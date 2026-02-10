@@ -37,11 +37,11 @@ Item {
         PluginParameter { name: "osm.useragent"; value: "MonAppliGPS_IUT" }
     }
 
-    // --- MODELE SUGGESTIONS (Limité à 3 résultats) ---
+    // --- MODELE SUGGESTIONS (Liste de résultats) ---
     GeocodeModel {
         id: suggestModel
         plugin: mapPlugin
-        limit: 3
+        limit: 6
         onLocationsChanged: {
             var list = [];
             for (var i = 0; i < count; i++) {

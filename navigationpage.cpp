@@ -5,8 +5,7 @@
 #include <QQuickItem>
 #include <QtCore>
 #include <QDebug>
-#include <QCompleter>
-#include <QAbstractItemView> // <--- LA LIGNE INDISPENSABLE QUI RÉPARE L'ERREUR
+#include <QListWidgetItem>
 
 NavigationPage::NavigationPage(QWidget* parent)
     : QWidget(parent), ui(new Ui::NavigationPage)
@@ -15,25 +14,14 @@ NavigationPage::NavigationPage(QWidget* parent)
 
     m_mapView = new QQuickWidget(this);
 
-    // --- 1. CONFIGURATION AUTO-COMPLETION ---
-    m_suggestModel = new QStringListModel(this);
-    m_completer = new QCompleter(m_suggestModel, this);
-    m_completer->setCompletionMode(QCompleter::UnfilteredPopupCompletion);
-
-    // MAQUILLAGE SOMBRE DU MENU (Réparé par l'include ci-dessus)
-    QAbstractItemView* popup = m_completer->popup();
-    if (popup) {
-        popup->setStyleSheet(
-            "QAbstractItemView { "
-            "   background: #2a2f3a; "
-            "   color: white; "
-            "   border: 1px solid #3d4455; "
-            "   selection-background-color: #4aa5ff; "
-            "}"
-            );
-    }
-
-    ui->editSearch->setCompleter(m_completer);
+    // --- 1. CONFIGURATION SUGGESTIONS ---
+    ui->listSuggestions->setVisible(false);
+    connect(ui->listSuggestions, &QListWidget::itemClicked, this, [this](QListWidgetItem* item){
+        if (!item) {
+            return;
+        }
+        selectSuggestion(item->text());
+    });
 
     m_searchTimer = new QTimer(this);
     m_searchTimer->setSingleShot(true);
@@ -47,7 +35,14 @@ NavigationPage::NavigationPage(QWidget* parent)
         }
     });
 
-    connect(ui->editSearch, &QLineEdit::textChanged, m_searchTimer, static_cast<void (QTimer::*)()>(&QTimer::start));
+    connect(ui->editSearch, &QLineEdit::textChanged, this, [this](const QString& text){
+        if (text.trimmed().length() < 4) {
+            ui->listSuggestions->clear();
+            ui->listSuggestions->setVisible(false);
+            return;
+        }
+        m_searchTimer->start();
+    });
 
     // --- 2. CONFIGURATION MAPBOX ---
     QString apiKey = QString::fromLocal8Bit(qgetenv("MAPBOX_KEY"));
@@ -89,6 +84,7 @@ NavigationPage::NavigationPage(QWidget* parent)
     connect(ui->btnSearch, &QPushButton::clicked, this, [this](){
         QString destination = ui->editSearch->text();
         if(!destination.isEmpty() && m_mapView->rootObject()){
+            ui->listSuggestions->setVisible(false);
             QMetaObject::invokeMethod(m_mapView->rootObject(), "searchDestination",
                                       Q_ARG(QVariant, destination));
         }
@@ -98,8 +94,28 @@ NavigationPage::NavigationPage(QWidget* parent)
 NavigationPage::~NavigationPage(){ delete ui; }
 
 void NavigationPage::updateSuggestions(const QVariant& suggestions) {
-    m_suggestModel->setStringList(suggestions.toStringList());
-    m_completer->complete();
+    m_lastSuggestions = suggestions.toStringList();
+
+    ui->listSuggestions->clear();
+    for (const QString& suggestion : m_lastSuggestions) {
+        if (!suggestion.trimmed().isEmpty()) {
+            ui->listSuggestions->addItem(suggestion);
+        }
+    }
+
+    ui->listSuggestions->setVisible(ui->listSuggestions->count() > 0);
+}
+
+void NavigationPage::selectSuggestion(const QString& suggestion)
+{
+    if (suggestion.isEmpty() || !m_mapView || !m_mapView->rootObject()) {
+        return;
+    }
+
+    ui->editSearch->setText(suggestion);
+    ui->listSuggestions->setVisible(false);
+    QMetaObject::invokeMethod(m_mapView->rootObject(), "searchDestination",
+                              Q_ARG(QVariant, suggestion));
 }
 
 void NavigationPage::onRouteInfoReceived(const QString& distance, const QString& duration) {
