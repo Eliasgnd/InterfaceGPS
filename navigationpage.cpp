@@ -6,6 +6,7 @@
 #include <QtCore>
 #include <QDebug>
 #include <QListWidgetItem>
+#include <QVariantList>
 
 NavigationPage::NavigationPage(QWidget* parent)
     : QWidget(parent), ui(new Ui::NavigationPage)
@@ -16,6 +17,14 @@ NavigationPage::NavigationPage(QWidget* parent)
 
     // --- 1. CONFIGURATION SUGGESTIONS ---
     ui->listSuggestions->setVisible(false);
+    ui->listSuggestions->setParent(ui->frame);
+    ui->listSuggestions->raise();
+    ui->listSuggestions->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    ui->frame->installEventFilter(this);
+    ui->editSearch->installEventFilter(this);
+    ui->btnSearch->installEventFilter(this);
+    updateSuggestionsGeometry();
+
     connect(ui->listSuggestions, &QListWidget::itemClicked, this, [this](QListWidgetItem* item){
         if (!item) {
             return;
@@ -94,7 +103,21 @@ NavigationPage::NavigationPage(QWidget* parent)
 NavigationPage::~NavigationPage(){ delete ui; }
 
 void NavigationPage::updateSuggestions(const QVariant& suggestions) {
-    m_lastSuggestions = suggestions.toStringList();
+    m_lastSuggestions.clear();
+
+    if (suggestions.canConvert<QStringList>()) {
+        m_lastSuggestions = suggestions.toStringList();
+    } else if (suggestions.typeId() == QMetaType::QVariantList) {
+        const QVariantList rawList = suggestions.toList();
+        for (const QVariant& entry : rawList) {
+            const QString text = entry.toString().trimmed();
+            if (!text.isEmpty()) {
+                m_lastSuggestions << text;
+            }
+        }
+    } else {
+        qWarning() << "Type de suggestions inattendu:" << suggestions.typeName();
+    }
 
     ui->listSuggestions->clear();
     for (const QString& suggestion : m_lastSuggestions) {
@@ -104,6 +127,33 @@ void NavigationPage::updateSuggestions(const QVariant& suggestions) {
     }
 
     ui->listSuggestions->setVisible(ui->listSuggestions->count() > 0);
+    if (ui->listSuggestions->isVisible()) {
+        ui->listSuggestions->raise();
+    }
+}
+
+bool NavigationPage::eventFilter(QObject* watched, QEvent* event)
+{
+    const bool isResizeOrMove = event->type() == QEvent::Resize || event->type() == QEvent::Move;
+    if (isResizeOrMove && (watched == ui->frame || watched == ui->editSearch || watched == ui->btnSearch)) {
+        updateSuggestionsGeometry();
+    }
+
+    return QWidget::eventFilter(watched, event);
+}
+
+void NavigationPage::updateSuggestionsGeometry()
+{
+    if (!ui || !ui->frame || !ui->editSearch || !ui->btnSearch || !ui->listSuggestions) {
+        return;
+    }
+
+    const QPoint topLeft = ui->editSearch->geometry().topLeft();
+    const int rowWidth = ui->btnSearch->geometry().right() - ui->editSearch->geometry().left() + 1;
+    const int listTop = ui->editSearch->geometry().bottom() + 6;
+    const int listHeight = ui->listSuggestions->maximumHeight();
+
+    ui->listSuggestions->setGeometry(topLeft.x(), listTop, rowWidth, listHeight);
 }
 
 void NavigationPage::selectSuggestion(const QString& suggestion)

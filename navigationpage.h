@@ -3,6 +3,7 @@
 #include <QQuickWidget>
 #include <QTimer>            // Indispensable pour le délai
 #include <QStringList>       // Pour stocker les suggestions
+#include <QEvent>
 
 namespace Ui { class NavigationPage; }
 class TelemetryData;
@@ -17,10 +18,11 @@ public:
 private slots:
     void onRouteInfoReceived(const QString& distance, const QString& duration);
 
-    // CHANGEZ CETTE LIGNE : remplacez QStringList par QVariant
     void updateSuggestions(const QVariant& suggestions);
 
 private:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+    void updateSuggestionsGeometry();
     void selectSuggestion(const QString& suggestion);
 
     Ui::NavigationPage* ui;
