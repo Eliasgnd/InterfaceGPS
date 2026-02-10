@@ -16,11 +16,10 @@ public:
     void bindTelemetry(TelemetryData* t);
 
 private slots:
-    // Reçoit la distance et le temps (ex: "12 km", "15 min")
     void onRouteInfoReceived(const QString& distance, const QString& duration);
 
-    // Reçoit la liste des villes suggérées (ex: "Paris", "Pariana", "Paris, TX")
-    void updateSuggestions(const QStringList& suggestions);
+    // CHANGEZ CETTE LIGNE : remplacez QStringList par QVariant
+    void updateSuggestions(const QVariant& suggestions);
 
 private:
     Ui::NavigationPage* ui;

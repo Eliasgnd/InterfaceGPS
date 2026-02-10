@@ -58,10 +58,11 @@ NavigationPage::NavigationPage(QWidget* parent)
 
     connect(m_mapView, &QQuickWidget::statusChanged, this, [this](QQuickWidget::Status status){
         if (status == QQuickWidget::Ready) {
+            connect(m_mapView->rootObject(), SIGNAL(suggestionsReady(QVariant)),
+                    this, SLOT(updateSuggestions(QVariant)));
+
             connect(m_mapView->rootObject(), SIGNAL(routeInfoUpdated(QString,QString)),
                     this, SLOT(onRouteInfoReceived(QString,QString)));
-            connect(m_mapView->rootObject(), SIGNAL(suggestionsReady(QStringList)),
-                    this, SLOT(updateSuggestions(QStringList)));
         }
     });
 
@@ -96,8 +97,8 @@ NavigationPage::NavigationPage(QWidget* parent)
 
 NavigationPage::~NavigationPage(){ delete ui; }
 
-void NavigationPage::updateSuggestions(const QStringList& suggestions) {
-    m_suggestModel->setStringList(suggestions);
+void NavigationPage::updateSuggestions(const QVariant& suggestions) {
+    m_suggestModel->setStringList(suggestions.toStringList());
     m_completer->complete();
 }
 

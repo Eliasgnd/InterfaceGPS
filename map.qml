@@ -33,6 +33,8 @@ Item {
         // 3. CACHE DISQUE (500 Mo) - Pour ne pas recharger la carte à chaque fois
         PluginParameter { name: "osm.mapping.cache.disk.cost_strategy"; value: "bytes" }
         PluginParameter { name: "osm.mapping.cache.disk.size"; value: "500000000" }
+
+        PluginParameter { name: "osm.useragent"; value: "MonAppliGPS_IUT" }
     }
 
     // --- MODELE SUGGESTIONS (Limité à 3 résultats) ---
@@ -45,6 +47,7 @@ Item {
             for (var i = 0; i < count; i++) {
                 list.push(get(i).address.text);
             }
+            console.log("Suggestions trouvées : " + list.length);
             suggestionsReady(list);
         }
     }
