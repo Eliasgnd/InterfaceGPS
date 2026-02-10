@@ -14,6 +14,7 @@ Item {
 
     // Signaux vers le C++
     signal routeInfoUpdated(string distance, string duration)
+    signal suggestionsUpdated(var suggestions)
 
     Plugin {
         id: mapPlugin
@@ -41,17 +42,40 @@ Item {
         id: geocodeModel
         plugin: mapPlugin
         limit: 1
+
         onLocationsChanged: {
-            if (count > 0) {
-                var loc = get(0).coordinate;
+            if (status !== GeocodeModel.Ready || count <= 0)
+                return
 
-                routeQuery.clearWaypoints();
-                routeQuery.addWaypoint(QtPositioning.coordinate(carLat, carLon));
-                routeQuery.addWaypoint(loc);
+            var loc = get(0).coordinate
 
-                // On lance le calcul MANUELLEMENT
-                routeModel.update();
+            routeQuery.clearWaypoints()
+            routeQuery.addWaypoint(QtPositioning.coordinate(carLat, carLon))
+            routeQuery.addWaypoint(loc)
+
+            // On lance le calcul MANUELLEMENT
+            routeModel.update()
+        }
+    }
+
+    // --- MODELE SUGGESTIONS (autocomplétion) ---
+    GeocodeModel {
+        id: suggestionsModel
+        plugin: mapPlugin
+        limit: 8
+
+        onLocationsChanged: {
+            var values = []
+
+            if (status === GeocodeModel.Ready) {
+                for (var i = 0; i < count; i++) {
+                    var entry = get(i)
+                    if (entry && entry.address && entry.address.text)
+                        values.push(entry.address.text)
+                }
             }
+
+            root.suggestionsUpdated(values)
         }
     }
 
@@ -137,8 +161,18 @@ Item {
     // Fonctions appelées par le C++
 
     function searchDestination(address) {
-        geocodeModel.query = address;
-        geocodeModel.update();
+        geocodeModel.query = address
+        geocodeModel.update()
+    }
+
+    function requestSuggestions(query) {
+        if (!query || query.length < 2) {
+            root.suggestionsUpdated([])
+            return
+        }
+
+        suggestionsModel.query = query
+        suggestionsModel.update()
     }
 
     onCarLatChanged: { if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon) }
