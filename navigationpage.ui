@@ -14,6 +14,8 @@
       <string notr="true">
 QFrame{background:#171a21;border-radius:16px;}
 QLabel{color:white;}
+/* Style pour la barre de recherche */
+QLineEdit{height:40px; border-radius:10px; background:#2a2f3a; color:white; padding: 0 10px; font-size:15px; border:1px solid #3d4455;}
 QPushButton{height:48px;border-radius:12px;color:white;background:#222634;font-size:15px;padding:8px;}
 QPushButton:pressed{background:#2d3245;}
       </string>
@@ -24,6 +26,27 @@ QPushButton:pressed{background:#2d3245;}
       <property name="rightMargin"><number>14</number></property>
       <property name="bottomMargin"><number>14</number></property>
       <property name="spacing"><number>10</number></property>
+
+      <item>
+       <layout class="QHBoxLayout" name="rowSearch">
+        <property name="spacing"><number>10</number></property>
+        <item>
+         <widget class="QLineEdit" name="editSearch">
+          <property name="placeholderText">
+           <string>Où voulez-vous aller ?</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnSearch">
+          <property name="text">
+           <string>Aller</string>
+          </property>
+          <property name="minimumWidth"><number>100</number></property>
+         </widget>
+        </item>
+       </layout>
+      </item>
 
       <item>
        <widget class="QFrame" name="mapPlaceholder">
