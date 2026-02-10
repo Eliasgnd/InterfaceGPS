@@ -14,7 +14,6 @@ Item {
 
     // Signaux vers le C++
     signal routeInfoUpdated(string distance, string duration)
-    signal suggestionsReady(var suggestions)
 
     Plugin {
         id: mapPlugin
@@ -35,21 +34,6 @@ Item {
         PluginParameter { name: "osm.mapping.cache.disk.size"; value: "500000000" }
 
         PluginParameter { name: "osm.useragent"; value: "MonAppliGPS_IUT" }
-    }
-
-    // --- MODELE SUGGESTIONS (Liste de résultats) ---
-    GeocodeModel {
-        id: suggestModel
-        plugin: mapPlugin
-        limit: 6
-        onLocationsChanged: {
-            var list = [];
-            for (var i = 0; i < count; i++) {
-                list.push(get(i).address.text);
-            }
-            console.log("Suggestions trouvées : " + list.length);
-            suggestionsReady(list);
-        }
     }
 
     // --- MODELE RECHERCHE FINALE (Itinéraire) ---
@@ -151,10 +135,6 @@ Item {
     }
 
     // Fonctions appelées par le C++
-    function fetchSuggestions(query) {
-        suggestModel.query = query;
-        suggestModel.update();
-    }
 
     function searchDestination(address) {
         geocodeModel.query = address;
