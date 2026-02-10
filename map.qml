@@ -13,17 +13,22 @@ Item {
     property bool autoFollow: true
 
     Plugin {
-        id: mapPlugin
-        name: "osm"
+            id: mapPlugin
+            name: "osm"
 
-        // Utilisation de CartoDB (Sombre) pour éviter les soucis de clé Mapbox si besoin
-        PluginParameter {
-            name: "osm.mapping.custom.host"
-            value: "https://a.basemaps.cartocdn.com/dark_all/"
+            // 1. On dit à Qt d'aller chercher les images (tuiles) chez Mapbox
+            // On utilise la variable 'mapboxApiKey' que le C++ nous envoie
+            PluginParameter {
+                name: "osm.mapping.custom.host"
+                value: "https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/tiles/256/%z/%x/%y?access_token=" + mapboxApiKey
+            }
+
+            // 2. On désactive les cartes OSM standard pour ne pas faire ramer l'appli
+            PluginParameter { name: "osm.mapping.providersrepository.disabled"; value: true }
+
+            // 3. On garde le routage gratuit (OSRM)
+            PluginParameter { name: "osm.routing.host"; value: "http://router.project-osrm.org/route/v1/driving" }
         }
-        PluginParameter { name: "osm.mapping.providersrepository.disabled"; value: true }
-        PluginParameter { name: "osm.routing.host"; value: "http://router.project-osrm.org/route/v1/driving" }
-    }
 
     RouteQuery {
         id: routeQuery
