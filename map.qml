@@ -10,7 +10,9 @@ Item {
     property double carLon: 4.0645
     property double carZoom: 17
     property double carHeading: 0
+    property double carSpeed: 0
     property bool autoFollow: true
+    property string nextInstruction: ""
 
     signal routeInfoUpdated(string distance, string duration)
     signal suggestionsUpdated(string suggestions)
@@ -53,7 +55,43 @@ Item {
                 var d = (route.distance / 1000).toFixed(1) + " km"
                 var t = Math.round(route.travelTime / 60) + " min"
                 routeInfoUpdated(d, t)
+
+                if (route.segments && route.segments.length > 0 && route.segments[0].maneuver) {
+                    nextInstruction = route.segments[0].maneuver.instructionText
+                } else {
+                    nextInstruction = "Continuez sur l'itinéraire"
+                }
+            } else if (status !== RouteModel.Loading) {
+                nextInstruction = ""
             }
+        }
+    }
+
+    Rectangle {
+        id: instructionBanner
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: 12
+        width: parent.width * 0.8
+        height: 52
+        radius: 12
+        color: "#dd171a21"
+        border.color: "#33ffffff"
+        border.width: 1
+        visible: routeModel.status === RouteModel.Ready && nextInstruction.length > 0
+        z: 10
+
+        Text {
+            anchors.fill: parent
+            anchors.margins: 12
+            text: nextInstruction
+            color: "white"
+            font.pixelSize: 18
+            font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.Wrap
+            elide: Text.ElideRight
         }
     }
 
@@ -62,12 +100,16 @@ Item {
         anchors.fill: parent
         plugin: mapPlugin
         center: QtPositioning.coordinate(carLat, carLon)
-        zoomLevel: carZoom
+        zoomLevel: autoFollow ? Math.max(12, 18 - (carSpeed / 50.0)) : carZoom
         copyrightsVisible: false
 
         // Bearing pour que la carte tourne avec la voiture en mode navigation
         bearing: autoFollow ? carHeading : 0
-        tilt: 0
+        tilt: autoFollow ? 45 : 0
+
+        onGestureStarted: {
+            autoFollow = false
+        }
 
         // Itinéraire
         MapItemView {
@@ -143,6 +185,7 @@ Item {
                         routeQuery.addWaypoint(QtPositioning.coordinate(carLat, carLon))
                         routeQuery.addWaypoint(QtPositioning.coordinate(c[1], c[0]))
                         routeModel.update()
+                        autoFollow = true
                     }
                 } catch(e) {}
             }

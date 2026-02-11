@@ -155,12 +155,14 @@ void NavigationPage::bindTelemetry(TelemetryData* t) {
             m_mapView->rootObject()->setProperty("carLat", m_t->lat());
             m_mapView->rootObject()->setProperty("carLon", m_t->lon());
             m_mapView->rootObject()->setProperty("carHeading", m_t->heading());
+            m_mapView->rootObject()->setProperty("carSpeed", m_t->speedKmh());
         }
     };
     refresh();
     connect(m_t, &TelemetryData::latChanged, this, refresh);
     connect(m_t, &TelemetryData::lonChanged, this, refresh);
     connect(m_t, &TelemetryData::headingChanged, this, refresh);
+    connect(m_t, &TelemetryData::speedKmhChanged, this, refresh);
 }
 
 void NavigationPage::requestRouteForText(const QString& destination)
