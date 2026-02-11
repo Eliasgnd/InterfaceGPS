@@ -1,6 +1,6 @@
-import QtQuick 2.15
-import QtLocation 5.15
-import QtPositioning 5.15
+import QtQuick
+import QtLocation
+import QtPositioning
 
 Item {
     id: root
@@ -17,29 +17,15 @@ Item {
     signal routeInfoUpdated(string distance, string duration)
     signal suggestionsUpdated(string suggestions)
 
-    // --- CONFIGURATION MAPBOX ---
     Plugin {
         id: mapPlugin
         name: "osm"
-
-        // 1. UTILISATION DES TUILES MAPBOX (Format Image 256px compatible)
         PluginParameter {
             name: "osm.mapping.custom.host"
             value: "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/%z/%x/%y?access_token=" + mapboxApiKey
         }
-
-        // 2. IDENTITÉ (Indispensable pour Qt 5.15 sur Linux)
-        PluginParameter { name: "osm.useragent"; value: "Mozilla/5.0 (QtLocation 5.15)" }
-
-        // 3. FORCER NOTRE CONFIGURATION
+        PluginParameter { name: "osm.useragent"; value: "Mozilla/5.0 (Qt6)" }
         PluginParameter { name: "osm.mapping.providersrepository.disabled"; value: true }
-
-        // 4. CACHE OPTIMISÉ (Utilise maintenant le dossier standard)
-        PluginParameter { name: "osm.mapping.cache.disk.size"; value: "100000000" }
-
-        // 5. ROUTING (OSRM)
-        PluginParameter { name: "osm.routing.host"; value: "https://routing.openstreetmap.de/routed-car/route/v1/driving/" }
-        PluginParameter { name: "osm.routing.apiversion"; value: "v5" }
     }
 
     RouteQuery { id: routeQuery }
@@ -52,46 +38,27 @@ Item {
         onStatusChanged: {
             if (status === RouteModel.Ready && count > 0) {
                 var route = get(0)
-                var d = (route.distance / 1000).toFixed(1) + " km"
-                var t = Math.round(route.travelTime / 60) + " min"
-                routeInfoUpdated(d, t)
-
+                routeInfoUpdated((route.distance / 1000).toFixed(1) + " km", Math.round(route.travelTime / 60) + " min")
                 if (route.segments && route.segments.length > 0 && route.segments[0].maneuver) {
                     nextInstruction = route.segments[0].maneuver.instructionText
-                } else {
-                    nextInstruction = "Continuez sur l'itinéraire"
                 }
-            } else if (status !== RouteModel.Loading) {
-                nextInstruction = ""
             }
         }
     }
 
+    // Bandeau d'instructions
     Rectangle {
         id: instructionBanner
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: 12
-        width: parent.width * 0.8
-        height: 52
-        radius: 12
-        color: "#dd171a21"
-        border.color: "#33ffffff"
-        border.width: 1
+        anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 12 }
+        width: parent.width * 0.8; height: 52; radius: 12
+        color: "#dd171a21"; border.color: "#33ffffff"; border.width: 1
         visible: routeModel.status === RouteModel.Ready && nextInstruction.length > 0
         z: 10
-
         Text {
-            anchors.fill: parent
-            anchors.margins: 12
-            text: nextInstruction
-            color: "white"
-            font.pixelSize: 18
-            font.bold: true
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            wrapMode: Text.Wrap
-            elide: Text.ElideRight
+            anchors.fill: parent; anchors.margins: 12
+            text: nextInstruction; color: "white"; font { pixelSize: 18; bold: true }
+            horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.Wrap; elide: Text.ElideRight
         }
     }
 
@@ -100,77 +67,76 @@ Item {
         anchors.fill: parent
         plugin: mapPlugin
         center: QtPositioning.coordinate(carLat, carLon)
-        zoomLevel: autoFollow ? Math.max(12, 18 - (carSpeed / 50.0)) : carZoom
-        copyrightsVisible: false
 
-        // Bearing pour que la carte tourne avec la voiture en mode navigation
+        // Calcul du zoom (vitesse ou manuel)
+        zoomLevel: autoFollow ? Math.max(12, 18 - (carSpeed / 50.0)) : carZoom
+
+        copyrightsVisible: false
         bearing: autoFollow ? carHeading : 0
         tilt: autoFollow ? 45 : 0
 
-        onGestureStarted: {
-            autoFollow = false
+        // --- ANIMATIONS FLUIDES (LE COEUR DU SYSTEME) ---
+
+        // 1. Animation de la position (Recentrage et suivi GPS lisse)
+        Behavior on center {
+            id: centerBehavior
+            enabled: !mapDragHandler.active // On coupe si l'utilisateur glisse la carte
+            CoordinateAnimation { duration: 800; easing.type: Easing.InOutQuad }
         }
 
-        // Itinéraire
-        MapItemView {
-            model: routeModel
-            delegate: MapRoute {
-                route: routeData
-                line.color: "#1db7ff"
-                line.width: 10
-                opacity: 0.8
-                smooth: true
+        // 2. Animation du Zoom (Boutons et zoom auto)
+        Behavior on zoomLevel {
+            NumberAnimation { duration: 500; easing.type: Easing.InOutQuad }
+        }
+
+        // 3. Animation de la Rotation et Inclinaison
+        Behavior on bearing { NumberAnimation { duration: 600 } }
+        Behavior on tilt { NumberAnimation { duration: 600 } }
+
+        // --- GESTION DES INTERACTIONS ---
+
+        DragHandler {
+            id: mapDragHandler
+            onActiveChanged: if (active) root.autoFollow = false
+        }
+
+        WheelHandler {
+            onWheel: (event) => {
+                root.autoFollow = false
+                root.carZoom = map.zoomLevel
             }
         }
 
-        // Marqueur Voiture
+        PinchHandler {
+            onActiveChanged: if (active) root.autoFollow = false
+        }
+
+        // Itinéraire et Voiture (Inchangés)
+        MapItemView {
+            model: routeModel
+            delegate: MapRoute { route: routeData; line.color: "#1db7ff"; line.width: 10; opacity: 0.8; smooth: true }
+        }
+
         MapQuickItem {
             id: carMarker
             coordinate: QtPositioning.coordinate(carLat, carLon)
-            anchorPoint.x: carVisual.width / 2
-            anchorPoint.y: carVisual.height / 2
-
+            anchorPoint.x: carVisual.width / 2; anchorPoint.y: carVisual.height / 2
             sourceItem: Item {
                 id: carVisual
                 width: 64; height: 64
-
-                // Aura de position
+                Rectangle { anchors.centerIn: parent; width: 50; height: 50; color: "#00a8ff"; opacity: 0.2; radius: 25 }
                 Rectangle {
-                    anchors.centerIn: parent
-                    width: 50; height: 50
-                    color: "#00a8ff"
-                    opacity: 0.2
-                    radius: 25
-                }
-
-                // Flèche de navigation
-                Rectangle {
-                    anchors.centerIn: parent; width: 24; height: 32
-                    color: "white"; radius: 6
-                    border.width: 2; border.color: "#171a21"
-
-                    Rectangle {
-                        width: 24; height: 24
-                        color: "white"
-                        rotation: 45
-                        y: -10; x: 0
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        border.width: 2; border.color: "#171a21"
-                    }
-                    Rectangle {
-                        width: 26; height: 16; y: 20; x: -1
-                        color: "white"
-                    }
+                    anchors.centerIn: parent; width: 24; height: 32; color: "white"; radius: 6; border.width: 2; border.color: "#171a21"
+                    Rectangle { width: 24; height: 24; color: "white"; rotation: 45; y: -10; anchors.horizontalCenter: parent.horizontalCenter; border.width: 2; border.color: "#171a21" }
+                    Rectangle { width: 26; height: 16; y: 20; x: -1; color: "white" }
                 }
             }
         }
-
-        onErrorChanged: {
-            if (map.error !== Map.NoError) console.log("ERREUR MAP : " + map.errorString)
-        }
     }
 
-    // --- LOGIQUE DE RECHERCHE ---
+    // --- LOGIQUE (Inchangée) ---
+    onCarZoomChanged: { if (map.zoomLevel !== carZoom) autoFollow = false }
+
     function searchDestination(address) {
         var http = new XMLHttpRequest()
         var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + encodeURIComponent(address) + ".json?access_token=" + mapboxApiKey + "&limit=1"
@@ -213,9 +179,10 @@ Item {
 
     onCarLatChanged: { if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon) }
     onCarLonChanged: { if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon) }
+
     function recenterMap() {
         autoFollow = true
         map.center = QtPositioning.coordinate(carLat, carLon)
-        map.zoomLevel = 17
+        carZoom = 17
     }
 }
