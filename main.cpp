@@ -4,22 +4,27 @@
 #include "telemetrydata.h"
 #include "mocktelemetrysource.h"
 #include <QNetworkProxyFactory>
+#include <QDir>
+#include <QStandardPaths>
+#include <QDebug>
+#include <QCoreApplication>
 
 int main(int argc, char *argv[]) {
-    // 1. Activer les logs détaillés pour le réseau et la localisation
     QLoggingCategory::setFilterRules(
         "qt.network.ssl.warning=true\n"
         "qt.location.mapping.osm.debug=true\n"
         "qt.location.mapping.network.debug=true\n"
-        "qt.network.access.debug=true" // Attention, ça va être très bavard !
+        "qt.network.access.debug=true"
         );
 
-    // 2. Force le rendu logiciel (indispensable sur certains Linux)
     QCoreApplication::setAttribute(Qt::AA_UseSoftwareOpenGL);
 
     QApplication a(argc, argv);
 
-    // 3. Configuration Proxy (Déjà fait, on garde)
+    QString cachePath = QCoreApplication::applicationDirPath() + "/qtlocation_cache";
+    QDir().mkpath(cachePath);
+    qputenv("QTLOCATION_OSM_CACHE_DIR", cachePath.toUtf8()); // OK
+
     QNetworkProxyFactory::setUseSystemConfiguration(true);
 
     TelemetryData telemetry;
@@ -30,3 +35,4 @@ int main(int argc, char *argv[]) {
     w.showFullScreen();
     return a.exec();
 }
+

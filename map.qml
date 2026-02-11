@@ -14,7 +14,8 @@ Item {
     property double carSpeed: 0
     property bool autoFollow: true
     property string nextInstruction: ""
-    property int speedLimit: 0
+    property int speedLimit: -1
+    property double manualBearing: 0
 
     // --- VARIABLES POUR L'OPTIMISATION API ---
     // On stocke le moment (timestamp) et la position du dernier appel
@@ -29,7 +30,8 @@ Item {
         name: "osm"
         PluginParameter {
             name: "osm.mapping.custom.host"
-            value: "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/%z/%x/%y?access_token=" + mapboxApiKey
+            value: "https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/%z/%x/%y?access_token="
+                   + mapboxApiKey
         }
         PluginParameter { name: "osm.useragent"; value: "Mozilla/5.0 (Qt6)" }
         PluginParameter { name: "osm.mapping.providersrepository.disabled"; value: true }
@@ -53,28 +55,104 @@ Item {
         }
     }
 
-    // --- FONCTION API SÉCURISÉE ---
+    function parseMaxspeedValue(raw) {
+        if (!raw) return 0
+
+        // Exemples possibles dans OSM: "50", "50 km/h", "30 mph", "FR:urban", "signals", etc. :contentReference[oaicite:2]{index=2}
+        raw = ("" + raw).trim()
+
+        // Cas "FR:urban" etc (très simplifié)
+        // (Si tu veux, on pourra affiner par pays / contexte plus tard)
+        if (raw.indexOf("FR:urban") === 0) return 50
+        if (raw.indexOf("FR:rural") === 0) return 80
+        if (raw.indexOf("FR:motorway") === 0) return 130
+
+        // Extraction du 1er nombre
+        var m = raw.match(/(\d+(\.\d+)?)/)
+        if (!m) return 0
+        var v = parseFloat(m[1])
+        if (isNaN(v)) return 0
+
+        // Conversion mph -> km/h si nécessaire
+        if (raw.toLowerCase().indexOf("mph") !== -1) {
+            v = v * 1.60934
+        }
+
+        return Math.round(v)
+    }
+
     function updateRealSpeedLimit(lat, lon) {
         var http = new XMLHttpRequest()
-        var url = "https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/tilequery/"
-                  + lon + "," + lat + ".json?layers=road&access_token=" + mapboxApiKey
 
-        http.open("GET", url, true);
+        // Query Overpass QL : routes autour du point qui ont maxspeed :contentReference[oaicite:3]{index=3}
+        var radius = 80 // mètres (ajuste 50-120 selon ta précision GPS)
+        var query =
+            '[out:json][timeout:10];' +
+            '(' +
+            '  way(around:' + radius + ',' + lat + ',' + lon + ')["highway"]["maxspeed"];' +
+            ');' +
+            'out tags center;'
+
+        // Overpass interpreter endpoint :contentReference[oaicite:4]{index=4}
+        var url = "https://overpass-api.de/api/interpreter"
+
+        console.log(">>> Overpass speedlimit POST to:", url)
+        // IMPORTANT: on envoie la requête en POST (plus fiable que GET pour l’encodage)
+        http.open("POST", url, true)
+        http.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+
         http.onreadystatechange = function() {
-            if (http.readyState == 4 && http.status == 200) {
-                try {
-                    var json = JSON.parse(http.responseText)
-                    if (json.features && json.features.length > 0) {
-                        var props = json.features[0].properties
-                        if (props.maxspeed) {
-                            var limit = parseInt(props.maxspeed)
-                            if (!isNaN(limit)) root.speedLimit = limit
-                        }
+            if (http.readyState !== 4) return
+
+            if (http.status !== 200) {
+                console.log("!!! Overpass error:", http.status, http.responseText)
+                // Fallback: ne change pas brutalement, ou mets une valeur par défaut
+                // root.speedLimit = 0
+                return
+            }
+
+            try {
+                var json = JSON.parse(http.responseText)
+                if (!json.elements || json.elements.length === 0) {
+                    console.log("Overpass: aucun maxspeed trouvé dans le rayon")
+                    return
+                }
+
+                var bestLimit = 0
+                var bestDist = 1e18
+                var carPos = QtPositioning.coordinate(lat, lon)
+
+                for (var i = 0; i < json.elements.length; i++) {
+                    var el = json.elements[i]
+                    if (!el.tags || !el.tags.maxspeed) continue
+                    if (!el.center) continue // on a demandé out center;
+
+                    var limit = parseMaxspeedValue(el.tags.maxspeed)
+                    if (limit <= 0) continue
+
+                    var p = QtPositioning.coordinate(el.center.lat, el.center.lon)
+                    var d = carPos.distanceTo(p)
+
+                    if (d < bestDist) {
+                        bestDist = d
+                        bestLimit = limit
                     }
-                } catch(e) { console.log("Erreur API: " + e) }
+                }
+
+                if (bestLimit > 0) {
+                    root.speedLimit = bestLimit
+                    // console.log("Overpass: speedLimit =", bestLimit, "dist(m)=", Math.round(bestDist))
+                } else {
+                    console.log("Overpass: trouvé des ways mais pas de maxspeed exploitable")
+                }
+
+            } catch(e) {
+                console.log("Erreur parsing Overpass JSON:", e)
             }
         }
-        http.send();
+
+        // body = data=<query>
+        http.send("data=" + encodeURIComponent(query))
     }
 
     // Bandeau d'instructions
@@ -99,25 +177,74 @@ Item {
         plugin: mapPlugin
         center: QtPositioning.coordinate(carLat, carLon)
 
-        zoomLevel: autoFollow ? Math.max(12, 18 - (carSpeed / 50.0)) : carZoom
+        zoomLevel: carZoom
         copyrightsVisible: false
-        bearing: autoFollow ? carHeading : 0
+        bearing: autoFollow ? carHeading : manualBearing
         tilt: autoFollow ? 45 : 0
 
         // Animations
         Behavior on center {
-            id: centerBehavior
-            enabled: !mapDragHandler.active
-            CoordinateAnimation { duration: 800; easing.type: Easing.InOutQuad }
+            enabled: !root.autoFollow && !mapDragHandler.active
+
+            CoordinateAnimation {
+                duration: 250
+                easing.type: Easing.InOutQuad
+            }
         }
+
         Behavior on zoomLevel { NumberAnimation { duration: 500; easing.type: Easing.InOutQuad } }
         Behavior on bearing { NumberAnimation { duration: 600 } }
         Behavior on tilt { NumberAnimation { duration: 600 } }
 
         // Interactions
-        DragHandler { id: mapDragHandler; onActiveChanged: if (active) root.autoFollow = false }
-        WheelHandler { onWheel: (event) => { root.autoFollow = false; root.carZoom = map.zoomLevel } }
-        PinchHandler { onActiveChanged: if (active) root.autoFollow = false }
+        DragHandler {
+            id: mapDragHandler
+            target: null
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchScreen | PointerDevice.TouchPad
+
+            property point lastPos: Qt.point(0, 0)
+
+            onActiveChanged: {
+                if (active) {
+                    lastPos = centroid.position
+                }
+            }
+
+            onCentroidChanged: {
+                if (!active) return
+
+                var p = centroid.position
+                var dx = p.x - lastPos.x
+                var dy = p.y - lastPos.y
+                lastPos = p
+
+                // Si on a VRAIMENT bougé un peu, alors seulement on désactive le follow
+                if (root.autoFollow && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
+                    root.autoFollow = false
+                }
+
+                // Pan de la carte (sens inverse pour “attraper” la map)
+                map.pan(-dx, -dy)
+            }
+        }
+
+        WheelHandler {
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            onWheel: (event) => {
+                var step = event.angleDelta.y > 0 ? 1 : -1
+                root.carZoom = Math.max(2, Math.min(20, root.carZoom + step))
+                event.accepted = true
+            }
+        }
+
+
+        PinchHandler {
+            onActiveChanged: {
+                if (!active && root.autoFollow) {
+                    map.center = QtPositioning.coordinate(root.carLat, root.carLon)
+                }
+            }
+        }
 
         MapItemView {
             model: routeModel
@@ -130,6 +257,7 @@ Item {
             anchorPoint.x: carVisual.width / 2; anchorPoint.y: carVisual.height / 2
             sourceItem: Item {
                 id: carVisual
+                enabled: false
                 width: 64; height: 64
                 Rectangle { anchors.centerIn: parent; width: 50; height: 50; color: "#00a8ff"; opacity: 0.2; radius: 25 }
                 Rectangle {
@@ -150,9 +278,9 @@ Item {
         z: 20
         Rectangle {
             anchors.fill: parent; radius: 30
-            color: "red"; visible: carSpeed > speedLimit; opacity: 0.6
+            color: "red"; visible: speedLimit > 0 && carSpeed > speedLimit; opacity: 0.6
             SequentialAnimation on opacity {
-                running: carSpeed > speedLimit
+                running: speedLimit > 0 && carSpeed > speedLimit
                 loops: Animation.Infinite
                 NumberAnimation { from: 0.2; to: 0.8; duration: 500 }
                 NumberAnimation { from: 0.8; to: 0.2; duration: 500 }
@@ -160,7 +288,7 @@ Item {
         }
         Text {
             anchors.centerIn: parent
-            text: speedLimit; font { pixelSize: 24; bold: true }
+            text: speedLimit < 0 ? "-" : speedLimit; font { pixelSize: 24; bold: true }
             color: "black"
         }
     }
@@ -177,11 +305,9 @@ Item {
         var distanceSinceLast = lastApiCallPos.distanceTo(currentPos)
 
         // 3. LA CONDITION DOUBLE :
-        // - Il doit s'être écoulé 30 000 ms (30 sec)
-        // - ET on doit avoir bougé de plus de 100 mètres
-        if ( (now - lastApiCallTime > 30000) && (distanceSinceLast > 100) ) {
+        if ( (now - lastApiCallTime > 15000) && (distanceSinceLast > 50) ) {
 
-            console.log("Mise à jour API Limite Vitesse (Eco-Mode)")
+            console.log("Mise à jour API Limite Vitesse")
             updateRealSpeedLimit(carLat, carLon)
 
             // On enregistre les nouvelles références
@@ -191,7 +317,24 @@ Item {
     }
 
     onCarLonChanged: { if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon) }
-    onCarZoomChanged: { if (map.zoomLevel !== carZoom) autoFollow = false }
+
+    onAutoFollowChanged: {
+        if (!autoFollow) {
+            // on “fige” l'orientation actuelle au moment où on quitte le suivi
+            manualBearing = map.bearing
+        } else {
+            // quand on revient en suivi, optionnel : aligner la carte sur la voiture
+            // (le binding bearing s’en charge déjà)
+        }
+    }
+
+    onCarZoomChanged: {
+        if (autoFollow) {
+            map.center = QtPositioning.coordinate(carLat, carLon)
+        }
+    }
+
+
 
     function searchDestination(address) {
         var http = new XMLHttpRequest()

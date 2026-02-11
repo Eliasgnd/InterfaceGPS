@@ -6,11 +6,8 @@
 MockTelemetrySource::MockTelemetrySource(TelemetryData* data, QObject* parent)
     : QObject(parent), m_data(data)
 {
-    // On vide l'ancienne liste
     m_routePoints.clear();
-
-    // --- TON TRACÉ RÉEL (Converti en Lat, Lon) ---
-    // C'est une boucle autour de l'IUT/Technopole
+    // Votre tracé autour de l'IUT
     m_routePoints << QGeoCoordinate(48.269593, 4.079829)
                   << QGeoCoordinate(48.267314, 4.076437)
                   << QGeoCoordinate(48.267109, 4.076079)
@@ -35,13 +32,14 @@ MockTelemetrySource::MockTelemetrySource(TelemetryData* data, QObject* parent)
                   << QGeoCoordinate(48.268387, 4.083990)
                   << QGeoCoordinate(48.268982, 4.084626)
                   << QGeoCoordinate(48.270582, 4.081287);
-    // Le dernier point rejoint le premier automatiquement grâce à la logique de boucle
 
-    m_currentIndex = 0;
+    if (!m_routePoints.isEmpty()) {
+        m_currentExactPos = m_routePoints[0];
+        m_currentIndex = 0;
+    }
 
-    // Vitesse de la simulation : 1 seconde par point
-    // Tu peux réduire à 500ms si tu veux que ça aille plus vite
-    m_timer.setInterval(1000);
+    // VITESSE DU TIMER : 50ms = 20 images par seconde (très fluide)
+    m_timer.setInterval(50);
     connect(&m_timer, &QTimer::timeout, this, &MockTelemetrySource::tick);
 }
 
@@ -51,36 +49,41 @@ void MockTelemetrySource::stop(){ m_timer.stop(); }
 void MockTelemetrySource::tick(){
     if(!m_data || m_routePoints.isEmpty()) return;
 
-    // 1. On récupère la position cible
-    QGeoCoordinate target = m_routePoints[m_currentIndex];
+    // 1. Cible actuelle
+    // On vise le PROCHAIN point (index + 1)
+    int nextIndex = m_currentIndex + 1;
+    if (nextIndex >= m_routePoints.size()) nextIndex = 0; // Boucle
 
-    // 2. On met à jour la position dans le système
-    m_data->setLat(target.latitude());
-    m_data->setLon(target.longitude());
+    QGeoCoordinate target = m_routePoints[nextIndex];
 
-    // 3. Calcul intelligent du cap (Heading) pour que la voiture tourne
-    // Si on n'est pas au dernier point, on regarde le suivant
-    // Sinon, on regarde le premier point (pour boucler proprement)
-    QGeoCoordinate nextPoint;
-    if (m_currentIndex < m_routePoints.size() - 1) {
-        nextPoint = m_routePoints[m_currentIndex + 1];
+    // 2. Calcul du déplacement
+    // Vitesse simulée : 50 km/h = 13.88 m/s
+    double speedKmh = 50.0;
+    double speedMs = speedKmh / 3.6;
+
+    // Distance à parcourir en 50ms (0.05s)
+    double stepDistance = speedMs * 0.05;
+
+    // Distance restante vers la cible
+    double distToTarget = m_currentExactPos.distanceTo(target);
+
+    if (distToTarget <= stepDistance) {
+        // ON EST ARRIVÉ AU POINT : On se cale dessus et on change d'index
+        m_currentExactPos = target;
+        m_currentIndex = nextIndex;
     } else {
-        nextPoint = m_routePoints[0]; // Bouclage
+        // ON AVANCE : Interpolation vers la cible
+        double azimuth = m_currentExactPos.azimuthTo(target);
+        m_currentExactPos = m_currentExactPos.atDistanceAndAzimuth(stepDistance, azimuth);
     }
 
-    // azimuthTo calcule l'angle exact entre deux coordonnées GPS
-    m_data->setHeading(target.azimuthTo(nextPoint));
+    // 3. Mise à jour des données (Interface)
+    m_data->setLat(m_currentExactPos.latitude());
+    m_data->setLon(m_currentExactPos.longitude());
 
-    // 4. On avance au point suivant
-    m_currentIndex++;
-    if (m_currentIndex >= m_routePoints.size()) {
-        m_currentIndex = 0; // Retour au départ
-    }
+    // Calcul du cap (Heading) pour orienter la carte
+    m_data->setHeading(m_currentExactPos.azimuthTo(target));
 
-    // --- SIMULATION DES CAPTEURS ---
-    m_data->setSpeedKmh(50.0); // On roule à 50 km/h
+    m_data->setSpeedKmh(speedKmh);
     m_data->setGpsOk(true);
-
-    // Note : On ne définit plus 'setSpeedLimit' ici manuellement !
-    // C'est ton fichier map.qml qui va le chercher sur internet grâce à la position.
 }

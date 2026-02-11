@@ -1,4 +1,5 @@
 #include "navigationpage.h"
+#include "qdir.h"
 #include "ui_navigationpage.h"
 #include "telemetrydata.h"
 #include <QCompleter>
@@ -102,12 +103,14 @@ NavigationPage::NavigationPage(QWidget* parent)
 
     // --- 3. BOUTONS ---
     connect(ui->btnZoomIn, &QPushButton::clicked, this, [this](){
-        if(m_mapView && m_mapView->rootObject()) m_mapView->rootObject()->setProperty("carZoom", m_currentZoom + 1);
-        m_currentZoom++;
+        if (!m_mapView || !m_mapView->rootObject()) return;
+        double z = m_mapView->rootObject()->property("carZoom").toDouble();
+        m_mapView->rootObject()->setProperty("carZoom", z + 1);
     });
     connect(ui->btnZoomOut, &QPushButton::clicked, this, [this](){
-        if(m_mapView && m_mapView->rootObject()) m_mapView->rootObject()->setProperty("carZoom", m_currentZoom - 1);
-        m_currentZoom--;
+        if (!m_mapView || !m_mapView->rootObject()) return;
+        double z = m_mapView->rootObject()->property("carZoom").toDouble();
+        m_mapView->rootObject()->setProperty("carZoom", z - 1);
     });
     connect(ui->btnCenter, &QPushButton::clicked, this, [this](){
         if(m_mapView && m_mapView->rootObject()) QMetaObject::invokeMethod(m_mapView->rootObject(), "recenterMap");
@@ -192,3 +195,5 @@ void NavigationPage::triggerSuggestionsSearch()
                                   Q_ARG(QVariant, query));
     }
 }
+
+

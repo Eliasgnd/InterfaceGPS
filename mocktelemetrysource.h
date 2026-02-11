@@ -20,6 +20,7 @@ private slots:
 private:
     QList<QGeoCoordinate> m_routePoints;
     int m_currentIndex = 0;
+    QGeoCoordinate m_currentExactPos;
 
     TelemetryData* m_data = nullptr;
     QTimer m_timer;
