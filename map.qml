@@ -16,6 +16,12 @@ Item {
     property string nextInstruction: ""
     property int speedLimit: -1
     property double manualBearing: 0
+    
+    // POI marker colors
+    readonly property string poiColorParking: "#3498db"
+    readonly property string poiColorGas: "#f39c12"
+    readonly property string poiColorDefault: "#95a5a6"
+    readonly property int poiResultLimit: 10
 
     // --- VARIABLES POUR L'OPTIMISATION API ---
     // On stocke le moment (timestamp) et la position du dernier appel
@@ -24,6 +30,12 @@ Item {
 
     signal routeInfoUpdated(string distance, string duration)
     signal suggestionsUpdated(string suggestions)
+
+    // POI Model for storing points of interest
+    ListModel {
+        id: poiModel
+        // Each entry: { lat: double, lon: double, name: string, category: string }
+    }
 
     Plugin {
         id: mapPlugin
@@ -251,6 +263,64 @@ Item {
             delegate: MapRoute { route: routeData; line.color: "#1db7ff"; line.width: 10; opacity: 0.8; smooth: true }
         }
 
+        // POI Markers
+        MapItemView {
+            model: poiModel
+            delegate: MapQuickItem {
+                coordinate: QtPositioning.coordinate(model.lat, model.lon)
+                anchorPoint.x: poiVisual.width / 2
+                anchorPoint.y: poiVisual.height / 2
+                
+                sourceItem: Item {
+                    id: poiVisual
+                    width: 40
+                    height: 40
+                    
+                    // Colored circle based on category
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 32
+                        height: 32
+                        radius: 16
+                        color: model.category === "parking" ? root.poiColorParking : 
+                               model.category === "gas_station" ? root.poiColorGas : root.poiColorDefault
+                        border.color: "white"
+                        border.width: 2
+                        
+                        // Icon/Letter in the center
+                        Text {
+                            anchors.centerIn: parent
+                            text: model.category === "parking" ? "P" : 
+                                  model.category === "gas_station" ? "⛽" : "•"
+                            color: "white"
+                            font.pixelSize: model.category === "gas_station" ? 18 : 16
+                            font.bold: true
+                        }
+                    }
+                    
+                    // POI Name tooltip (optional, shown below marker)
+                    Rectangle {
+                        anchors.top: parent.bottom
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.topMargin: 2
+                        width: nameText.width + 8
+                        height: 20
+                        radius: 4
+                        color: "#dd000000"
+                        visible: model.name && model.name.length > 0
+                        
+                        Text {
+                            id: nameText
+                            anchors.centerIn: parent
+                            text: model.name || ""
+                            color: "white"
+                            font.pixelSize: 10
+                        }
+                    }
+                }
+            }
+        }
+
         MapQuickItem {
             id: carMarker
             coordinate: QtPositioning.coordinate(carLat, carLon)
@@ -385,5 +455,84 @@ Item {
         autoFollow = true
         map.center = QtPositioning.coordinate(carLat, carLon)
         carZoom = 17
+    }
+
+    // Search for Points of Interest using Mapbox Geocoding API
+    function searchPOI(category) {
+        console.log("Searching POI for category:", category)
+        
+        // Validate coordinates before making API call
+        if (isNaN(carLat) || isNaN(carLon) || (carLat === 0 && carLon === 0)) {
+            console.log("Invalid car position, cannot search POI")
+            return
+        }
+        
+        // Clear previous POIs
+        poiModel.clear()
+        
+        // Map category to Mapbox query types
+        var queryType = ""
+        var poiCategory = ""
+        
+        if (category === "gas" || category === "gas_station") {
+            queryType = "gas station"
+            poiCategory = "gas_station"
+        } else if (category === "parking") {
+            queryType = "parking"
+            poiCategory = "parking"
+        } else {
+            queryType = category
+            poiCategory = category
+        }
+        
+        // Search around current position with a radius (proximity parameter)
+        var http = new XMLHttpRequest()
+        var proximity = carLon + "," + carLat
+        var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + 
+                  encodeURIComponent(queryType) + ".json" +
+                  "?access_token=" + mapboxApiKey +
+                  "&proximity=" + proximity +
+                  "&limit=" + root.poiResultLimit +
+                  "&types=poi"
+        
+        console.log("POI search URL:", url)
+        
+        http.open("GET", url, true)
+        http.onreadystatechange = function() {
+            if (http.readyState !== 4) return
+            
+            if (http.status !== 200) {
+                console.log("POI search error:", http.status, http.responseText)
+                return
+            }
+            
+            try {
+                var json = JSON.parse(http.responseText)
+                console.log("POI search results:", json.features ? json.features.length : 0, "items")
+                
+                if (json.features && json.features.length > 0) {
+                    for (var i = 0; i < json.features.length; i++) {
+                        var feature = json.features[i]
+                        var coords = feature.center
+                        var name = feature.text || feature.place_name || "POI"
+                        
+                        poiModel.append({
+                            lat: coords[1],
+                            lon: coords[0],
+                            name: name,
+                            category: poiCategory
+                        })
+                    }
+                    
+                    console.log("Added", poiModel.count, "POIs to map")
+                } else {
+                    console.log("No POIs found for category:", category)
+                }
+            } catch(e) {
+                console.log("Error parsing POI response:", e)
+            }
+        }
+        
+        http.send()
     }
 }

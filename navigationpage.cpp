@@ -122,6 +122,21 @@ NavigationPage::NavigationPage(QWidget* parent)
         requestRouteForText(ui->editSearch->text());
         ui->editSearch->clearFocus();
     });
+    
+    // POI buttons
+    connect(ui->btnGas, &QPushButton::clicked, this, [this](){
+        if(m_mapView && m_mapView->rootObject()) {
+            QMetaObject::invokeMethod(m_mapView->rootObject(), "searchPOI",
+                                      Q_ARG(QVariant, "gas"));
+        }
+    });
+    
+    connect(ui->btnParking, &QPushButton::clicked, this, [this](){
+        if(m_mapView && m_mapView->rootObject()) {
+            QMetaObject::invokeMethod(m_mapView->rootObject(), "searchPOI",
+                                      Q_ARG(QVariant, "parking"));
+        }
+    });
 }
 
 NavigationPage::~NavigationPage(){ delete ui; }
