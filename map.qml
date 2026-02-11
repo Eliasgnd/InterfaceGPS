@@ -16,6 +16,11 @@ Item {
     property string nextInstruction: ""
     property int speedLimit: -1
     property double manualBearing: 0
+    
+    // POI marker colors
+    readonly property string poiColorParking: "#3498db"
+    readonly property string poiColorGas: "#f39c12"
+    readonly property string poiColorDefault: "#95a5a6"
 
     // --- VARIABLES POUR L'OPTIMISATION API ---
     // On stocke le moment (timestamp) et la position du dernier appel
@@ -276,8 +281,8 @@ Item {
                         width: 32
                         height: 32
                         radius: 16
-                        color: model.category === "parking" ? "#3498db" : 
-                               model.category === "gas_station" ? "#f39c12" : "#95a5a6"
+                        color: model.category === "parking" ? root.poiColorParking : 
+                               model.category === "gas_station" ? root.poiColorGas : root.poiColorDefault
                         border.color: "white"
                         border.width: 2
                         
@@ -454,6 +459,12 @@ Item {
     // Search for Points of Interest using Mapbox Geocoding API
     function searchPOI(category) {
         console.log("Searching POI for category:", category)
+        
+        // Validate coordinates before making API call
+        if (isNaN(carLat) || isNaN(carLon) || carLat === 0 && carLon === 0) {
+            console.log("Invalid car position, cannot search POI")
+            return
+        }
         
         // Clear previous POIs
         poiModel.clear()

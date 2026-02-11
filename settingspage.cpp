@@ -84,7 +84,7 @@ void SettingsPage::loadSettings()
     
     QJsonDocument doc = QJsonDocument::fromJson(data);
     if (!doc.isObject()) {
-        qDebug() << "Invalid settings file format";
+        qDebug() << "Invalid settings file format at:" << filePath << "- expected JSON object";
         return;
     }
     
