@@ -21,6 +21,7 @@ Item {
     readonly property string poiColorParking: "#3498db"
     readonly property string poiColorGas: "#f39c12"
     readonly property string poiColorDefault: "#95a5a6"
+    readonly property int poiResultLimit: 10
 
     // --- VARIABLES POUR L'OPTIMISATION API ---
     // On stocke le moment (timestamp) et la position du dernier appel
@@ -461,7 +462,7 @@ Item {
         console.log("Searching POI for category:", category)
         
         // Validate coordinates before making API call
-        if (isNaN(carLat) || isNaN(carLon) || carLat === 0 && carLon === 0) {
+        if (isNaN(carLat) || isNaN(carLon) || (carLat === 0 && carLon === 0)) {
             console.log("Invalid car position, cannot search POI")
             return
         }
@@ -491,7 +492,7 @@ Item {
                   encodeURIComponent(queryType) + ".json" +
                   "?access_token=" + mapboxApiKey +
                   "&proximity=" + proximity +
-                  "&limit=10" +
+                  "&limit=" + root.poiResultLimit +
                   "&types=poi"
         
         console.log("POI search URL:", url)

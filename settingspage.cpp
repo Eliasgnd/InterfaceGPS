@@ -9,6 +9,10 @@
 #include <QDebug>
 #include <QTimer>
 
+namespace {
+    constexpr int SAVE_CONFIRMATION_DURATION_MS = 2000;
+}
+
 SettingsPage::SettingsPage(QWidget* parent)
     : QWidget(parent), ui(new Ui::SettingsPage)
 {
@@ -30,7 +34,7 @@ SettingsPage::SettingsPage(QWidget* parent)
     connect(ui->btnSave, &QPushButton::clicked, this, [this](){
         saveSettings();
         ui->btnSave->setText("Enregistré ✅");
-        QTimer::singleShot(2000, this, [this](){
+        QTimer::singleShot(SAVE_CONFIRMATION_DURATION_MS, this, [this](){
             ui->btnSave->setText("Enregistrer");
         });
     });
