@@ -23,10 +23,15 @@ Item {
     property var currentRoute: null
     property int currentSegmentIndex: 0
 
+    // TRACÉ
+    property var routePoints: []
+
+    property var finalDestination: null
+    property bool isRecalculating: false
+
     property int speedLimit: -1
     property double manualBearing: 0
 
-    // Optimisation API
     property double lastApiCallTime: 0
     property var lastApiCallPos: QtPositioning.coordinate(0, 0)
 
@@ -53,36 +58,133 @@ Item {
         autoUpdate: false
         onStatusChanged: {
             if (status === RouteModel.Ready && count > 0) {
+                isRecalculating = false
                 currentRoute = get(0)
                 currentSegmentIndex = 0
+
+                var tmpPoints = []
+                for(var i = 0; i < currentRoute.path.length; i++) {
+                    tmpPoints.push(currentRoute.path[i])
+                }
+                routePoints = tmpPoints
+
+                updateRouteVisuals()
+
                 routeInfoUpdated((currentRoute.distance / 1000).toFixed(1) + " km", Math.round(currentRoute.travelTime / 60) + " min")
                 updateGuidance()
+            } else if (status === RouteModel.Error) {
+                isRecalculating = false
             }
         }
     }
 
-    // --- TRADUCTION INTELLIGENTE ---
+    // --- 1. LE SCANNER INTELLIGENT ---
+    function updateRouteVisuals() {
+        if (routePoints.length === 0) {
+            visualRouteLine.path = []
+            return
+        }
+
+        var carPos = QtPositioning.coordinate(carLat, carLon)
+
+        // On cherche l'index du point le plus proche dans les 20 prochains points
+        var searchLimit = Math.min(routePoints.length, 20)
+        var closestIndex = -1
+        var minDistance = 100000
+
+        for (var i = 0; i < searchLimit; i++) {
+            var d = carPos.distanceTo(routePoints[i])
+            if (d < minDistance) {
+                minDistance = d
+                closestIndex = i
+            }
+        }
+
+        // LOGIQUE DE NETTOYAGE :
+        // Si le point le plus proche n'est pas le 0 (ex: c'est le 3),
+        // ça veut dire qu'on a dépassé le 0, le 1 et le 2. On les supprime.
+        if (closestIndex > 0) {
+            // console.log("--- Nettoyage : On saute " + closestIndex + " points (Dist min: " + minDistance.toFixed(1) + "m)")
+            routePoints.splice(0, closestIndex)
+        }
+
+        // Cas spécial : Si on est vraiment TRES près du nouveau point 0 (< 10m), on le vire aussi
+        // pour éviter que la ligne ne fasse un petit "crochet" bizarre sous la voiture.
+        if (routePoints.length > 0 && carPos.distanceTo(routePoints[0]) < 10) {
+             routePoints.splice(0, 1)
+        }
+
+        // CONSTRUCTION DU DESSIN (Visuel)
+        // On dessine de la voiture vers le reste de la liste
+        if (routePoints.length > 0) {
+            var drawPath = [carPos]
+
+            var limit = Math.min(routePoints.length, 500)
+            for (var k = 0; k < limit; k++) {
+                drawPath.push(routePoints[k])
+            }
+            visualRouteLine.path = drawPath
+        } else {
+            visualRouteLine.path = []
+        }
+    }
+
+    // --- 2. RECALCUL BASÉ SUR LE SCANNER ---
+    function checkIfOffRoute() {
+        if (routePoints.length === 0 || isRecalculating) return
+
+        var carPos = QtPositioning.coordinate(carLat, carLon)
+
+        // On refait un scan rapide pour voir la distance minimale au tracé restant
+        var minDistance = 100000
+        var searchLimit = Math.min(routePoints.length, 10)
+
+        for (var i = 0; i < searchLimit; i++) {
+            var d = carPos.distanceTo(routePoints[i])
+            if (d < minDistance) minDistance = d
+        }
+
+        // Seuil : 50 mètres.
+        // Comme on nettoie bien la liste maintenant avec le scanner,
+        // minDistance devrait toujours être faible si on est sur la route.
+        if (minDistance > 50) {
+            console.log("⚠️ HORS TRAJET (" + Math.round(minDistance) + "m) -> RECALCUL")
+            recalculateRoute()
+        }
+    }
+
+    function recalculateRoute() {
+        if (!finalDestination || isRecalculating) return
+
+        isRecalculating = true
+        nextInstruction = "Recalcul..."
+        distanceToNextTurn = "..."
+        nextManeuverDirection = 6
+
+        // On affiche juste le tracé restant statique (sans le lien vers la voiture)
+        // pour éviter l'effet "élastique" pendant le chargement
+        visualRouteLine.path = routePoints
+
+        routeQuery.clearWaypoints()
+        routeQuery.addWaypoint(QtPositioning.coordinate(carLat, carLon))
+        routeQuery.addWaypoint(finalDestination)
+        routeModel.update()
+    }
+
+    // --- TRADUCTION ---
     function translateInstruction(enText, direction) {
         if (!enText) return ""
 
-        console.log("DEBUG API - Texte reçu : " + enText + " | Direction : " + direction)
-
         var baseAction = ""
-
-        // --- 1. Gestion avancée des Ronds-points ---
         var isRoundabout = enText.toLowerCase().indexOf("roundabout") !== -1 ||
                            enText.toLowerCase().indexOf("rotary") !== -1 ||
                            enText.toLowerCase().indexOf("circle") !== -1;
 
         if (isRoundabout) {
-            // Tenter de trouver le numéro de sortie (chiffre ou lettre)
             var exitNum = "";
-
-            // Cas 1 : "exit 2"
             var digitMatch = enText.match(/exit (\d+)/);
             if (digitMatch) exitNum = digitMatch[1];
 
-            // Cas 2 : "second exit" (Mapbox écrit souvent en lettres)
             if (enText.indexOf("first") !== -1) exitNum = "1";
             else if (enText.indexOf("second") !== -1) exitNum = "2";
             else if (enText.indexOf("third") !== -1) exitNum = "3";
@@ -95,7 +197,6 @@ Item {
             return "Prenez le rond-point";
         }
 
-        // --- 2. Autres directions ---
         switch(direction) {
             case 1: baseAction = "Continuez tout droit"; break;
             case 2: baseAction = "Tenez la droite"; break;
@@ -113,13 +214,11 @@ Item {
 
         var split = enText.split(" onto ")
         if (split.length > 1) return baseAction + " sur " + split[1]
-
         if (enText.indexOf("Arrive") !== -1 || enText.indexOf("Destination") !== -1) return "Vous êtes arrivé"
-
         return baseAction
     }
 
-    // --- GUIDAGE DYNAMIQUE ---
+    // --- GUIDAGE ---
     function updateGuidance() {
         if (!currentRoute || !currentRoute.segments) return
         var nextIndex = currentSegmentIndex + 1
@@ -136,20 +235,16 @@ Item {
         var maneuverCoord = nextSegment.maneuver.position
         var dist = currentPos.distanceTo(maneuverCoord)
 
-        // Lissage Waze
         if (dist >= 1000) distanceToNextTurn = (dist / 1000).toFixed(1) + " km"
         else if (dist >= 500) distanceToNextTurn = (Math.round(dist / 100) * 100) + " m"
         else if (dist >= 200) distanceToNextTurn = (Math.round(dist / 50) * 50) + " m"
         else if (dist >= 50) distanceToNextTurn = (Math.round(dist / 10) * 10) + " m"
         else distanceToNextTurn = Math.round(dist) + " m"
 
-        // Traduction
         nextInstruction = translateInstruction(nextSegment.maneuver.instructionText, nextSegment.maneuver.direction)
 
-        // --- CORRECTION BUG ROND-POINT ---
-        // On vérifie "ond-point" pour éviter les erreurs de Majuscule/minuscule
         if (nextInstruction.toLowerCase().indexOf("ond-point") !== -1) {
-            nextManeuverDirection = 100 // Force l'icône rond-point
+            nextManeuverDirection = 100
         } else {
             nextManeuverDirection = nextSegment.maneuver.direction
         }
@@ -160,12 +255,10 @@ Item {
         }
     }
 
-    // --- GESTION DES ICÔNES ---
+    // --- ICONES ---
     function getDirectionIconPath(direction) {
-        var path = "qrc:/icons/" // Préfixe défini dans resources.qrc
-
+        var path = "qrc:/icons/"
         if (direction === 0) return path + "dir_arrival.svg"
-
         switch(direction) {
             case 1: return path + "dir_straight.svg"
             case 2: case 3: return path + "dir_slight_right.svg"
@@ -173,9 +266,7 @@ Item {
             case 6: case 7: return path + "dir_uturn.svg"
             case 8: case 9: return path + "dir_left.svg"
             case 10: case 11: return path + "dir_slight_left.svg"
-
-            case 100: return path + "rond_point.svg" // Code spécial
-
+            case 100: return path + "rond_point.svg"
             default: return path + "dir_straight.svg"
         }
     }
@@ -248,12 +339,26 @@ Item {
         Behavior on bearing { NumberAnimation { duration: 600 } }
         Behavior on tilt { NumberAnimation { duration: 600 } }
 
-        DragHandler { id: mapDragHandler; target: null; onCentroidChanged: { if (active && root.autoFollow) root.autoFollow = false; map.pan(-(centroid.position.x - mapDragHandler.centroid.pressedPosition.x), -(centroid.position.y - mapDragHandler.centroid.pressedPosition.y)) } }
+        DragHandler {
+            id: mapDragHandler
+            target: null
+            onCentroidChanged: {
+                if (!active) return
+                if (root.autoFollow) root.autoFollow = false
+                if (centroid.pressedPosition) {
+                    map.pan(-(centroid.position.x - centroid.pressedPosition.x),
+                            -(centroid.position.y - centroid.pressedPosition.y))
+                }
+            }
+        }
+
         WheelHandler { onWheel: (event) => { var step = event.angleDelta.y > 0 ? 1 : -1; root.carZoom = Math.max(2, Math.min(20, root.carZoom + step)) } }
 
-        MapItemView {
-            model: routeModel
-            delegate: MapRoute { route: routeData; line.color: "#1db7ff"; line.width: 10; opacity: 0.8; smooth: true }
+        MapPolyline {
+            id: visualRouteLine
+            line.width: 10
+            line.color: "#1db7ff"
+            opacity: 0.8
         }
 
         MapQuickItem {
@@ -276,7 +381,7 @@ Item {
     // --- BANDEAU NAVIGATION ---
     Rectangle {
         id: navPanel
-        visible: routeModel.status === RouteModel.Ready && nextInstruction.length > 0
+        visible: (routeModel.status === RouteModel.Ready || isRecalculating) && nextInstruction.length > 0
 
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
@@ -287,8 +392,8 @@ Item {
         radius: 35
 
         color: "#CC1C1C1E"
-        border.color: "#33FFFFFF"
-        border.width: 1
+        border.color: isRecalculating ? "#FF9800" : "#33FFFFFF"
+        border.width: 2
 
         layer.enabled: true
         layer.effect: MultiEffect {
@@ -321,7 +426,7 @@ Item {
 
                 Text {
                     text: distanceToNextTurn
-                    color: "white"
+                    color: isRecalculating ? "#FF9800" : "white"
                     font.pixelSize: 22
                     font.bold: true
                 }
@@ -365,7 +470,13 @@ Item {
 
     onCarLatChanged: {
         if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon)
-        updateGuidance()
+
+        if (!isRecalculating) {
+            updateRouteVisuals() // Mise à jour visuelle (Scan + Dessin)
+            checkIfOffRoute()    // Vérification Off Route (Basée sur le scan)
+            updateGuidance()
+        }
+
         var now = Date.now()
         var currentPos = QtPositioning.coordinate(carLat, carLon)
         var distanceSinceLast = lastApiCallPos.distanceTo(currentPos)
@@ -388,9 +499,10 @@ Item {
                     var json = JSON.parse(http.responseText)
                     if (json.features && json.features.length > 0) {
                         var c = json.features[0].center
+                        finalDestination = QtPositioning.coordinate(c[1], c[0])
                         routeQuery.clearWaypoints()
                         routeQuery.addWaypoint(QtPositioning.coordinate(carLat, carLon))
-                        routeQuery.addWaypoint(QtPositioning.coordinate(c[1], c[0]))
+                        routeQuery.addWaypoint(finalDestination)
                         routeModel.update()
                         autoFollow = true
                         updateRealSpeedLimit(carLat, carLon)
