@@ -45,7 +45,7 @@ NavigationPage::NavigationPage(QWidget* parent)
     // --- 2. CONFIGURATION CARTE QML ---
     m_mapView = new QQuickWidget(this);
 
-    QString apiKey = QString::fromLocal8Bit(qgetenv("MAPBOX_KEY"));
+    QString apiKey = QString::fromLocal8Bit(qgetenv("MAPBOX_KEY")).trimmed();
     if(apiKey.isEmpty()) qDebug() << "!!! ATTENTION: MAPBOX_KEY est vide !!!";
     else qDebug() << "OK: Clé API trouvée (" << apiKey.left(5) << "...)";
 
@@ -125,17 +125,15 @@ NavigationPage::NavigationPage(QWidget* parent)
     
     // POI buttons
     connect(ui->btnGas, &QPushButton::clicked, this, [this](){
-        if(m_mapView && m_mapView->rootObject()) {
-            QMetaObject::invokeMethod(m_mapView->rootObject(), "searchPOI",
-                                      Q_ARG(QVariant, "gas"));
-        }
+        if (!m_mapView || !m_mapView->rootObject()) return;
+        QMetaObject::invokeMethod(m_mapView->rootObject(), "searchPOI",
+                                  Q_ARG(QVariant, QStringLiteral("gas")));
     });
     
     connect(ui->btnParking, &QPushButton::clicked, this, [this](){
-        if(m_mapView && m_mapView->rootObject()) {
-            QMetaObject::invokeMethod(m_mapView->rootObject(), "searchPOI",
-                                      Q_ARG(QVariant, "parking"));
-        }
+        if (!m_mapView || !m_mapView->rootObject()) return;
+        QMetaObject::invokeMethod(m_mapView->rootObject(), "searchPOI",
+                                  Q_ARG(QVariant, QStringLiteral("parking")));
     });
 }
 
@@ -210,5 +208,4 @@ void NavigationPage::triggerSuggestionsSearch()
                                   Q_ARG(QVariant, query));
     }
 }
-
 

@@ -50,63 +50,67 @@ void SettingsPage::bindTelemetry(TelemetryData* t)
 
 void SettingsPage::saveSettings()
 {
-    QJsonObject json;
-    json["theme"] = ui->cmbTheme->currentIndex();
-    json["brightness"] = ui->sliderBrightness->value();
-    json["homeAddress"] = ui->editHome->text();
-    json["workAddress"] = ui->editWork->text();
-
-    QJsonDocument doc(json);
-    
-    QString dataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    QDir().mkpath(dataPath);
-    QString filePath = dataPath + "/user_settings.json";
-    
-    QFile file(filePath);
-    if (file.open(QIODevice::WriteOnly)) {
-        file.write(doc.toJson());
-        file.close();
-        qDebug() << "Settings saved to:" << filePath;
-    } else {
-        qDebug() << "Failed to save settings to:" << filePath;
+    const QString dataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (dataPath.isEmpty()) {
+        qWarning() << "Cannot save settings: AppDataLocation is empty";
+        return;
     }
+
+    QDir dir;
+    if (!dir.mkpath(dataPath)) {
+        qWarning() << "Cannot create settings directory:" << dataPath;
+        return;
+    }
+
+    QJsonObject json;
+    json["homeAddress"] = ui->editHome->text().trimmed();
+    json["workAddress"] = ui->editWork->text().trimmed();
+
+    const QString filePath = dataPath + "/user_settings.json";
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        qWarning() << "Failed to save settings to:" << filePath;
+        return;
+    }
+
+    const QJsonDocument doc(json);
+    file.write(doc.toJson(QJsonDocument::Indented));
+    file.close();
+    qDebug() << "Settings saved to:" << filePath;
 }
 
 void SettingsPage::loadSettings()
 {
-    QString dataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    QString filePath = dataPath + "/user_settings.json";
-    
+    const QString dataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (dataPath.isEmpty()) {
+        qWarning() << "Cannot load settings: AppDataLocation is empty";
+        return;
+    }
+
+    const QString filePath = dataPath + "/user_settings.json";
     QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
+    if (!file.exists()) {
         qDebug() << "No saved settings found at:" << filePath;
         return;
     }
-    
-    QByteArray data = file.readAll();
-    file.close();
-    
-    QJsonDocument doc = QJsonDocument::fromJson(data);
-    if (!doc.isObject()) {
-        qDebug() << "Invalid settings file format at:" << filePath << "- expected JSON object";
+
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Unable to open settings file:" << filePath;
         return;
     }
-    
-    QJsonObject json = doc.object();
-    
-    if (json.contains("theme")) {
-        ui->cmbTheme->setCurrentIndex(json["theme"].toInt());
+
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+
+    if (!doc.isObject()) {
+        qWarning() << "Invalid settings file format at:" << filePath;
+        return;
     }
-    if (json.contains("brightness")) {
-        ui->sliderBrightness->setValue(json["brightness"].toInt());
-    }
-    if (json.contains("homeAddress")) {
-        ui->editHome->setText(json["homeAddress"].toString());
-    }
-    if (json.contains("workAddress")) {
-        ui->editWork->setText(json["workAddress"].toString());
-    }
-    
+
+    const QJsonObject json = doc.object();
+    ui->editHome->setText(json.value("homeAddress").toString());
+    ui->editWork->setText(json.value("workAddress").toString());
+
     qDebug() << "Settings loaded from:" << filePath;
 }
 

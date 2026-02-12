@@ -34,7 +34,7 @@ Item {
     // POI Model for storing points of interest
     ListModel {
         id: poiModel
-        // Each entry: { lat: double, lon: double, name: string, category: string }
+        // Each entry: { lat: double, lon: double, name: string, category: string, color: string }
     }
 
     Plugin {
@@ -267,54 +267,63 @@ Item {
         MapItemView {
             model: poiModel
             delegate: MapQuickItem {
-                coordinate: QtPositioning.coordinate(model.lat, model.lon)
+                coordinate: QtPositioning.coordinate(lat, lon)
                 anchorPoint.x: poiVisual.width / 2
-                anchorPoint.y: poiVisual.height / 2
-                
+                anchorPoint.y: poiVisual.height
+
                 sourceItem: Item {
                     id: poiVisual
                     width: 40
-                    height: 40
-                    
-                    // Colored circle based on category
+                    height: 56
+
                     Rectangle {
-                        anchors.centerIn: parent
-                        width: 32
-                        height: 32
-                        radius: 16
-                        color: model.category === "parking" ? root.poiColorParking : 
-                               model.category === "gas_station" ? root.poiColorGas : root.poiColorDefault
+                        anchors.top: parent.top
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: 30
+                        height: 30
+                        radius: 15
+                        color: color || root.poiColorDefault
                         border.color: "white"
                         border.width: 2
-                        
-                        // Icon/Letter in the center
+
                         Text {
                             anchors.centerIn: parent
-                            text: model.category === "parking" ? "P" : 
-                                  model.category === "gas_station" ? "⛽" : "•"
+                            text: category === "parking" ? "P" : "⛽"
                             color: "white"
-                            font.pixelSize: model.category === "gas_station" ? 18 : 16
                             font.bold: true
+                            font.pixelSize: 16
                         }
                     }
-                    
-                    // POI Name tooltip (optional, shown below marker)
+
                     Rectangle {
-                        anchors.top: parent.bottom
+                        anchors.top: parent.top
+                        anchors.topMargin: 27
                         anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.topMargin: 2
-                        width: nameText.width + 8
-                        height: 20
+                        width: 10
+                        height: 10
+                        rotation: 45
+                        color: color || root.poiColorDefault
+                    }
+
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.topMargin: 42
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: Math.min(Math.max(nameText.implicitWidth + 10, 0), 160)
+                        height: 18
                         radius: 4
-                        color: "#dd000000"
-                        visible: model.name && model.name.length > 0
-                        
+                        color: "#BB1A1A1A"
+                        visible: name && name.length > 0
+
                         Text {
                             id: nameText
                             anchors.centerIn: parent
-                            text: model.name || ""
+                            text: name || ""
                             color: "white"
-                            font.pixelSize: 10
+                            font.pixelSize: 9
+                            elide: Text.ElideRight
+                            width: 148
+                            horizontalAlignment: Text.AlignHCenter
                         }
                     }
                 }
@@ -459,80 +468,93 @@ Item {
 
     // Search for Points of Interest using Mapbox Geocoding API
     function searchPOI(category) {
-        console.log("Searching POI for category:", category)
-        
-        // Validate coordinates before making API call
-        if (isNaN(carLat) || isNaN(carLon) || (carLat === 0 && carLon === 0)) {
-            console.log("Invalid car position, cannot search POI")
+        var normalized = (category || "").toString().trim().toLowerCase()
+        var token = (mapboxApiKey || "").toString().trim()
+
+        if (!token) {
+            console.log("POI search cancelled: missing MAPBOX key")
+            poiModel.clear()
             return
         }
-        
-        // Clear previous POIs
-        poiModel.clear()
-        
-        // Map category to Mapbox query types
-        var queryType = ""
-        var poiCategory = ""
-        
-        if (category === "gas" || category === "gas_station") {
-            queryType = "gas station"
-            poiCategory = "gas_station"
-        } else if (category === "parking") {
-            queryType = "parking"
-            poiCategory = "parking"
-        } else {
-            queryType = category
-            poiCategory = category
+
+        if (isNaN(carLat) || isNaN(carLon)) {
+            console.log("POI search cancelled: invalid car position")
+            poiModel.clear()
+            return
         }
-        
-        // Search around current position with a radius (proximity parameter)
+
+        var queryText = ""
+        var poiCategory = ""
+        var markerColor = root.poiColorDefault
+
+        if (normalized === "gas" || normalized === "gas_station") {
+            queryText = "gas station"
+            poiCategory = "gas_station"
+            markerColor = root.poiColorGas
+        } else if (normalized === "parking") {
+            queryText = "parking"
+            poiCategory = "parking"
+            markerColor = root.poiColorParking
+        } else {
+            console.log("POI category not supported:", category)
+            poiModel.clear()
+            return
+        }
+
+        poiModel.clear()
+
+        var params = []
+        params.push("access_token=" + encodeURIComponent(token))
+        params.push("types=poi")
+        params.push("limit=" + encodeURIComponent(root.poiResultLimit))
+        params.push("proximity=" + encodeURIComponent(carLon + "," + carLat))
+        params.push("language=fr")
+
+        var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/"
+                + encodeURIComponent(queryText)
+                + ".json?"
+                + params.join("&")
+
         var http = new XMLHttpRequest()
-        var proximity = carLon + "," + carLat
-        var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + 
-                  encodeURIComponent(queryType) + ".json" +
-                  "?access_token=" + mapboxApiKey +
-                  "&proximity=" + proximity +
-                  "&limit=" + root.poiResultLimit +
-                  "&types=poi"
-        
-        console.log("POI search URL:", url)
-        
         http.open("GET", url, true)
         http.onreadystatechange = function() {
-            if (http.readyState !== 4) return
-            
+            if (http.readyState !== 4)
+                return
+
             if (http.status !== 200) {
                 console.log("POI search error:", http.status, http.responseText)
                 return
             }
-            
+
             try {
                 var json = JSON.parse(http.responseText)
-                console.log("POI search results:", json.features ? json.features.length : 0, "items")
-                
-                if (json.features && json.features.length > 0) {
-                    for (var i = 0; i < json.features.length; i++) {
-                        var feature = json.features[i]
-                        var coords = feature.center
-                        var name = feature.text || feature.place_name || "POI"
-                        
-                        poiModel.append({
-                            lat: coords[1],
-                            lon: coords[0],
-                            name: name,
-                            category: poiCategory
-                        })
-                    }
-                    
-                    console.log("Added", poiModel.count, "POIs to map")
-                } else {
-                    console.log("No POIs found for category:", category)
+                var features = json && json.features ? json.features : []
+
+                for (var i = 0; i < features.length; ++i) {
+                    var feature = features[i]
+                    if (!feature.center || feature.center.length < 2)
+                        continue
+
+                    var lon = Number(feature.center[0])
+                    var lat = Number(feature.center[1])
+                    if (isNaN(lat) || isNaN(lon))
+                        continue
+
+                    poiModel.append({
+                        lat: lat,
+                        lon: lon,
+                        name: feature.text || feature.place_name || "POI",
+                        category: poiCategory,
+                        color: markerColor
+                    })
                 }
-            } catch(e) {
+
+                console.log("POI results displayed:", poiModel.count)
+            } catch (e) {
                 console.log("Error parsing POI response:", e)
             }
         }
-        
+
         http.send()
     }
 }
