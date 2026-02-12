@@ -42,8 +42,18 @@ NavigationPage::NavigationPage(QWidget* parent)
     // --- 2. CONFIGURATION CARTE QML ---
     m_mapView = new QQuickWidget(this);
 
-    // Utilisation de la clé en dur pour garantir le fonctionnement
-    QString apiKey = "pk.eyJ1IjoiZWxpYXNnbmQiLCJhIjoiY21saDJrYnE3MDRxMzNmcDdmYWRwYW53aCJ9.PnoyJHAGlyeoffTaYEqTcA";
+    // --- MODIFICATION : UTILISATION DE LA VARIABLE D'ENVIRONNEMENT ---
+    // On récupère la variable, on la convertit et on nettoie les espaces éventuels
+    QString apiKey = QString::fromLocal8Bit(qgetenv("MAPBOX_KEY")).trimmed();
+
+    // Vérification de sécurité
+    if (apiKey.isEmpty()) {
+        qWarning() << "!!! ERREUR : La variable d'environnement MAPBOX_KEY est vide ou introuvable !!!";
+        qWarning() << "Veuillez la configurer dans Qt Creator (Projets > Run > Environment) avec votre NOUVELLE clé.";
+    } else {
+        qDebug() << "OK : Clé API chargée depuis MAPBOX_KEY (" << apiKey.left(10) << "...)";
+    }
+
     m_mapView->rootContext()->setContextProperty("mapboxApiKey", apiKey);
     m_mapView->setResizeMode(QQuickWidget::SizeRootObjectToView);
 

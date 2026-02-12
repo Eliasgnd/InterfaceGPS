@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Transformed by: SVG Repo Mixer Tools -->
+
+<svg
+   width="600"
+   height="600"
+   viewBox="0 0 18 18"
+   fill="none"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="rond_point.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="0.9075"
+     inkscape:cx="299.72452"
+     inkscape:cy="299.72452"
+     inkscape:window-width="1560"
+     inkscape:window-height="970"
+     inkscape:window-x="-6"
+     inkscape:window-y="-6"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <g
+     id="SVGRepo_bgCarrier"
+     stroke-width="0"
+     transform="translate(-3,-3)" />
+  <g
+     id="SVGRepo_tracerCarrier"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     transform="translate(-3,-3)" />
+  <g
+     id="SVGRepo_iconCarrier"
+     transform="matrix(-1,0,0,1,21,-3)">
+    <path
+       d="M 12,20 C 9.47362,20 7.22075,18.8289 5.75463,17 M 12,4 c 2.9611,0 5.5465,1.60879 6.9297,4 M 4,12 C 4,9.47362 5.17107,7.22075 7,5.75463 M 20,12 c 0,2.8339 -1.4735,5.3236 -3.6961,6.7448 M 19.3,5 v 3 h -3 M 8,16.3 H 5 v 3 M 16.3,16 v 3 h 3 M 4.7002,5 h 3 v 3"
+       stroke="#ffffff"
+       stroke-width="2"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       id="path1" />
+  </g>
+</svg>

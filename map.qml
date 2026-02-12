@@ -1,6 +1,7 @@
 import QtQuick
 import QtLocation
 import QtPositioning
+import QtQuick.Effects
 
 Item {
     id: root
@@ -13,11 +14,19 @@ Item {
     property double carHeading: 0
     property double carSpeed: 0
     property bool autoFollow: true
+
+    // NAVIGATION
     property string nextInstruction: ""
+    property string distanceToNextTurn: ""
+    property int nextManeuverDirection: 0
+
+    property var currentRoute: null
+    property int currentSegmentIndex: 0
+
     property int speedLimit: -1
     property double manualBearing: 0
 
-    // Optimisation API Vitesse
+    // Optimisation API
     property double lastApiCallTime: 0
     property var lastApiCallPos: QtPositioning.coordinate(0, 0)
 
@@ -29,8 +38,7 @@ Item {
         name: "osm"
         PluginParameter {
             name: "osm.mapping.custom.host"
-            value: "https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/%z/%x/%y?access_token="
-                   + mapboxApiKey
+            value: "https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/%z/%x/%y?access_token=" + mapboxApiKey
         }
         PluginParameter { name: "osm.useragent"; value: "Mozilla/5.0 (Qt6)" }
         PluginParameter { name: "osm.mapping.providersrepository.disabled"; value: true }
@@ -45,16 +53,133 @@ Item {
         autoUpdate: false
         onStatusChanged: {
             if (status === RouteModel.Ready && count > 0) {
-                var route = get(0)
-                routeInfoUpdated((route.distance / 1000).toFixed(1) + " km", Math.round(route.travelTime / 60) + " min")
-                if (route.segments && route.segments.length > 0 && route.segments[0].maneuver) {
-                    nextInstruction = route.segments[0].maneuver.instructionText
-                }
+                currentRoute = get(0)
+                currentSegmentIndex = 0
+                routeInfoUpdated((currentRoute.distance / 1000).toFixed(1) + " km", Math.round(currentRoute.travelTime / 60) + " min")
+                updateGuidance()
             }
         }
     }
 
-    // Gestion limitation vitesse (Overpass)
+    // --- TRADUCTION INTELLIGENTE ---
+    function translateInstruction(enText, direction) {
+        if (!enText) return ""
+
+        console.log("DEBUG API - Texte reçu : " + enText + " | Direction : " + direction)
+
+        var baseAction = ""
+
+        // --- 1. Gestion avancée des Ronds-points ---
+        var isRoundabout = enText.toLowerCase().indexOf("roundabout") !== -1 ||
+                           enText.toLowerCase().indexOf("rotary") !== -1 ||
+                           enText.toLowerCase().indexOf("circle") !== -1;
+
+        if (isRoundabout) {
+            // Tenter de trouver le numéro de sortie (chiffre ou lettre)
+            var exitNum = "";
+
+            // Cas 1 : "exit 2"
+            var digitMatch = enText.match(/exit (\d+)/);
+            if (digitMatch) exitNum = digitMatch[1];
+
+            // Cas 2 : "second exit" (Mapbox écrit souvent en lettres)
+            if (enText.indexOf("first") !== -1) exitNum = "1";
+            else if (enText.indexOf("second") !== -1) exitNum = "2";
+            else if (enText.indexOf("third") !== -1) exitNum = "3";
+            else if (enText.indexOf("fourth") !== -1) exitNum = "4";
+            else if (enText.indexOf("fifth") !== -1) exitNum = "5";
+
+            if (exitNum !== "") {
+                return "Rond-point : prenez la " + exitNum + (exitNum == "1" ? "ère" : "ème") + " sortie";
+            }
+            return "Prenez le rond-point";
+        }
+
+        // --- 2. Autres directions ---
+        switch(direction) {
+            case 1: baseAction = "Continuez tout droit"; break;
+            case 2: baseAction = "Tenez la droite"; break;
+            case 3: baseAction = "Légèrement à droite"; break;
+            case 4: baseAction = "Tournez à droite"; break;
+            case 5: baseAction = "Tournez fortement à droite"; break;
+            case 6: baseAction = "Faites demi-tour"; break;
+            case 7: baseAction = "Faites demi-tour"; break;
+            case 8: baseAction = "Tournez fortement à gauche"; break;
+            case 9: baseAction = "Tournez à gauche"; break;
+            case 10: baseAction = "Légèrement à gauche"; break;
+            case 11: baseAction = "Tenez la gauche"; break;
+            default: baseAction = "Suivez la route";
+        }
+
+        var split = enText.split(" onto ")
+        if (split.length > 1) return baseAction + " sur " + split[1]
+
+        if (enText.indexOf("Arrive") !== -1 || enText.indexOf("Destination") !== -1) return "Vous êtes arrivé"
+
+        return baseAction
+    }
+
+    // --- GUIDAGE DYNAMIQUE ---
+    function updateGuidance() {
+        if (!currentRoute || !currentRoute.segments) return
+        var nextIndex = currentSegmentIndex + 1
+
+        if (nextIndex >= currentRoute.segments.length) {
+            nextInstruction = "Vous êtes arrivé"
+            distanceToNextTurn = "0 m"
+            nextManeuverDirection = 0
+            return
+        }
+
+        var nextSegment = currentRoute.segments[nextIndex]
+        var currentPos = QtPositioning.coordinate(carLat, carLon)
+        var maneuverCoord = nextSegment.maneuver.position
+        var dist = currentPos.distanceTo(maneuverCoord)
+
+        // Lissage Waze
+        if (dist >= 1000) distanceToNextTurn = (dist / 1000).toFixed(1) + " km"
+        else if (dist >= 500) distanceToNextTurn = (Math.round(dist / 100) * 100) + " m"
+        else if (dist >= 200) distanceToNextTurn = (Math.round(dist / 50) * 50) + " m"
+        else if (dist >= 50) distanceToNextTurn = (Math.round(dist / 10) * 10) + " m"
+        else distanceToNextTurn = Math.round(dist) + " m"
+
+        // Traduction
+        nextInstruction = translateInstruction(nextSegment.maneuver.instructionText, nextSegment.maneuver.direction)
+
+        // --- CORRECTION BUG ROND-POINT ---
+        // On vérifie "ond-point" pour éviter les erreurs de Majuscule/minuscule
+        if (nextInstruction.toLowerCase().indexOf("ond-point") !== -1) {
+            nextManeuverDirection = 100 // Force l'icône rond-point
+        } else {
+            nextManeuverDirection = nextSegment.maneuver.direction
+        }
+
+        if (dist < 30) {
+            currentSegmentIndex++
+            updateGuidance()
+        }
+    }
+
+    // --- GESTION DES ICÔNES ---
+    function getDirectionIconPath(direction) {
+        var path = "qrc:/icons/" // Préfixe défini dans resources.qrc
+
+        if (direction === 0) return path + "dir_arrival.svg"
+
+        switch(direction) {
+            case 1: return path + "dir_straight.svg"
+            case 2: case 3: return path + "dir_slight_right.svg"
+            case 4: case 5: return path + "dir_right.svg"
+            case 6: case 7: return path + "dir_uturn.svg"
+            case 8: case 9: return path + "dir_left.svg"
+            case 10: case 11: return path + "dir_slight_left.svg"
+
+            case 100: return path + "rond_point.svg" // Code spécial
+
+            default: return path + "dir_straight.svg"
+        }
+    }
+
     function parseMaxspeedValue(raw) {
         if (!raw) return 0
         raw = ("" + raw).trim()
@@ -86,7 +211,6 @@ Item {
                 var bestLimit = 0
                 var bestDist = 1e18
                 var carPos = QtPositioning.coordinate(lat, lon)
-
                 for (var i = 0; i < json.elements.length; i++) {
                     var el = json.elements[i]
                     if (!el.tags || !el.tags.maxspeed || !el.center) continue
@@ -105,22 +229,7 @@ Item {
         http.send("data=" + encodeURIComponent(query))
     }
 
-    // UI Carte
-    Rectangle {
-        id: instructionBanner
-        anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 12 }
-        width: parent.width * 0.8; height: 52; radius: 12
-        color: "#dd171a21"; border.color: "#33ffffff"; border.width: 1
-        visible: routeModel.status === RouteModel.Ready && nextInstruction.length > 0
-        z: 10
-        Text {
-            anchors.fill: parent; anchors.margins: 12
-            text: nextInstruction; color: "white"; font { pixelSize: 18; bold: true }
-            horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-            wrapMode: Text.Wrap; elide: Text.ElideRight
-        }
-    }
-
+    // --- CARTE ---
     Map {
         id: map
         anchors.fill: parent
@@ -139,23 +248,8 @@ Item {
         Behavior on bearing { NumberAnimation { duration: 600 } }
         Behavior on tilt { NumberAnimation { duration: 600 } }
 
-        DragHandler {
-            id: mapDragHandler
-            target: null
-            onCentroidChanged: {
-                if (!active) return
-                if (root.autoFollow) root.autoFollow = false
-                map.pan(-(centroid.position.x - mapDragHandler.centroid.pressedPosition.x),
-                        -(centroid.position.y - mapDragHandler.centroid.pressedPosition.y))
-            }
-        }
-
-        WheelHandler {
-            onWheel: (event) => {
-                var step = event.angleDelta.y > 0 ? 1 : -1
-                root.carZoom = Math.max(2, Math.min(20, root.carZoom + step))
-            }
-        }
+        DragHandler { id: mapDragHandler; target: null; onCentroidChanged: { if (active && root.autoFollow) root.autoFollow = false; map.pan(-(centroid.position.x - mapDragHandler.centroid.pressedPosition.x), -(centroid.position.y - mapDragHandler.centroid.pressedPosition.y)) } }
+        WheelHandler { onWheel: (event) => { var step = event.angleDelta.y > 0 ? 1 : -1; root.carZoom = Math.max(2, Math.min(20, root.carZoom + step)) } }
 
         MapItemView {
             model: routeModel
@@ -179,13 +273,79 @@ Item {
         }
     }
 
-    // Panneau Limitation
+    // --- BANDEAU NAVIGATION ---
+    Rectangle {
+        id: navPanel
+        visible: routeModel.status === RouteModel.Ready && nextInstruction.length > 0
+
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: 15
+
+        width: Math.min(parent.width * 0.9, 400)
+        height: 70
+        radius: 35
+
+        color: "#CC1C1C1E"
+        border.color: "#33FFFFFF"
+        border.width: 1
+
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: "#80000000"
+            shadowBlur: 10
+            shadowVerticalOffset: 4
+        }
+
+        Row {
+            anchors.fill: parent
+            anchors.leftMargin: 20
+            anchors.rightMargin: 20
+            spacing: 15
+
+            Image {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 40; height: 40
+                source: getDirectionIconPath(nextManeuverDirection)
+                sourceSize.width: 40
+                sourceSize.height: 40
+                fillMode: Image.PreserveAspectFit
+                mipmap: true
+            }
+
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - 65
+                spacing: 2
+
+                Text {
+                    text: distanceToNextTurn
+                    color: "white"
+                    font.pixelSize: 22
+                    font.bold: true
+                }
+
+                Text {
+                    text: nextInstruction
+                    color: "#D0D0D0"
+                    font.pixelSize: 14
+                    elide: Text.ElideRight
+                    width: parent.width
+                    maximumLineCount: 1
+                }
+            }
+        }
+    }
+
     Rectangle {
         id: speedSign
         width: 60; height: 60; radius: 30
         color: "white"; border.color: "red"; border.width: 6
         anchors { bottom: parent.bottom; left: parent.left; margins: 20 }
         z: 20
+        visible: speedLimit > 0
+
         Rectangle {
             anchors.fill: parent; radius: 30
             color: "red"; visible: speedLimit > 0 && carSpeed > speedLimit; opacity: 0.6
@@ -203,9 +363,9 @@ Item {
         }
     }
 
-    // Logique
     onCarLatChanged: {
         if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon)
+        updateGuidance()
         var now = Date.now()
         var currentPos = QtPositioning.coordinate(carLat, carLon)
         var distanceSinceLast = lastApiCallPos.distanceTo(currentPos)
@@ -220,7 +380,7 @@ Item {
 
     function searchDestination(address) {
         var http = new XMLHttpRequest()
-        var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + encodeURIComponent(address) + ".json?access_token=" + mapboxApiKey + "&limit=1"
+        var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + encodeURIComponent(address) + ".json?access_token=" + mapboxApiKey + "&limit=1&language=fr"
         http.open("GET", url, true);
         http.onreadystatechange = function() {
             if (http.readyState == 4 && http.status == 200) {
@@ -244,7 +404,7 @@ Item {
     function requestSuggestions(query) {
         if (!query || query.length < 3) return
         var http = new XMLHttpRequest()
-        var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + encodeURIComponent(query) + ".json?access_token=" + mapboxApiKey + "&autocomplete=true&limit=5"
+        var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + encodeURIComponent(query) + ".json?access_token=" + mapboxApiKey + "&autocomplete=true&limit=5&language=fr"
         http.open("GET", url, true);
         http.onreadystatechange = function() {
             if (http.readyState == 4 && http.status == 200) {

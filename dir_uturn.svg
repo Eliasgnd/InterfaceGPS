@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Transformed by: SVG Repo Mixer Tools -->
+
+<svg
+   width="789.02399"
+   height="640"
+   viewBox="-2.5 0 24.657 20"
+   version="1.1"
+   fill="#ffffff"
+   id="svg1"
+   sodipodi:docname="dir_uturn.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="0.9075"
+     inkscape:cx="394.49036"
+     inkscape:cy="325.06887"
+     inkscape:window-width="1560"
+     inkscape:window-height="970"
+     inkscape:window-x="-6"
+     inkscape:window-y="-6"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <g
+     id="SVGRepo_bgCarrier"
+     stroke-width="0"
+     transform="translate(-0.1715,-2.3285)" />
+  <g
+     id="SVGRepo_tracerCarrier"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     transform="translate(-0.1715,-2.3285)" />
+  <g
+     id="SVGRepo_iconCarrier"
+     transform="rotate(90,11.0785,11.0785)">
+    <title
+       id="title1">arrow_right [#ffffff]</title>
+    <desc
+       id="desc1">Created with Sketch.</desc>
+    <defs
+       id="defs1" />
+    <g
+       id="Page-1"
+       stroke="none"
+       stroke-width="1"
+       fill="none"
+       fill-rule="evenodd">
+      <g
+         id="Dribbble-Light-Preview"
+         transform="translate(-220,-6559)"
+         fill="#ffffff">
+        <g
+           id="icons"
+           transform="translate(56,160)">
+          <path
+             d="m 174,6417 h 5.828 l -3.242,-3.243 1.414,-1.414 5.657,5.657 c -2.066,2.066 -3.652,3.652 -5.657,5.657 l -1.414,-1.414 3.242,-3.243 H 174 c -5.523,0 -10,-4.477 -10,-10 0,-5.523 4.477,-10 10,-10 h 10 v 2 h -10 c -4.418,0 -8,3.582 -8,8 0,4.418 3.582,8 8,8"
+             id="arrow_right-[#ffffff]" />
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

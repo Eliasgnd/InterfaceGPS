@@ -2,4 +2,14 @@
     <qresource prefix="/">
         <file>map.qml</file>
     </qresource>
+    <qresource prefix="/icons">
+        <file>dir_arrival.svg</file>
+        <file>dir_right.svg</file>
+        <file>dir_slight_left.svg</file>
+        <file>dir_slight_right.svg</file>
+        <file>dir_straight.svg</file>
+        <file>dir_uturn.svg</file>
+        <file>rond_point.svg</file>
+        <file>dir_left.svg</file>
+    </qresource>
 </RCC>
