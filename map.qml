@@ -34,6 +34,7 @@ Item {
 
     // TRACÉ
     property var routePoints: []
+    property var routeSpeedLimits: []
     property var finalDestination: null
     property bool isRecalculating: false
 
@@ -114,10 +115,11 @@ Item {
 
     // --- CALCUL D'ITINÉRAIRE (API Mapbox Traffic) ---
     function requestRouteWithTraffic(startCoord, endCoord) {
-        var url = "https://api.mapbox.com/directions/v5/mapbox/driving-traffic/" +
-                  startCoord.longitude + "," + startCoord.latitude + ";" +
-                  endCoord.longitude + "," + endCoord.latitude +
-                  "?geometries=geojson&steps=true&overview=full&language=fr&access_token=" + mapboxApiKey;
+            var url = "https://api.mapbox.com/directions/v5/mapbox/driving-traffic/" +
+                      startCoord.longitude + "," + startCoord.latitude + ";" +
+                      endCoord.longitude + "," + endCoord.latitude +
+                      // ON RAJOUTE &annotations=maxspeed ICI :
+                      "?geometries=geojson&steps=true&overview=full&language=fr&annotations=maxspeed&access_token=" + mapboxApiKey;
 
         var http = new XMLHttpRequest()
         http.open("GET", url, true);
@@ -150,6 +152,12 @@ Item {
                             routeReadyForSimulation(simplePath);
                             routePoints = newPoints;
                             visualRouteLine.path = routePoints;
+
+                            if (route.legs && route.legs[0] && route.legs[0].annotation && route.legs[0].annotation.maxspeed) {
+                                                            root.routeSpeedLimits = route.legs[0].annotation.maxspeed;
+                                                        } else {
+                                                            root.routeSpeedLimits = [];
+                                                        }
 
                             if (route.legs && route.legs.length > 0) {
                                 routeSteps = route.legs[0].steps;
@@ -240,36 +248,131 @@ Item {
         arrivalTimeString = ah + ":" + (am < 10 ? "0"+am : am);
     }
 
-    function updateRouteVisuals() {
-        if (routePoints.length === 0) { visualRouteLine.path = []; return; }
-        var carPos = QtPositioning.coordinate(carLat, carLon);
-        var searchLimit = Math.min(routePoints.length, 50);
-        var closestIndex = -1; var minDistance = 100000;
-        for (var i = 0; i < searchLimit; i++) {
-            var d = carPos.distanceTo(routePoints[i]);
-            if (d < minDistance) { minDistance = d; closestIndex = i; }
-        }
-        if (closestIndex > 0) routePoints.splice(0, closestIndex);
-        if (routePoints.length > 0 && carPos.distanceTo(routePoints[0]) < 12) routePoints.splice(0, 1);
-        if (routePoints.length > 0) {
-            var drawPath = [carPos];
-            var limit = Math.min(routePoints.length, 3000);
-            for (var k = 0; k < limit; k++) drawPath.push(routePoints[k]);
-            visualRouteLine.path = drawPath;
-        } else { visualRouteLine.path = []; }
-    }
+    // --- CORRECTION DÉFINITIVE : Mise à jour du tracé visuel ---
+        function updateRouteVisuals() {
+            if (!root.routePoints || root.routePoints.length === 0) {
+                visualRouteLine.path = [];
+                root.speedLimit = -1;
+                return;
+            }
 
-    function checkIfOffRoute() {
-        if (routePoints.length === 0 || isRecalculating) return;
-        var carPos = QtPositioning.coordinate(carLat, carLon);
-        var minDistance = 100000;
-        var searchLimit = Math.min(routePoints.length, 100);
-        for (var i = 0; i < searchLimit; i++) {
-            var d = carPos.distanceTo(routePoints[i]);
-            if (d < minDistance) minDistance = d;
+            var carPos = QtPositioning.coordinate(root.carLat, root.carLon);
+            var changed = false;
+            var tempPoints = root.routePoints;
+            var tempLimits = (typeof root.routeSpeedLimits !== "undefined" && root.routeSpeedLimits) ? root.routeSpeedLimits : [];
+
+            // Suppression des points qu'on a physiquement dépassés
+            if (tempPoints.length > 1 && carPos.distanceTo(tempPoints[1]) < 35) {
+                tempPoints.splice(0, 1);
+                if (tempLimits.length > 0) tempLimits.splice(0, 1);
+                changed = true;
+            } else if (tempPoints.length > 2 && carPos.distanceTo(tempPoints[2]) < 35) {
+                tempPoints.splice(0, 2);
+                if (tempLimits.length > 1) tempLimits.splice(0, 2);
+                changed = true;
+            }
+
+            if (changed) {
+                root.routePoints = tempPoints;
+                if (typeof root.routeSpeedLimits !== "undefined") {
+                    root.routeSpeedLimits = tempLimits;
+                }
+            }
+
+            if (tempLimits.length > 0) {
+                var limitData = tempLimits[0];
+                if (limitData && limitData.speed !== undefined) {
+                     root.speedLimit = limitData.speed;
+                } else if (typeof limitData === 'number') {
+                     root.speedLimit = limitData;
+                }
+            }
+
+            // --- NOUVEAU : DESSIN INTELLIGENT DE LA LIGNE ---
+            if (tempPoints.length > 0) {
+                var drawPath = [carPos];
+                var limit = Math.min(tempPoints.length, 3000);
+
+                // On calcule l'angle (en degrés) entre la position de la voiture et le prochain point GPS
+                var bearingTo0 = carPos.azimuthTo(tempPoints[0]);
+
+                // On le compare à la direction (le cap) vers laquelle la voiture roule actuellement
+                var diff = Math.abs(bearingTo0 - root.carHeading);
+                if (diff > 180) diff = 360 - diff;
+
+                // Si la différence d'angle est supérieure à 90°, c'est que le point est DERRIÈRE nous.
+                // On l'ignore (startIndex = 1) pour ne pas faire un trait en arrière.
+                // Sinon, le point est DEVANT nous (ex: un virage !), on le trace (startIndex = 0).
+                var startIndex = (diff > 90) ? 1 : 0;
+
+                for (var k = startIndex; k < limit; k++) {
+                    drawPath.push(tempPoints[k]);
+                }
+
+                visualRouteLine.path = drawPath;
+            } else {
+                visualRouteLine.path = [];
+            }
         }
-        if (minDistance > 100) recalculateRoute();
-    }
+
+        // --- FONCTIONS MATHÉMATIQUES ET LOGS DE DEBUG ---
+        function distanceToSegment(P, A, B) {
+            var d_AB = A.distanceTo(B);
+            if (d_AB < 1) return A.distanceTo(P);
+
+            var d_AP = A.distanceTo(P);
+            var bearingAB = A.azimuthTo(B);
+            var bearingAP = A.azimuthTo(P);
+
+            var angleDiff = (bearingAP - bearingAB) * Math.PI / 180.0;
+            var crossTrack = Math.abs(d_AP * Math.sin(angleDiff));
+            var alongTrack = d_AP * Math.cos(angleDiff);
+
+            if (alongTrack < 0) return d_AP;
+            if (alongTrack > d_AB) return P.distanceTo(B);
+
+            return crossTrack;
+        }
+
+        function checkIfOffRoute() {
+            if (routePoints.length < 2 || isRecalculating) return;
+
+            var carPos = QtPositioning.coordinate(carLat, carLon);
+            var minDistance = 100000;
+            var bestIndex = -1;
+
+            var searchLimit = Math.min(routePoints.length - 1, 30);
+
+            for (var i = 0; i < searchLimit; i++) {
+                var d = distanceToSegment(carPos, routePoints[i], routePoints[i+1]);
+                if (d < minDistance) {
+                    minDistance = d;
+                    bestIndex = i; // On mémorise le meilleur segment
+                }
+            }
+
+            // === LOGS DE DEBUG ===
+            // On affiche les logs seulement si la distance commence à être suspecte (> 25 mètres)
+            // pour ne pas saturer la console quand on roule bien.
+            if (minDistance > 25) {
+                console.log("🔍 [DEBUG GPS] Analyse de sortie de route...");
+                console.log("   📍 Voiture : " + carPos.latitude.toFixed(5) + ", " + carPos.longitude.toFixed(5));
+                console.log("   📏 Distance au segment (Index " + bestIndex + ") : " + Math.round(minDistance) + " mètres");
+                if (bestIndex >= 0) {
+                    var pA = routePoints[bestIndex];
+                    var pB = routePoints[bestIndex+1];
+                    console.log("   🔗 Segment ciblé : A[" + pA.latitude.toFixed(5) + "," + pA.longitude.toFixed(5) + "] -> B[" + pB.latitude.toFixed(5) + "," + pB.longitude.toFixed(5) + "]");
+                    console.log("   🚗 Distance de la voiture à A : " + Math.round(carPos.distanceTo(pA)) + "m | à B : " + Math.round(carPos.distanceTo(pB)) + "m");
+                }
+                console.log("-----------------------");
+            }
+
+            // 75 mètres de tolérance avant le recalcul
+            if (minDistance > 75) {
+                console.log("⚠️ RECALCUL DÉCLENCHÉ ! La distance de " + Math.round(minDistance) + "m dépasse 75m.");
+                recalculateRoute();
+            }
+        }
 
     // --- RECHERCHE ET SUGGESTIONS (CORRIGÉES) ---
     function searchDestination(address) {
@@ -451,22 +554,14 @@ Item {
     }
 
     onCarLatChanged: {
-        if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon);
-        if (!isRecalculating) {
-            updateRouteVisuals();
-            checkIfOffRoute();
-            updateTripStats();
-            updateGuidance();
+            if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon);
+            if (!isRecalculating) {
+                updateRouteVisuals();
+                checkIfOffRoute();
+                updateTripStats();
+                updateGuidance();
+            }
         }
-        var now = Date.now();
-        var currentPos = QtPositioning.coordinate(carLat, carLon);
-        var distanceSinceLast = lastApiCallPos.distanceTo(currentPos);
-        if ( (now - lastApiCallTime > 30000) && (distanceSinceLast > 50) ) {
-            updateRealSpeedLimit(carLat, carLon);
-            lastApiCallTime = now;
-            lastApiCallPos = currentPos;
-        }
-    }
-    onCarLonChanged: { if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon); }
-    onCarZoomChanged: { if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon); }
+        onCarLonChanged: { if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon); }
+        onCarZoomChanged: { if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon); }
 }
