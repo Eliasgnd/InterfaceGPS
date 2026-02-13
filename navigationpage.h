@@ -4,9 +4,10 @@
 #include <QWidget>
 #include <QQuickWidget>
 #include <QStringList>
-// On inclut plus QVariant ici, on passe au string simple pour la communication
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QVariant>       // <-- AJOUTEZ CECI
+#include <QVariantList>   // <-- AJOUTEZ CECI
 
 namespace Ui { class NavigationPage; }
 class TelemetryData;
@@ -26,9 +27,10 @@ private slots:
     void onRouteInfoReceived(const QString& distance, const QString& duration);
     void onSuggestionChosen(const QString& suggestion);
     void triggerSuggestionsSearch();
-
-    // MODIFICATION IMPORTANTE : On reçoit une chaîne de caractères (JSON)
     void onSuggestionsReceived(const QString& jsonSuggestions);
+
+    // <-- AJOUTEZ CETTE LIGNE ICI :
+    void onRouteReadyForSimulation(const QVariant& pathObj);
 
 private:
     void requestRouteForText(const QString& destination);
@@ -41,6 +43,9 @@ private:
     QStringListModel* m_suggestionsModel = nullptr;
     QTimer* m_suggestionDebounceTimer = nullptr;
     bool m_ignoreTextUpdate = false;
+
+    // <-- AJOUTEZ CETTE LIGNE ICI :
+    QVariantList m_lastCalculatedRoute;
 };
 
 #endif // NAVIGATIONPAGE_H

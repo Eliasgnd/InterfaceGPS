@@ -9,6 +9,7 @@
 #include <QDebug>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QVariant>
 
 NavigationPage::NavigationPage(QWidget* parent)
     : QWidget(parent), ui(new Ui::NavigationPage)
@@ -71,9 +72,13 @@ NavigationPage::NavigationPage(QWidget* parent)
 
         connect(root, SIGNAL(suggestionsUpdated(QString)),
                 this, SLOT(onSuggestionsReceived(QString)));
+
+        // NOUVELLE LIGNE :
+        connect(root, SIGNAL(routeReadyForSimulation(QVariant)),
+                this, SLOT(onRouteReadyForSimulation(QVariant)));
     };
 
-    connect(m_mapView, &QQuickWidget::statusChanged, this, [this, setupQmlConnections](QQuickWidget::Status status){
+    connect(m_mapView, &QQuickWidget::statusChanged, this, [setupQmlConnections](QQuickWidget::Status status){
         if (status == QQuickWidget::Ready) {
             setupQmlConnections();
         }
@@ -108,6 +113,14 @@ NavigationPage::NavigationPage(QWidget* parent)
     connect(ui->editSearch, &QLineEdit::returnPressed, this, [this](){
         requestRouteForText(ui->editSearch->text());
         ui->editSearch->clearFocus();
+    });
+
+
+    // 3. Toujours dans le constructeur, avec les connexions des autres boutons (vers btnCenter, btnZoomIn...), reliez le nouveau bouton de simulation :
+    connect(ui->btnSimulate, &QPushButton::clicked, this, [this](){
+        if(m_t && !m_lastCalculatedRoute.isEmpty()){
+            emit m_t->simulateRouteRequested(m_lastCalculatedRoute);
+        }
     });
 }
 
@@ -175,4 +188,8 @@ void NavigationPage::triggerSuggestionsSearch()
         QMetaObject::invokeMethod(m_mapView->rootObject(), "requestSuggestions",
                                   Q_ARG(QVariant, query));
     }
+}
+
+void NavigationPage::onRouteReadyForSimulation(const QVariant& pathObj) {
+    m_lastCalculatedRoute = pathObj.toList();
 }

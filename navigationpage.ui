@@ -80,6 +80,13 @@ QPushButton:pressed{background:#2d3245;}
           <property name="sizeHint" stdset="0"><size><width>160</width><height>10</height></size></property>
          </spacer>
         </item>
+        <item>
+         <widget class="QPushButton" name="btnSimulate">
+          <property name="text">
+           <string>Simuler</string>
+          </property>
+         </widget>
+        </item>
         <item><widget class="QPushButton" name="btnCenter"><property name="text"><string>Centrer</string></property></widget></item>
         <item><widget class="QPushButton" name="btnZoomIn"><property name="text"><string>Zoom +</string></property></widget></item>
         <item><widget class="QPushButton" name="btnZoomOut"><property name="text"><string>Zoom -</string></property></widget></item>

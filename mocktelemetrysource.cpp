@@ -2,6 +2,7 @@
 #include "telemetrydata.h"
 #include <QGeoCoordinate>
 #include <QDebug>
+#include <QVariant>
 
 MockTelemetrySource::MockTelemetrySource(TelemetryData* data, QObject* parent)
     : QObject(parent), m_data(data)
@@ -41,6 +42,21 @@ MockTelemetrySource::MockTelemetrySource(TelemetryData* data, QObject* parent)
     // VITESSE DU TIMER : 50ms = 20 images par seconde (très fluide)
     m_timer.setInterval(50);
     connect(&m_timer, &QTimer::timeout, this, &MockTelemetrySource::tick);
+
+    connect(m_data, &TelemetryData::simulateRouteRequested, this, [this](QVariantList routeCoords){
+        if(routeCoords.isEmpty()) return;
+
+        m_routePoints.clear();
+        for(const QVariant& var : routeCoords) {
+            QVariantMap pt = var.toMap();
+            m_routePoints.append(QGeoCoordinate(pt["lat"].toDouble(), pt["lon"].toDouble()));
+        }
+
+        // On replace la voiture au départ du nouveau trajet
+        m_currentIndex = 0;
+        m_currentExactPos = m_routePoints[0];
+    });
+    // ==========================================
 }
 
 void MockTelemetrySource::start(){ m_timer.start(); }
@@ -50,39 +66,42 @@ void MockTelemetrySource::tick(){
     if(!m_data || m_routePoints.isEmpty()) return;
 
     // 1. Cible actuelle
-    // On vise le PROCHAIN point (index + 1)
     int nextIndex = m_currentIndex + 1;
     if (nextIndex >= m_routePoints.size()) nextIndex = 0; // Boucle
 
     QGeoCoordinate target = m_routePoints[nextIndex];
 
-    // 2. Calcul du déplacement
-    // Vitesse simulée : 50 km/h = 13.88 m/s
+    // 2. Calcul des distances
     double speedKmh = 50.0;
     double speedMs = speedKmh / 3.6;
-
-    // Distance à parcourir en 50ms (0.05s)
     double stepDistance = speedMs * 0.05;
-
-    // Distance restante vers la cible
     double distToTarget = m_currentExactPos.distanceTo(target);
 
+    // /!\ CORRECTION DU SAUT DE CAMÉRA /!\
+    // On calcule le cap AVANT de potentiellement se téléporter sur le point
+    double azimuth = m_currentExactPos.azimuthTo(target);
+
     if (distToTarget <= stepDistance) {
-        // ON EST ARRIVÉ AU POINT : On se cale dessus et on change d'index
+        // ON EST ARRIVÉ AU POINT
         m_currentExactPos = target;
         m_currentIndex = nextIndex;
+
+        // On anticipe doucement l'angle du prochain segment pour fluidifier
+        int nextNextIndex = nextIndex + 1;
+        if (nextNextIndex < m_routePoints.size()) {
+            azimuth = m_currentExactPos.azimuthTo(m_routePoints[nextNextIndex]);
+        }
     } else {
         // ON AVANCE : Interpolation vers la cible
-        double azimuth = m_currentExactPos.azimuthTo(target);
         m_currentExactPos = m_currentExactPos.atDistanceAndAzimuth(stepDistance, azimuth);
     }
 
-    // 3. Mise à jour des données (Interface)
+    // 3. Mise à jour des données
     m_data->setLat(m_currentExactPos.latitude());
     m_data->setLon(m_currentExactPos.longitude());
 
-    // Calcul du cap (Heading) pour orienter la carte
-    m_data->setHeading(m_currentExactPos.azimuthTo(target));
+    // On utilise la variable calculée plus haut qui ne tombe plus jamais à zéro !
+    m_data->setHeading(azimuth);
 
     m_data->setSpeedKmh(speedKmh);
     m_data->setGpsOk(true);
