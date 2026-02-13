@@ -2,6 +2,7 @@ import QtQuick
 import QtLocation
 import QtPositioning
 import QtQuick.Effects
+import QtQuick.Shapes
 
 Item {
     id: root
@@ -122,21 +123,76 @@ Item {
         }
 
         MapQuickItem {
-            id: carMarker
-            coordinate: QtPositioning.coordinate(carLat, carLon)
-            anchorPoint.x: carVisual.width / 2; anchorPoint.y: carVisual.height / 2
-            z: 10
-            sourceItem: Item {
-                id: carVisual
-                enabled: false
-                width: 64; height: 64
-                Rectangle { anchors.centerIn: parent; width: 50; height: 50; color: "#00a8ff"; opacity: 0.3; radius: 25 }
-                Rectangle {
-                    anchors.centerIn: parent; width: 24; height: 32; color: "white"; radius: 6; border.width: 2; border.color: "#171a21"
-                    Rectangle { width: 24; height: 24; color: "white"; rotation: 45; y: -10; anchors.horizontalCenter: parent.horizontalCenter; border.width: 2; border.color: "#171a21" }
+                    id: carMarker
+                    coordinate: QtPositioning.coordinate(carLat, carLon)
+                    anchorPoint.x: carVisual.width / 2; anchorPoint.y: carVisual.height / 2
+                    z: 10
+
+                    sourceItem: Item {
+                        id: carVisual
+                        width: 100; height: 100
+                        enabled: false
+
+                        // --- LE HALO INTELLIGENT (Corrigé) ---
+                        Rectangle {
+                            id: haloRect // <-- L'ID QUI CORRIGE LE BUG "NULL"
+                            anchors.centerIn: parent
+                            width: 70; height: 70; radius: 35
+                            color: "#D2CAEC"; opacity: 0 // Assorti au cyan de la flèche
+
+                            // Condition : Route en cours ET (vitesse très faible OU arrivé)
+                            property bool pulseActive: (root.routePoints && root.routePoints.length > 0) && (root.carSpeed < 2 || nextInstruction === "Vous êtes arrivé")
+
+                            SequentialAnimation {
+                                running: haloRect.pulseActive // <-- On utilise l'ID ici !
+                                loops: Animation.Infinite
+                                alwaysRunToEnd: true
+
+                                ParallelAnimation {
+                                    NumberAnimation { target: haloRect; property: "opacity"; from: 0.6; to: 0.0; duration: 1500; easing.type: Easing.OutQuad }
+                                    NumberAnimation { target: haloRect; property: "width"; from: 40; to: 90; duration: 1500; easing.type: Easing.OutQuad }
+                                    NumberAnimation { target: haloRect; property: "height"; from: 40; to: 90; duration: 1500; easing.type: Easing.OutQuad }
+                                }
+                            }
+                        }
+
+                        // --- LA FLÈCHE STYLE WAZE ---
+                        Item {
+                            anchors.centerIn: parent
+                            width: 60; height: 60
+
+                            Shape {
+                                anchors.fill: parent
+
+                                ShapePath {
+                                    strokeWidth: 4          // Grosse bordure blanche Waze
+                                    strokeColor: "#370028"  // Bordure Blanche
+                                    fillColor: "#C9A0DC"    // Intérieur Cyan
+
+                                    // Bords et pointes arrondis !
+                                    joinStyle: ShapePath.RoundJoin
+                                    capStyle: ShapePath.RoundCap
+
+                                    // Proportions "trapues" fidèles à Waze
+                                    startX: 30; startY: 10    // Pointe haut
+                                    PathLine { x: 48; y: 46 } // Bas droite
+                                    PathLine { x: 30; y: 36 } // Creux central (moins profond)
+                                    PathLine { x: 12; y: 46 } // Bas gauche
+                                    PathLine { x: 30; y: 10 } // Retour
+                                }
+                            }
+
+                            // L'ombre portée pour l'effet "Flottant 3D"
+                            layer.enabled: true
+                            layer.effect: MultiEffect {
+                                shadowEnabled: true
+                                shadowColor: "#A0000000"
+                                shadowBlur: 10
+                                shadowVerticalOffset: 3
+                            }
+                        }
+                    }
                 }
-            }
-        }
     }
 
     // --- REQUÊTES API ---
