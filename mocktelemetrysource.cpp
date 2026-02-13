@@ -67,7 +67,12 @@ void MockTelemetrySource::tick(){
 
     // 1. Cible actuelle
     int nextIndex = m_currentIndex + 1;
-    if (nextIndex >= m_routePoints.size()) nextIndex = 0; // Boucle
+
+    // --- MODIFICATION ICI : On arrête la voiture à la fin du trajet ---
+    if (nextIndex >= m_routePoints.size()) {
+        m_data->setSpeedKmh(0.0); // On met la vitesse à 0 sur l'interface
+        return; // On quitte la fonction pour ne plus avancer
+    }
 
     QGeoCoordinate target = m_routePoints[nextIndex];
 
@@ -77,12 +82,11 @@ void MockTelemetrySource::tick(){
     double stepDistance = speedMs * 0.05;
     double distToTarget = m_currentExactPos.distanceTo(target);
 
-    // /!\ CORRECTION DU SAUT DE CAMÉRA /!\
     // On calcule le cap AVANT de potentiellement se téléporter sur le point
     double azimuth = m_currentExactPos.azimuthTo(target);
 
     if (distToTarget <= stepDistance) {
-        // ON EST ARRIVÉ AU POINT
+        // ON EST ARRIVÉ AU POINT CIBLE
         m_currentExactPos = target;
         m_currentIndex = nextIndex;
 
@@ -100,9 +104,7 @@ void MockTelemetrySource::tick(){
     m_data->setLat(m_currentExactPos.latitude());
     m_data->setLon(m_currentExactPos.longitude());
 
-    // On utilise la variable calculée plus haut qui ne tombe plus jamais à zéro !
     m_data->setHeading(azimuth);
-
     m_data->setSpeedKmh(speedKmh);
     m_data->setGpsOk(true);
 }
