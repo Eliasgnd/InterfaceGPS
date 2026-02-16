@@ -32,18 +32,15 @@ int main(int argc, char *argv[]) {
     // 1. D�CLARATION INDISPENSABLE (� ne jamais commenter)
     TelemetryData telemetry;
 
-    // 2. CHOIX DE LA SOURCE
-    // Option A: Simulation (D�sactiv�e)
-    /*
-    MockTelemetrySource mock(&telemetry);
-    mock.start();
-    */
-
-    // Option B: Vrai GPS (Activ�e)
-
-    // C'est propre : une ligne pour cr�er, une ligne pour d�marrer.
+#ifdef Q_OS_LINUX_PI
+    // Code spécifique à la Pi (GPS réel sur port série)
     GpsTelemetrySource gpsSource(&telemetry);
     gpsSource.start("/dev/serial0");
+#else
+    // Code pour Windows (Simulation)
+    MockTelemetrySource mock(&telemetry);
+    mock.start();
+#endif
 
     MainWindow w(&telemetry);
     w.showFullScreen();

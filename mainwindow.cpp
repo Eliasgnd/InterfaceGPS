@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "androidautopage.h"
 #include "ui_mainwindow.h"
 #include "telemetrydata.h"
 #include "homepage.h"
@@ -52,6 +53,16 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     connect(m_t, &TelemetryData::reverseChanged, this, &MainWindow::updateTopBarAndAlert);
     connect(m_t, &TelemetryData::alertLevelChanged, this, &MainWindow::updateTopBarAndAlert);
     connect(m_t, &TelemetryData::alertTextChanged, this, &MainWindow::updateTopBarAndAlert);
+
+    //android auto
+    m_androidAuto = new AndroidAutoPage(this);
+    ui->stackedPages->addWidget(m_androidAuto);
+
+    // Ajoutez un bouton dans votre UI pour y accéder (par exemple btnAndroidAuto)
+    connect(ui->btnAndroidAuto, &QPushButton::clicked, this, [this](){
+        ui->stackedPages->setCurrentWidget(m_androidAuto);
+        m_androidAuto->startEmulation();
+    });
 }
 
 MainWindow::~MainWindow(){ delete ui; }

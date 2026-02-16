@@ -1,11 +1,13 @@
 #pragma once
 #include <QMainWindow>
+#include "androidautopage.h" // <--- 1. AJOUTER L'INCLUDE ICI
 
 class TelemetryData;
 class HomePage;
 class NavigationPage;
 class CameraPage;
 class SettingsPage;
+// AndroidAutoPage est déjà inclus via le #include plus haut
 
 namespace Ui { class MainWindow; }
 
@@ -30,4 +32,6 @@ private:
     NavigationPage* m_nav=nullptr;
     CameraPage* m_cam=nullptr;
     SettingsPage* m_settings=nullptr;
+
+    AndroidAutoPage* m_androidAuto=nullptr;
 };

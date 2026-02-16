@@ -10,6 +10,7 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    androidautopage.cpp \
     camerapage.cpp \
     gpstelemetrysource.cpp \
     homepage.cpp \
@@ -21,6 +22,7 @@ SOURCES += \
     telemetrydata.cpp
 
 HEADERS += \
+    androidautopage.h \
     camerapage.h \
     gpstelemetrysource.h \
     homepage.h \
@@ -47,3 +49,25 @@ DISTFILES += \
 
 RESOURCES += \
     resources.qrc
+
+
+# Bloc spécifique à Linux (Raspberry Pi)
+unix:!android {
+    DEFINES += Q_OS_LINUX_PI
+
+    # Chemins vers aasdk et protobuf (à adapter selon où vous les avez compilés)
+    INCLUDEPATH += /path/to/aasdk/include
+    LIBS += -L/path/to/aasdk/lib -laasdk -laasdk_proto
+
+    # Dépendances système
+    LIBS += -lprotobuf -lusb-1.0 -lssl -lcrypto -lboost_system
+
+    SOURCES += androidautopage.cpp
+    HEADERS += androidautopage.h
+}
+
+# Bloc spécifique à Windows
+win32 {
+    # DEFINES += Q_OS_WIN  <-- SUPPRIMEZ OU COMMENTEZ CETTE LIGNE
+    # Ici, on n'ajoute pas les libs Linux
+}
