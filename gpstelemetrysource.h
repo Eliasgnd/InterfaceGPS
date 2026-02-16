@@ -1,7 +1,8 @@
 #pragma once
 #include <QObject>
 #include <QSerialPort>
-#include <QGeoCoordinate>
+#include <QNmeaPositionInfoSource> // <--- Le moteur GPS de Qt
+#include <QGeoPositionInfo>
 
 class TelemetryData;
 
@@ -15,12 +16,11 @@ public:
     void stop();
 
 private slots:
-    void onReadyRead();
+    // On remplace onReadyRead par ce slot officiel de Qt Positioning
+    void onPositionUpdated(const QGeoPositionInfo &info);
 
 private:
-    void parseNmeaLine(const QByteArray& line);
-    double convertNmeaToDecimal(const QString& nmeaPos, const QString& quadrant);
-
     TelemetryData* m_data = nullptr;
     QSerialPort* m_serial = nullptr;
+    QNmeaPositionInfoSource* m_nmeaSource = nullptr; // <--- L'objet magique
 };

@@ -29,16 +29,21 @@ int main(int argc, char *argv[]) {
 
     QNetworkProxyFactory::setUseSystemConfiguration(true);
 
-    /*TelemetryData telemetry;
+    // 1. D�CLARATION INDISPENSABLE (� ne jamais commenter)
+    TelemetryData telemetry;
+
+    // 2. CHOIX DE LA SOURCE
+    // Option A: Simulation (D�sactiv�e)
+    /*
     MockTelemetrySource mock(&telemetry);
-    mock.start();*/
+    mock.start();
+    */
 
-    // Option B: Vrai GPS
-    GpsTelemetrySource source(&telemetry);
+    // Option B: Vrai GPS (Activ�e)
 
-    source.start("/dev/serial0"); // ou /dev/ttyAMA0 selon votre Pi
-
-    qDebug() << "Fournisseurs dispo :" << QGeoServiceProvider::availableServiceProviders();
+    // C'est propre : une ligne pour cr�er, une ligne pour d�marrer.
+    GpsTelemetrySource gpsSource(&telemetry);
+    gpsSource.start("/dev/serial0");
 
     MainWindow w(&telemetry);
     w.showFullScreen();
