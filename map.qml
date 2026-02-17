@@ -3,6 +3,7 @@ import QtLocation
 import QtPositioning
 import QtQuick.Effects
 import QtQuick.Shapes
+import QtQuick.VirtualKeyboard
 
 Item {
     id: root
@@ -648,4 +649,32 @@ Item {
             color: "black"
         }
     }
+    InputPanel {
+            id: inputPanel
+            z: 99 // Toujours au dessus
+            y: root.height // Caché par défaut en bas
+            anchors.left: parent.left
+            anchors.right: parent.right
+
+            states: State {
+                name: "visible"
+                // Quand le clavier doit être vu, il remonte
+                when: inputPanel.active
+                PropertyChanges {
+                    target: inputPanel
+                    y: root.height - inputPanel.height
+                }
+            }
+
+            transitions: Transition {
+                from: ""
+                to: "visible"
+                reversible: true
+                NumberAnimation {
+                    properties: "y"
+                    duration: 250
+                    easing.type: Easing.InOutQuad
+                }
+            }
+        }
 }
