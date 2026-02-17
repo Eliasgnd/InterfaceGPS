@@ -11,6 +11,7 @@ CONFIG += c++17
 
 SOURCES += \
     camerapage.cpp \
+    clavier.cpp \
     gpstelemetrysource.cpp \
     homepage.cpp \
     main.cpp \
@@ -22,6 +23,7 @@ SOURCES += \
 
 HEADERS += \
     camerapage.h \
+    clavier.h \
     gpstelemetrysource.h \
     homepage.h \
     mainwindow.h \
