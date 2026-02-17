@@ -83,47 +83,38 @@ Item {
         Behavior on bearing { RotationAnimation { direction: RotationAnimation.Shortest; duration: 600 } }
         Behavior on tilt { NumberAnimation { duration: 800 } }
 
-        // --- GESTION DU CLIC SUR LA CARTE ---
-        MouseArea {
-            anchors.fill: parent
-
-            // Important pour laisser passer le drag (glissement) de la carte
-            propagateComposedEvents: true
-            preventStealing: false
-
-            onClicked: (mouse) => {
-                // 1. Conversion des pixels (x,y) en Latitude/Longitude
-                var coord = map.toCoordinate(Qt.point(mouse.x, mouse.y))
-
+        // --- GESTION DU CLIC (Destination) ---
+        // TapHandler détecte le clic sans bloquer le glissement
+        TapHandler {
+            onTapped: (event) => {
+                var coord = map.toCoordinate(event.position)
                 if (coord.isValid) {
-                    console.log("Destination définie au clic : " + coord.latitude + ", " + coord.longitude)
+                    console.log("Destination définie : " + coord.latitude + ", " + coord.longitude)
 
-                    // 2. Mise à jour de la variable de destination
                     root.finalDestination = coord
-
-                    // 3. Feedback visuel
-                    root.nextInstruction = "Calcul de l'itinéraire..."
+                    root.nextInstruction = "Calcul..."
                     root.isRecalculating = true
 
-                    // 4. Lancement du calcul d'itinéraire existant
+                    // Désactive le suivi automatique (comportement GPS standard)
+                    root.autoFollow = false
+
                     root.requestRouteWithTraffic(
                         QtPositioning.coordinate(root.carLat, root.carLon),
                         coord
                     )
-
-                    // 5. Désactiver le suivi automatique pour ne pas recentrer immédiatement la vue
-                    root.autoFollow = false
                 }
             }
         }
 
+        // --- GESTION DU GLISSEMENT (Déplacement Carte) ---
         DragHandler {
             id: mapDragHandler
-            target: null
-            onCentroidChanged: {
-                if (!active) return
-                if (root.autoFollow) root.autoFollow = false
-                if (centroid.pressedPosition) map.pan(-(centroid.position.x - centroid.pressedPosition.x), -(centroid.position.y - centroid.pressedPosition.y))
+            target: null // On ne déplace pas un objet, on pan la map
+            onTranslationChanged: (delta) => {
+                // Déplace la carte selon le mouvement du doigt/souris
+                map.pan(-delta.x, -delta.y)
+                // Dès qu'on bouge la carte, on coupe le suivi automatique
+                root.autoFollow = false
             }
         }
 
@@ -131,11 +122,13 @@ Item {
             onWheel: (event) => {
                 var step = event.angleDelta.y > 0 ? 1 : -1;
                 root.carZoom = Math.max(2, Math.min(20, root.carZoom + step))
+                // Le zoom manuel désactive aussi le zoom auto temporairement
+                root.enableSpeedZoom = false
             }
         }
 
         // --- DESSINATEUR DE ROUTE ---
-        // 1. La ligne bleue de base (mise à jour en temps réel)
+        // 1. La ligne bleue de base
         MapPolyline {
             id: visualRouteLine
             line.width: 8
@@ -144,7 +137,7 @@ Item {
             z: 1
         }
 
-        // 2. Les lignes de trafic Orange/Rouge superposées (mises à jour occasionnellement pour zéro lag)
+        // 2. Les lignes de trafic Orange/Rouge
         MapItemView {
             model: root.trafficSegments
             delegate: MapPolyline {
@@ -156,12 +149,12 @@ Item {
             }
         }
 
-        // 3. Marqueur de destination (Drapeau d'arrivée)
+        // 3. Marqueur de destination (Drapeau)
         MapQuickItem {
             visible: root.finalDestination !== null
             coordinate: root.finalDestination !== null ? root.finalDestination : QtPositioning.coordinate(0,0)
             anchorPoint.x: sourceItem.width / 2
-            anchorPoint.y: sourceItem.height // La pointe en bas
+            anchorPoint.y: sourceItem.height
             z: 5
 
             sourceItem: Image {
@@ -172,6 +165,7 @@ Item {
             }
         }
 
+        // 4. La Voiture
         MapQuickItem {
             id: carMarker
             coordinate: QtPositioning.coordinate(carLat, carLon)
@@ -183,21 +177,18 @@ Item {
                 width: 100; height: 100
                 enabled: false
 
-                // --- LE HALO INTELLIGENT ---
+                // Halo
                 Rectangle {
                     id: haloRect
                     anchors.centerIn: parent
                     width: 70; height: 70; radius: 35
                     color: "#D2CAEC"; opacity: 0
-
-                    // Condition : Route en cours ET (vitesse très faible OU arrivé)
                     property bool pulseActive: (root.routePoints && root.routePoints.length > 0) && (root.carSpeed < 2 || nextInstruction === "Vous êtes arrivé")
 
                     SequentialAnimation {
                         running: haloRect.pulseActive
                         loops: Animation.Infinite
                         alwaysRunToEnd: true
-
                         ParallelAnimation {
                             NumberAnimation { target: haloRect; property: "opacity"; from: 0.6; to: 0.0; duration: 1500; easing.type: Easing.OutQuad }
                             NumberAnimation { target: haloRect; property: "width"; from: 40; to: 90; duration: 1500; easing.type: Easing.OutQuad }
@@ -206,33 +197,26 @@ Item {
                     }
                 }
 
-                // --- LA FLÈCHE STYLE WAZE ---
+                // Flèche Waze
                 Item {
                     anchors.centerIn: parent
                     width: 60; height: 60
 
                     Shape {
                         anchors.fill: parent
-
                         ShapePath {
-                            strokeWidth: 4          // Grosse bordure blanche Waze
-                            strokeColor: "#370028"  // Bordure Blanche
-                            fillColor: "#C9A0DC"    // Intérieur Cyan
-
-                            // Bords et pointes arrondis !
+                            strokeWidth: 4
+                            strokeColor: "#370028"
+                            fillColor: "#C9A0DC"
                             joinStyle: ShapePath.RoundJoin
                             capStyle: ShapePath.RoundCap
-
-                            // Proportions "trapues" fidèles à Waze
-                            startX: 30; startY: 10    // Pointe haut
-                            PathLine { x: 48; y: 46 } // Bas droite
-                            PathLine { x: 30; y: 36 } // Creux central (moins profond)
-                            PathLine { x: 12; y: 46 } // Bas gauche
-                            PathLine { x: 30; y: 10 } // Retour
+                            startX: 30; startY: 10
+                            PathLine { x: 48; y: 46 }
+                            PathLine { x: 30; y: 36 }
+                            PathLine { x: 12; y: 46 }
+                            PathLine { x: 30; y: 10 }
                         }
                     }
-
-                    // L'ombre portée pour l'effet "Flottant 3D"
                     layer.enabled: true
                     layer.effect: MultiEffect {
                         shadowEnabled: true
@@ -280,11 +264,10 @@ Item {
                             simplePath.push({"lat": coords[i][1], "lon": coords[i][0]});
                         }
                         routePoints = newPoints;
-                        root.trafficSegments = []; // On réinitialise le trafic
+                        root.trafficSegments = [];
 
                         routeReadyForSimulation(simplePath);
 
-                        // Vitesses et Trafic
                         if (route.legs && route.legs[0] && route.legs[0].annotation) {
                             routeSpeedLimits = route.legs[0].annotation.maxspeed ? route.legs[0].annotation.maxspeed : [];
                             routeCongestions = route.legs[0].annotation.congestion ? route.legs[0].annotation.congestion : [];
@@ -322,7 +305,6 @@ Item {
         var tempLimits = (typeof root.routeSpeedLimits !== "undefined" && root.routeSpeedLimits) ? root.routeSpeedLimits : [];
         var tempCongestions = (typeof root.routeCongestions !== "undefined" && root.routeCongestions) ? root.routeCongestions : [];
 
-        // ON TROUVE LE SEGMENT LE PLUS PROCHE POUR ÉVITER DE COUPER LES BÂTIMENTS
         var bestI = 0;
         var minD = 100000;
         var searchLimit = Math.min(tempPoints.length - 1, 30);
@@ -334,7 +316,6 @@ Item {
             }
         }
 
-        // On efface intelligemment tous les points qui sont derrière la voiture
         if (bestI > 0) {
             tempPoints.splice(0, bestI);
             if (tempLimits.length >= bestI) tempLimits.splice(0, bestI);
@@ -354,7 +335,6 @@ Item {
             else if (typeof limitData === 'number') root.speedLimit = limitData;
         }
 
-        // 1. DESSIN DE LA LIGNE BLEUE (Mise à jour ultra rapide, suit parfaitement la route)
         var limit = Math.min(tempPoints.length, 3000);
         var drawPath = [carPos];
         if (tempPoints.length > 1) {
@@ -364,7 +344,6 @@ Item {
         }
         visualRouteLine.path = drawPath;
 
-        // 2. DESSIN DU TRAFIC ORANGE/ROUGE (Mis à jour que quand c'est nécessaire -> Anti-Lag)
         if (changed || typeof root.trafficSegments === "undefined" || root.trafficSegments.length === 0) {
             var newSegments = [];
             var currentPath = [];
@@ -372,10 +351,10 @@ Item {
 
             for (var k = 0; k < limit - 1; k++) {
                 var levelK = (k < tempCongestions.length) ? tempCongestions[k] : "unknown";
-                var colorK = "none"; // Par défaut, on ne dessine rien (on laisse voir le bleu)
+                var colorK = "none";
 
-                if (levelK === "moderate") colorK = "#FF9800"; // Orange
-                else if (levelK === "heavy" || levelK === "severe") colorK = "#F44336"; // Rouge
+                if (levelK === "moderate") colorK = "#FF9800";
+                else if (levelK === "heavy" || levelK === "severe") colorK = "#F44336";
 
                 if (colorK === "none") {
                     if (currentColor !== "none") {
