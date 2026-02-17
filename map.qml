@@ -83,6 +83,40 @@ Item {
         Behavior on bearing { RotationAnimation { direction: RotationAnimation.Shortest; duration: 600 } }
         Behavior on tilt { NumberAnimation { duration: 800 } }
 
+        // --- GESTION DU CLIC SUR LA CARTE ---
+        MouseArea {
+            anchors.fill: parent
+
+            // Important pour laisser passer le drag (glissement) de la carte
+            propagateComposedEvents: true
+            preventStealing: false
+
+            onClicked: (mouse) => {
+                // 1. Conversion des pixels (x,y) en Latitude/Longitude
+                var coord = map.toCoordinate(Qt.point(mouse.x, mouse.y))
+
+                if (coord.isValid) {
+                    console.log("Destination définie au clic : " + coord.latitude + ", " + coord.longitude)
+
+                    // 2. Mise à jour de la variable de destination
+                    root.finalDestination = coord
+
+                    // 3. Feedback visuel
+                    root.nextInstruction = "Calcul de l'itinéraire..."
+                    root.isRecalculating = true
+
+                    // 4. Lancement du calcul d'itinéraire existant
+                    root.requestRouteWithTraffic(
+                        QtPositioning.coordinate(root.carLat, root.carLon),
+                        coord
+                    )
+
+                    // 5. Désactiver le suivi automatique pour ne pas recentrer immédiatement la vue
+                    root.autoFollow = false
+                }
+            }
+        }
+
         DragHandler {
             id: mapDragHandler
             target: null
@@ -122,77 +156,93 @@ Item {
             }
         }
 
+        // 3. Marqueur de destination (Drapeau d'arrivée)
         MapQuickItem {
-                    id: carMarker
-                    coordinate: QtPositioning.coordinate(carLat, carLon)
-                    anchorPoint.x: carVisual.width / 2; anchorPoint.y: carVisual.height / 2
-                    z: 10
+            visible: root.finalDestination !== null
+            coordinate: root.finalDestination !== null ? root.finalDestination : QtPositioning.coordinate(0,0)
+            anchorPoint.x: sourceItem.width / 2
+            anchorPoint.y: sourceItem.height // La pointe en bas
+            z: 5
 
-                    sourceItem: Item {
-                        id: carVisual
-                        width: 100; height: 100
-                        enabled: false
+            sourceItem: Image {
+                width: 40
+                height: 40
+                source: "qrc:/icons/dir_arrival.svg"
+                fillMode: Image.PreserveAspectFit
+            }
+        }
 
-                        // --- LE HALO INTELLIGENT (Corrigé) ---
-                        Rectangle {
-                            id: haloRect // <-- L'ID QUI CORRIGE LE BUG "NULL"
-                            anchors.centerIn: parent
-                            width: 70; height: 70; radius: 35
-                            color: "#D2CAEC"; opacity: 0 // Assorti au cyan de la flèche
+        MapQuickItem {
+            id: carMarker
+            coordinate: QtPositioning.coordinate(carLat, carLon)
+            anchorPoint.x: carVisual.width / 2; anchorPoint.y: carVisual.height / 2
+            z: 10
 
-                            // Condition : Route en cours ET (vitesse très faible OU arrivé)
-                            property bool pulseActive: (root.routePoints && root.routePoints.length > 0) && (root.carSpeed < 2 || nextInstruction === "Vous êtes arrivé")
+            sourceItem: Item {
+                id: carVisual
+                width: 100; height: 100
+                enabled: false
 
-                            SequentialAnimation {
-                                running: haloRect.pulseActive // <-- On utilise l'ID ici !
-                                loops: Animation.Infinite
-                                alwaysRunToEnd: true
+                // --- LE HALO INTELLIGENT ---
+                Rectangle {
+                    id: haloRect
+                    anchors.centerIn: parent
+                    width: 70; height: 70; radius: 35
+                    color: "#D2CAEC"; opacity: 0
 
-                                ParallelAnimation {
-                                    NumberAnimation { target: haloRect; property: "opacity"; from: 0.6; to: 0.0; duration: 1500; easing.type: Easing.OutQuad }
-                                    NumberAnimation { target: haloRect; property: "width"; from: 40; to: 90; duration: 1500; easing.type: Easing.OutQuad }
-                                    NumberAnimation { target: haloRect; property: "height"; from: 40; to: 90; duration: 1500; easing.type: Easing.OutQuad }
-                                }
-                            }
-                        }
+                    // Condition : Route en cours ET (vitesse très faible OU arrivé)
+                    property bool pulseActive: (root.routePoints && root.routePoints.length > 0) && (root.carSpeed < 2 || nextInstruction === "Vous êtes arrivé")
 
-                        // --- LA FLÈCHE STYLE WAZE ---
-                        Item {
-                            anchors.centerIn: parent
-                            width: 60; height: 60
+                    SequentialAnimation {
+                        running: haloRect.pulseActive
+                        loops: Animation.Infinite
+                        alwaysRunToEnd: true
 
-                            Shape {
-                                anchors.fill: parent
-
-                                ShapePath {
-                                    strokeWidth: 4          // Grosse bordure blanche Waze
-                                    strokeColor: "#370028"  // Bordure Blanche
-                                    fillColor: "#C9A0DC"    // Intérieur Cyan
-
-                                    // Bords et pointes arrondis !
-                                    joinStyle: ShapePath.RoundJoin
-                                    capStyle: ShapePath.RoundCap
-
-                                    // Proportions "trapues" fidèles à Waze
-                                    startX: 30; startY: 10    // Pointe haut
-                                    PathLine { x: 48; y: 46 } // Bas droite
-                                    PathLine { x: 30; y: 36 } // Creux central (moins profond)
-                                    PathLine { x: 12; y: 46 } // Bas gauche
-                                    PathLine { x: 30; y: 10 } // Retour
-                                }
-                            }
-
-                            // L'ombre portée pour l'effet "Flottant 3D"
-                            layer.enabled: true
-                            layer.effect: MultiEffect {
-                                shadowEnabled: true
-                                shadowColor: "#A0000000"
-                                shadowBlur: 10
-                                shadowVerticalOffset: 3
-                            }
+                        ParallelAnimation {
+                            NumberAnimation { target: haloRect; property: "opacity"; from: 0.6; to: 0.0; duration: 1500; easing.type: Easing.OutQuad }
+                            NumberAnimation { target: haloRect; property: "width"; from: 40; to: 90; duration: 1500; easing.type: Easing.OutQuad }
+                            NumberAnimation { target: haloRect; property: "height"; from: 40; to: 90; duration: 1500; easing.type: Easing.OutQuad }
                         }
                     }
                 }
+
+                // --- LA FLÈCHE STYLE WAZE ---
+                Item {
+                    anchors.centerIn: parent
+                    width: 60; height: 60
+
+                    Shape {
+                        anchors.fill: parent
+
+                        ShapePath {
+                            strokeWidth: 4          // Grosse bordure blanche Waze
+                            strokeColor: "#370028"  // Bordure Blanche
+                            fillColor: "#C9A0DC"    // Intérieur Cyan
+
+                            // Bords et pointes arrondis !
+                            joinStyle: ShapePath.RoundJoin
+                            capStyle: ShapePath.RoundCap
+
+                            // Proportions "trapues" fidèles à Waze
+                            startX: 30; startY: 10    // Pointe haut
+                            PathLine { x: 48; y: 46 } // Bas droite
+                            PathLine { x: 30; y: 36 } // Creux central (moins profond)
+                            PathLine { x: 12; y: 46 } // Bas gauche
+                            PathLine { x: 30; y: 10 } // Retour
+                        }
+                    }
+
+                    // L'ombre portée pour l'effet "Flottant 3D"
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: "#A0000000"
+                        shadowBlur: 10
+                        shadowVerticalOffset: 3
+                    }
+                }
+            }
+        }
     }
 
     // --- REQUÊTES API ---
