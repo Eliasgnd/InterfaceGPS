@@ -1,17 +1,23 @@
 #include <QApplication>
-#include <QLoggingCategory> // <--- AJOUTER CECI
+#include <QLoggingCategory>
 #include "mainwindow.h"
 #include "telemetrydata.h"
-#include "mocktelemetrysource.h"
+#include "gpstelemetrysource.h" // N'oubliez pas cet include
 #include <QNetworkProxyFactory>
 #include <QDir>
 #include <QStandardPaths>
 #include <QDebug>
 #include <QCoreApplication>
-#include <QGeoServiceProvider>
-#include "gpstelemetrysource.h" // <--- Ajouter l'include
 
 int main(int argc, char *argv[]) {
+    // 1. ACTIVE LE CLAVIER VIRTUEL
+    qputenv("QT_IM_MODULE", QByteArray("qtvirtualkeyboard"));
+
+    // 2. FORCE LE CLAVIER À RESTER COLLÉ EN BAS (Mode "Embedded")
+    // Sans cette ligne, il flotte comme une fenêtre sur le bureau du Pi
+    //qputenv("QT_VIRTUALKEYBOARD_DESKTOP_DISABLE", QByteArray("1"));
+
+    // --- Reste de votre configuration existante ---
     QLoggingCategory::setFilterRules(
         "qt.network.ssl.warning=true\n"
         "qt.location.mapping.osm.debug=true\n"
@@ -19,34 +25,22 @@ int main(int argc, char *argv[]) {
         "qt.network.access.debug=true"
         );
 
-    //QCoreApplication::setAttribute(Qt::AA_UseSoftwareOpenGL);
-
     QApplication a(argc, argv);
 
     QString cachePath = QCoreApplication::applicationDirPath() + "/qtlocation_cache";
     QDir().mkpath(cachePath);
-    qputenv("QTLOCATION_OSM_CACHE_DIR", cachePath.toUtf8()); // OK
+    qputenv("QTLOCATION_OSM_CACHE_DIR", cachePath.toUtf8());
 
     QNetworkProxyFactory::setUseSystemConfiguration(true);
 
-    // 1. D�CLARATION INDISPENSABLE (� ne jamais commenter)
     TelemetryData telemetry;
 
-    // 2. CHOIX DE LA SOURCE
-    // Option A: Simulation (D�sactiv�e)
-    /*
-    MockTelemetrySource mock(&telemetry);
-    mock.start();
-    */
-
-    // Option B: Vrai GPS (Activ�e)
-
-    // C'est propre : une ligne pour cr�er, une ligne pour d�marrer.
+    // Source GPS réelle
     GpsTelemetrySource gpsSource(&telemetry);
     gpsSource.start("/dev/serial0");
 
     MainWindow w(&telemetry);
     w.showFullScreen();
+
     return a.exec();
 }
-

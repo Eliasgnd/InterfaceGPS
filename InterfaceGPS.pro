@@ -1,5 +1,5 @@
 # Supprime les anciennes versions et mets exactement ceci :
-QT += core gui widgets positioning location quickwidgets qml quick serialport
+QT += core gui widgets positioning location quickwidgets qml quick serialport virtualkeyboard
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 

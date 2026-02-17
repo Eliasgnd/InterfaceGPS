@@ -60,30 +60,39 @@ void GpsTelemetrySource::stop() {
 void GpsTelemetrySource::onPositionUpdated(const QGeoPositionInfo &info) {
     if (!m_data) return;
 
-    // isValid() retourne true si le GPS a un "Fix" (verrouillage satellites)
     if (info.isValid()) {
         m_data->setGpsOk(true);
 
-        // R�cup�ration des coordonn�es (d�j� en double, pas besoin de conversion)
         QGeoCoordinate coord = info.coordinate();
         m_data->setLat(coord.latitude());
         m_data->setLon(coord.longitude());
 
-        // R�cup�ration de la vitesse
-        // Qt renvoie souvent la vitesse en m�tres par seconde (m/s)
+        // Récupération vitesse (m/s -> km/h)
+        double speedMs = 0.0;
         if (info.hasAttribute(QGeoPositionInfo::GroundSpeed)) {
-            double speedMs = info.attribute(QGeoPositionInfo::GroundSpeed);
-            m_data->setSpeedKmh(speedMs * 3.6); // Conversion m/s -> km/h
+            speedMs = info.attribute(QGeoPositionInfo::GroundSpeed);
+            m_data->setSpeedKmh(speedMs * 3.6);
         }
 
-        // R�cup�ration du Cap (Heading) pour la rotation de la carte
+        // --- GESTION ET VÉRIFICATION DE L'ORIENTATION ---
         if (info.hasAttribute(QGeoPositionInfo::Direction)) {
-            m_data->setHeading(info.attribute(QGeoPositionInfo::Direction));
+            double course = info.attribute(QGeoPositionInfo::Direction);
+
+            // LOG DE DÉBUG : Regardez la console "Application Output" dans Qt Creator
+            qDebug() << "GPS Fix -> Lat:" << coord.latitude()
+                     << "Lon:" << coord.longitude()
+                     << "Vitesse:" << (speedMs*3.6) << "km/h"
+                     << "Cap (Raw):" << course;
+
+            if (speedMs * 3.6 > 3.0) {
+                m_data->setHeading(course);
+            }
+        } else {
+            qDebug() << "GPS Fix mais PAS d'info de direction (Cap)";
         }
 
     } else {
-        // Le module envoie des donn�es, mais ne capte pas assez de satellites
-        // (C'est l'�quivalent du 'V' dans les trames GPRMC)
         m_data->setGpsOk(false);
+        qDebug() << "GPS : En attente de satellites (No Fix)...";
     }
 }
