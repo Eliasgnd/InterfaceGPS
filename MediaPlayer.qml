@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtMultimedia
+// import QtMultimedia // Plus besoin du module multimédia local
 import QtQuick.Shapes
 import QtQuick.Effects
 
@@ -25,11 +25,8 @@ Item {
     }
 
     // --- AUDIO ---
-    MediaPlayer {
-        id: player
-        audioOutput: AudioOutput { volume: volumeSlider.value }
-        source: "qrc:/demo.mp3"
-    }
+    // L'objet MediaPlayer a été supprimé car c'est le téléphone qui gère l'audio.
+    // Nous utilisons maintenant l'objet global "bluetoothManager" injecté depuis le C++.
 
     // --- FOND D'ÉCRAN ---
     Rectangle {
@@ -97,10 +94,11 @@ Item {
                                 }
                                 Text { anchors.centerIn: parent; text: "♫"; font.pixelSize: 45; color: "white" }
                             }
-                            // Animation
+                            // Animation (Tourne si bluetoothManager.isPlaying est vrai)
                             RotationAnimation on rotation {
                                 from: 0; to: 360; duration: 8000; loops: Animation.Infinite
-                                running: true; paused: player.playbackState !== MediaPlayer.PlayingState
+                                running: true;
+                                paused: !bluetoothManager.isPlaying
                             }
                         }
                     }
@@ -118,52 +116,46 @@ Item {
                         spacing: 5
                         Label {
                             Layout.fillWidth: true
-                            text: "On My Knees"
+                            // MODIFICATION : Liaison avec le C++
+                            text: bluetoothManager.title
                             font.pixelSize: 38; font.weight: Font.Bold; color: "white"
                             elide: Text.ElideRight
                         }
                         Label {
                             Layout.fillWidth: true
-                            text: "RÜFÜS DU SOL"
+                            // MODIFICATION : Liaison avec le C++
+                            text: bluetoothManager.artist
                             font.pixelSize: 22; font.weight: Font.Medium; color: "#8892a0"
                         }
                     }
 
                     Item { Layout.fillHeight: true; Layout.minimumHeight: 20 }
 
-                    // --- BARRE DE PROGRESSION (Version Tactile Améliorée) ---
+                    // --- BARRE DE PROGRESSION ---
+                    // Note: La progression Bluetooth est complexe à récupérer.
+                    // Ici, on met des valeurs par défaut pour éviter les erreurs.
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 0 // On gère l'espacement via la hauteur du slider
+                        spacing: 0
 
                         Slider {
                             id: progressSlider
                             Layout.fillWidth: true
-                            // ERGONOMIE : On donne une hauteur tactile de 60px !
-                            // C'est invisible, mais ça permet de cliquer bien au dessus ou en dessous
                             Layout.preferredHeight: 60
+                            enabled: false // Désactivé pour le mode Bluetooth simple
 
                             from: 0
-                            to: player.duration > 0 ? player.duration : 1
+                            to: 1
+                            value: 0
 
-                            // Logique de déplacement
-                            Binding on value {
-                                when: !progressSlider.pressed
-                                value: player.position
-                            }
-                            onMoved: player.position = value
-
-                            // Fond (La barre fine) - Centrée verticalement dans la zone de 60px
                             background: Rectangle {
                                 x: progressSlider.leftPadding
-                                // Centrage vertical parfait
                                 y: parent.height / 2 - height / 2
                                 width: progressSlider.availableWidth
-                                height: 8 // Barre un peu plus épaisse pour le visuel
+                                height: 8
                                 radius: 4
                                 color: "#2a2f3a"
 
-                                // Barre de progression colorée
                                 Rectangle {
                                     width: progressSlider.visualPosition * parent.width
                                     height: parent.height
@@ -172,24 +164,22 @@ Item {
                                 }
                             }
 
-                            // Poignée (Le rond) - Centrée verticalement
                             handle: Rectangle {
                                 x: progressSlider.leftPadding + progressSlider.visualPosition * (progressSlider.availableWidth - width)
                                 y: parent.height / 2 - height / 2
-                                width: 34; height: 34; radius: 17 // Rond plus gros (34px)
+                                width: 34; height: 34; radius: 17
                                 color: "white"
-                                // Ombre pour le relief
                                 layer.enabled: true
                                 layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowBlur: 10 }
                             }
                         }
 
-                        // Temps (juste en dessous de la grosse zone tactile)
+                        // Temps
                         RowLayout {
                             Layout.fillWidth: true
-                            Label { text: formatTime(player.position); color: "#8892a0"; font.pixelSize: 14 }
+                            Label { text: "--:--"; color: "#8892a0"; font.pixelSize: 14 }
                             Item { Layout.fillWidth: true }
-                            Label { text: formatTime(player.duration); color: "#8892a0"; font.pixelSize: 14 }
+                            Label { text: "--:--"; color: "#8892a0"; font.pixelSize: 14 }
                         }
                     }
 
@@ -204,7 +194,7 @@ Item {
                         // Shuffle
                         Item { Layout.fillWidth: true }
                         RoundButton {
-                            Layout.preferredWidth: 60; Layout.preferredHeight: 60 // Zone tactile augmentée
+                            Layout.preferredWidth: 60; Layout.preferredHeight: 60
                             background: Item{}
                             contentItem: Shape {
                                 anchors.centerIn: parent; width: 24; height: 24
@@ -235,7 +225,8 @@ Item {
                                     PathMove { x: 2; y: 0 } PathLine { x: 2; y: 28 } PathLine { x: 0; y: 28 } PathLine { x: 0; y: 0 }
                                 }
                             }
-                            onClicked: console.log("Prev")
+                            // MODIFICATION : Appel C++
+                            onClicked: bluetoothManager.previous()
                         }
 
                         // PLAY / PAUSE
@@ -247,23 +238,23 @@ Item {
                                 anchors.fill: parent
                                 Row {
                                     anchors.centerIn: parent; spacing: 7
-                                    visible: player.playbackState === MediaPlayer.PlayingState
+                                    // Visible si lecture en cours
+                                    visible: bluetoothManager.isPlaying
                                     Rectangle { width: 7; height: 28; color: "black"; radius: 1 }
                                     Rectangle { width: 7; height: 28; color: "black"; radius: 1 }
                                 }
                                 Shape {
                                     anchors.centerIn: parent; anchors.horizontalCenterOffset: 3
-                                    visible: player.playbackState !== MediaPlayer.PlayingState
+                                    // Visible si pause
+                                    visible: !bluetoothManager.isPlaying
                                     ShapePath {
                                         strokeWidth: 0; fillColor: "black"
                                         startX: 0; startY: 0; PathLine { x: 0; y: 28 } PathLine { x: 24; y: 14 } PathLine { x: 0; y: 0 }
                                     }
                                 }
                             }
-                            onClicked: {
-                                if (player.playbackState === MediaPlayer.PlayingState) player.pause()
-                                else player.play()
-                            }
+                            // MODIFICATION : Appel C++
+                            onClicked: bluetoothManager.togglePlay()
                         }
 
                         // Next
@@ -279,7 +270,8 @@ Item {
                                     PathMove { x: 26; y: 0 } PathLine { x: 26; y: 28 } PathLine { x: 28; y: 28 } PathLine { x: 28; y: 0 }
                                 }
                             }
-                            onClicked: console.log("Next")
+                            // MODIFICATION : Appel C++
+                            onClicked: bluetoothManager.next()
                         }
 
                         // Repeat
@@ -315,7 +307,6 @@ Item {
                         Slider {
                             id: volumeSlider
                             Layout.fillWidth: true
-                            // On agrandit aussi la zone tactile du volume
                             Layout.preferredHeight: 50
                             from: 0; to: 1.0; value: 0.7
 
@@ -327,7 +318,7 @@ Item {
                             handle: Rectangle {
                                 x: volumeSlider.leftPadding + volumeSlider.visualPosition * (volumeSlider.availableWidth - width)
                                 y: parent.height / 2 - height / 2
-                                width: 24; height: 24; radius: 12; color: "white" // Poignée plus grosse aussi
+                                width: 24; height: 24; radius: 12; color: "white"
                             }
                         }
                         // Bouton Playlist
@@ -351,7 +342,7 @@ Item {
             }
         }
 
-        // === PANNEAU LATÉRAL (Playlist) ===
+        // === PANNEAU LATÉRAL (Playlist - Statique pour l'instant) ===
         Rectangle {
             id: playlistPanel
             Layout.preferredWidth: root.isPlaylistOpen ? 300 : 0
@@ -373,10 +364,7 @@ Item {
                     Layout.fillWidth: true; Layout.fillHeight: true
                     clip: true
                     model: ListModel {
-                        ListElement { title: "On My Knees"; artist: "RÜFÜS DU SOL"; playing: true }
-                        ListElement { title: "Innerbloom"; artist: "RÜFÜS DU SOL"; playing: false }
-                        ListElement { title: "Underwater"; artist: "RÜFÜS DU SOL"; playing: false }
-                        ListElement { title: "Alive"; artist: "RÜFÜS DU SOL"; playing: false }
+                        ListElement { title: "Bluetooth Audio"; artist: "Stream"; playing: true }
                     }
                     delegate: Item {
                         width: ListView.view.width; height: 60

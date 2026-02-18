@@ -1,5 +1,5 @@
 # Supprime les anciennes versions et mets exactement ceci :
-QT += core gui widgets positioning location quickwidgets qml quick serialport virtualkeyboard multimedia quickcontrols2 network
+QT += core gui widgets positioning location quickwidgets qml quick serialport virtualkeyboard multimedia quickcontrols2 network dbus
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -10,6 +10,7 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    bluetoothmanager.cpp \
     camerapage.cpp \
     clavier.cpp \
     gpstelemetrysource.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
     telemetrydata.cpp
 
 HEADERS += \
+    bluetoothmanager.h \
     camerapage.h \
     clavier.h \
     gpstelemetrysource.h \
