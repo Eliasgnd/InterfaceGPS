@@ -5,7 +5,7 @@
 #include "navigationpage.h"
 #include "camerapage.h"
 #include "settingspage.h"
-#include "mediapage.h" // <--- 1. AJOUT DE L'INCLUDE
+#include "mediapage.h"
 
 #include <QStackedWidget>
 
@@ -14,45 +14,43 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
 {
     ui->setupUi(this);
 
-    // Create pages
+    // 1. Création des pages
     m_home = new HomePage(this);
     m_nav = new NavigationPage(this);
     m_cam = new CameraPage(this);
     m_settings = new SettingsPage(this);
-    m_media = new MediaPage(this); // <--- 2. CRÉATION DE LA PAGE MEDIA
+    m_media = new MediaPage(this);
 
-    // Bind telemetry
+    // 2. Connexion de la télémétrie (Sauf pour la caméra vidéo qui n'en a pas besoin)
     m_home->bindTelemetry(m_t);
     m_nav->bindTelemetry(m_t);
-    m_cam->bindTelemetry(m_t);
+    // m_cam->bindTelemetry(m_t); // <--- SUPPRIMÉ car n'existe plus dans la nouvelle CameraPage
     m_settings->bindTelemetry(m_t);
-    // m_media->bindTelemetry(m_t); // Décommente si tu ajoutes bindTelemetry dans MediaPage plus tard
 
-    // Put into stacked widget
+    // 3. Ajout des pages au StackedWidget (Vérifie que c'est bien 'stackedPages' dans le .ui)
     ui->stackedPages->addWidget(m_home);
     ui->stackedPages->addWidget(m_nav);
     ui->stackedPages->addWidget(m_cam);
-    ui->stackedPages->addWidget(m_media); // <--- 3. AJOUT AU STACK
+    ui->stackedPages->addWidget(m_media);
     ui->stackedPages->addWidget(m_settings);
 
+    // Page de démarrage
     ui->stackedPages->setCurrentWidget(m_home);
 
-    // Bottom nav buttons
+    // 4. Connexion des boutons du menu bas
     connect(ui->btnHome, &QPushButton::clicked, this, &MainWindow::goHome);
     connect(ui->btnNav, &QPushButton::clicked, this, &MainWindow::goNav);
     connect(ui->btnCam, &QPushButton::clicked, this, &MainWindow::goCam);
     connect(ui->btnSettings, &QPushButton::clicked, this, &MainWindow::goSettings);
 
-    // --- 4. CONNEXION DU BOUTON MEDIA ---
-    // Note : Assure-toi d'avoir ajouté un bouton nommé "btnMedia" dans ton mainwindow.ui
-    // Sinon, cette ligne fera planter la compilation. Décommente-la une fois le bouton créé.
+    // Assure-toi d'avoir créé le bouton 'btnMedia' dans mainwindow.ui
     connect(ui->btnMedia, &QPushButton::clicked, this, &MainWindow::goMedia);
 
-    // quick links from home
+    // Liens rapides depuis la Home
     connect(m_home, &HomePage::requestNavigation, this, &MainWindow::goNav);
     connect(m_home, &HomePage::requestCamera, this, &MainWindow::goCam);
 
-    // Update topbar + alert
+    // Mise à jour de la barre du haut
     updateTopBarAndAlert();
     connect(m_t, &TelemetryData::speedKmhChanged, this, &MainWindow::updateTopBarAndAlert);
     connect(m_t, &TelemetryData::batteryPercentChanged, this, &MainWindow::updateTopBarAndAlert);
@@ -62,15 +60,52 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     connect(m_t, &TelemetryData::alertTextChanged, this, &MainWindow::updateTopBarAndAlert);
 }
 
-MainWindow::~MainWindow(){ delete ui; }
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
 
-void MainWindow::goHome(){ ui->stackedPages->setCurrentWidget(m_home); }
-void MainWindow::goNav(){ ui->stackedPages->setCurrentWidget(m_nav); }
-void MainWindow::goCam(){ ui->stackedPages->setCurrentWidget(m_cam); }
-void MainWindow::goSettings(){ ui->stackedPages->setCurrentWidget(m_settings); }
-void MainWindow::goMedia(){ ui->stackedPages->setCurrentWidget(m_media); } // <--- 5. FONCTION POUR AFFICHER
+// --- NAVIGATION ---
 
-void MainWindow::updateTopBarAndAlert(){
+void MainWindow::goHome()
+{
+    // Important : Couper le flux vidéo si on vient de la caméra
+    m_cam->stopStream();
+
+    ui->stackedPages->setCurrentWidget(m_home);
+}
+
+void MainWindow::goNav()
+{
+    m_cam->stopStream();
+    ui->stackedPages->setCurrentWidget(m_nav);
+}
+
+void MainWindow::goCam()
+{
+    // 1. Afficher la page Caméra
+    ui->stackedPages->setCurrentWidget(m_cam);
+
+    // 2. Démarrer la réception vidéo UDP
+    m_cam->startStream();
+}
+
+void MainWindow::goMedia()
+{
+    m_cam->stopStream();
+    ui->stackedPages->setCurrentWidget(m_media);
+}
+
+void MainWindow::goSettings()
+{
+    m_cam->stopStream();
+    ui->stackedPages->setCurrentWidget(m_settings);
+}
+
+// --- BARRE DE STATUT ---
+
+void MainWindow::updateTopBarAndAlert()
+{
     ui->lblSpeed->setText(QString("%1 km/h").arg((int)qRound(m_t->speedKmh())));
     ui->lblBattery->setText(QString("Bat %1%").arg(m_t->batteryPercent()));
     ui->lblGps->setText(m_t->gpsOk() ? "GPS OK" : "GPS LOST");
