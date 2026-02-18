@@ -163,6 +163,12 @@ void BluetoothManager::handleDBusSignal(const QDBusMessage &msg) {
     if (changed.contains("PlaybackStatus")) {
         m_isPlaying = (unwrapVariant(changed.value("PlaybackStatus")).toString() == "Playing");
         emit statusChanged();
+
+        // AJOUT : Si on passe en lecture, on force une mise à jour de la position
+        // pour que le timer QML parte du bon endroit.
+        if (m_isPlaying) {
+            updatePosition();
+        }
     }
 
     if (changed.contains("Position")) {
