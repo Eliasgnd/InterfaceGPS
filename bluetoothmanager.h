@@ -32,9 +32,14 @@ private slots:
     void handleDBusSignal(const QString &interface, const QVariantMap &changedProperties, const QStringList &invalidatedProperties);
 
 private:
+private:
     void updateMetadata();
+    void findActivePlayer(); // <--- Ajout
+    void connectToService(const QString &service); // <--- Ajout
 
-    QString m_title = "Pas de musique";
+    QString m_currentService; // <--- Ajout pour stocker le nom dynamique
+    QString m_title = "En attente...";
+    // ... le reste ne change pas
     QString m_artist = "Déconnecté";
     bool m_isPlaying = false;
     QDBusInterface *m_playerInterface = nullptr;
