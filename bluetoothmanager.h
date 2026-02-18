@@ -36,6 +36,7 @@ private:
     void updateMetadata();
     void findActivePlayer(); // <--- Ajout
     void connectToService(const QString &service); // <--- Ajout
+    void parseMetadataMap(const QVariantMap &metadata);
 
     QString m_currentService; // <--- Ajout pour stocker le nom dynamique
     QString m_title = "En attente...";
