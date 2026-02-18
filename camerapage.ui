@@ -2,12 +2,27 @@
 <ui version="4.0">
  <class>CameraPage</class>
  <widget class="QWidget" name="CameraPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>338</width>
+    <height>372</height>
+   </rect>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="leftMargin"><number>14</number></property>
-   <property name="topMargin"><number>14</number></property>
-   <property name="rightMargin"><number>14</number></property>
-   <property name="bottomMargin"><number>14</number></property>
-
+   <property name="leftMargin">
+    <number>14</number>
+   </property>
+   <property name="topMargin">
+    <number>14</number>
+   </property>
+   <property name="rightMargin">
+    <number>14</number>
+   </property>
+   <property name="bottomMargin">
+    <number>14</number>
+   </property>
    <item>
     <widget class="QFrame" name="frame">
      <property name="styleSheet">
@@ -19,56 +34,82 @@ QPushButton:pressed{background:#2d3245;}
       </string>
      </property>
      <layout class="QVBoxLayout" name="layoutInner">
-      <property name="leftMargin"><number>14</number></property>
-      <property name="topMargin"><number>14</number></property>
-      <property name="rightMargin"><number>14</number></property>
-      <property name="bottomMargin"><number>14</number></property>
-      <property name="spacing"><number>10</number></property>
-
+      <property name="spacing">
+       <number>10</number>
+      </property>
+      <property name="leftMargin">
+       <number>14</number>
+      </property>
+      <property name="topMargin">
+       <number>14</number>
+      </property>
+      <property name="rightMargin">
+       <number>14</number>
+      </property>
+      <property name="bottomMargin">
+       <number>14</number>
+      </property>
       <item>
        <widget class="QFrame" name="videoPlaceholder">
-        <property name="minimumHeight"><number>240</number></property>
         <property name="styleSheet">
          <string notr="true">QFrame{background:#0f1115;border-radius:14px;border:1px solid #2a2f3a;}</string>
         </property>
         <layout class="QVBoxLayout" name="videoLayout">
-         <property name="leftMargin"><number>10</number></property>
-         <property name="topMargin"><number>10</number></property>
-         <property name="rightMargin"><number>10</number></property>
-         <property name="bottomMargin"><number>10</number></property>
-         <property name="spacing"><number>6</number></property>
+         <property name="spacing">
+          <number>6</number>
+         </property>
+         <property name="leftMargin">
+          <number>10</number>
+         </property>
+         <property name="topMargin">
+          <number>10</number>
+         </property>
+         <property name="rightMargin">
+          <number>10</number>
+         </property>
+         <property name="bottomMargin">
+          <number>10</number>
+         </property>
          <item>
           <widget class="QLabel" name="lblVideo">
-           <property name="text"><string>Flux caméra / Bird-eye - placeholder</string></property>
-           <property name="alignment"><set>Qt::AlignCenter</set></property>
-           <property name="styleSheet"><string notr="true">QLabel{color:#b8c0cc;font-size:16px;}</string></property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="lblMode">
-           <property name="text"><string>Mode: BIRD-EYE</string></property>
-           <property name="alignment"><set>Qt::AlignCenter</set></property>
-           <property name="styleSheet"><string notr="true">QLabel{font-size:16px;font-weight:700;}</string></property>
+           <property name="styleSheet">
+            <string notr="true">QLabel{color:#b8c0cc;font-size:16px;}</string>
+           </property>
+           <property name="text">
+            <string>Flux caméra / Bird-eye - placeholder</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
           </widget>
          </item>
         </layout>
        </widget>
       </item>
-
       <item>
        <layout class="QHBoxLayout" name="rowButtons">
-        <property name="spacing"><number>10</number></property>
-        <item><widget class="QPushButton" name="btnRear"><property name="text"><string>Rear</string></property></widget></item>
-        <item><widget class="QPushButton" name="btnFront"><property name="text"><string>Front</string></property></widget></item>
-        <item><widget class="QPushButton" name="btnMosaic"><property name="text"><string>Mosaic</string></property></widget></item>
-        <item><widget class="QPushButton" name="btnBird"><property name="text"><string>Bird</string></property></widget></item>
+        <property name="spacing">
+         <number>10</number>
+        </property>
+        <item>
+         <widget class="QPushButton" name="btnRear">
+          <property name="text">
+           <string>Rear</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnFront">
+          <property name="text">
+           <string>Front</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
-
      </layout>
     </widget>
    </item>
-
   </layout>
  </widget>
  <resources/>
