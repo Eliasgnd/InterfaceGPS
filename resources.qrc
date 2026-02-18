@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>map.qml</file>
+        <file>MediaPlayer.qml</file>
     </qresource>
     <qresource prefix="/icons">
         <file>dir_arrival.svg</file>
@@ -11,5 +12,7 @@
         <file>dir_uturn.svg</file>
         <file>rond_point.svg</file>
         <file>dir_left.svg</file>
+        <file>volume_up.svg</file>
+        <file>volume_down.svg</file>
     </qresource>
 </RCC>

@@ -97,6 +97,9 @@ QPushButton:pressed{background:#2d3245;}
        <item><widget class="QPushButton" name="btnHome"><property name="text"><string>Home</string></property></widget></item>
        <item><widget class="QPushButton" name="btnNav"><property name="text"><string>Nav</string></property></widget></item>
        <item><widget class="QPushButton" name="btnCam"><property name="text"><string>Cam</string></property></widget></item>
+
+       <item><widget class="QPushButton" name="btnMedia"><property name="text"><string>Musique</string></property></widget></item>
+
        <item><widget class="QPushButton" name="btnSettings"><property name="text"><string>Settings</string></property></widget></item>
       </layout>
      </widget>

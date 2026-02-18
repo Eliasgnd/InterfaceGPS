@@ -1,5 +1,5 @@
 # Supprime les anciennes versions et mets exactement ceci :
-QT += core gui widgets positioning location quickwidgets qml quick serialport virtualkeyboard
+QT += core gui widgets positioning location quickwidgets qml quick serialport virtualkeyboard multimedia quickcontrols2
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -16,6 +16,7 @@ SOURCES += \
     homepage.cpp \
     main.cpp \
     mainwindow.cpp \
+    mediapage.cpp \
     mocktelemetrysource.cpp \
     navigationpage.cpp \
     settingspage.cpp \
@@ -27,6 +28,7 @@ HEADERS += \
     gpstelemetrysource.h \
     homepage.h \
     mainwindow.h \
+    mediapage.h \
     mocktelemetrysource.h \
     navigationpage.h \
     settingspage.h \
@@ -36,6 +38,7 @@ FORMS += \
     camerapage.ui \
     homepage.ui \
     mainwindow.ui \
+    mediapage.ui \
     navigationpage.ui \
     settingspage.ui
 
@@ -45,6 +48,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
+    MediaPlayer.qml \
     map.qml
 
 RESOURCES += \

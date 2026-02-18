@@ -6,6 +6,7 @@ class HomePage;
 class NavigationPage;
 class CameraPage;
 class SettingsPage;
+class MediaPage; // <--- AJOUTER CETTE LIGNE (Forward Declaration)
 
 namespace Ui { class MainWindow; }
 
@@ -19,6 +20,7 @@ private slots:
     void goHome();
     void goNav();
     void goCam();
+    void goMedia();    // <--- AJOUTER CETTE LIGNE (Le slot existe maintenant)
     void goSettings();
     void updateTopBarAndAlert();
 
@@ -29,5 +31,6 @@ private:
     HomePage* m_home=nullptr;
     NavigationPage* m_nav=nullptr;
     CameraPage* m_cam=nullptr;
+    MediaPage* m_media=nullptr;       // <--- AJOUTER CETTE LIGNE
     SettingsPage* m_settings=nullptr;
 };
