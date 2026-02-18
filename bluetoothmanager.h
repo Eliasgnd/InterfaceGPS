@@ -29,9 +29,8 @@ signals:
     void statusChanged();
 
 private slots:
-    void handleDBusSignal(const QString &interface, const QVariantMap &changedProperties, const QStringList &invalidatedProperties);
+    void handleDBusSignal(const QDBusMessage &msg);
 
-private:
 private:
     void updateMetadata();
     void findActivePlayer(); // <--- Ajout

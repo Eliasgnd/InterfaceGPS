@@ -10,18 +10,15 @@ QVariant unwrapVariant(const QVariant &var) {
     if (var.userType() == qMetaTypeId<QDBusArgument>()) {
         const QDBusArgument &arg = var.value<QDBusArgument>();
         if (arg.currentType() == QDBusArgument::VariantType) {
-            QVariant inner;
-            arg >> inner;
+            QVariant inner; arg >> inner;
             return unwrapVariant(inner);
         }
         if (arg.currentType() == QDBusArgument::ArrayType) {
-            QStringList list;
-            arg >> list;
+            QStringList list; arg >> list;
             return list;
         }
         if (arg.currentType() == QDBusArgument::MapType) {
-            QVariantMap map;
-            arg >> map;
+            QVariantMap map; arg >> map;
             return map;
         }
     }
@@ -45,12 +42,10 @@ BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
     connect(watcher, &QDBusServiceWatcher::serviceRegistered, this, &BluetoothManager::connectToService);
     connect(watcher, &QDBusServiceWatcher::serviceUnregistered, this, [this](const QString &service){
         if (service == m_currentService) {
-            m_title = "Déconnecté";
-            m_artist = "";
-            m_isPlaying = false;
+            qDebug() << "⚠️ Appareil déconnecté";
+            m_title = "Déconnecté"; m_artist = ""; m_isPlaying = false;
             m_currentService.clear();
-            emit metadataChanged();
-            emit statusChanged();
+            emit metadataChanged(); emit statusChanged();
         }
     });
 
@@ -58,10 +53,8 @@ BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
 }
 
 void BluetoothManager::findActivePlayer() {
-    // CORRECTION ICI : QDBusConnectionInterface au lieu de QDBusConnectionBusInterface
     QDBusConnectionInterface *bus = QDBusConnection::sessionBus().interface();
     if (!bus) return;
-
     QStringList services = bus->registeredServiceNames();
     for (const QString &service : services) {
         if (service.startsWith("org.mpris.MediaPlayer2.") && !service.endsWith(".mpris-proxy")) {
@@ -76,29 +69,34 @@ void BluetoothManager::connectToService(const QString &serviceName) {
     m_currentService = serviceName;
 
     if (m_playerInterface) delete m_playerInterface;
-    m_playerInterface = new QDBusInterface(serviceName,
-                                           "/org/mpris/MediaPlayer2",
-                                           "org.mpris.MediaPlayer2.Player",
-                                           QDBusConnection::sessionBus(), this);
+    m_playerInterface = new QDBusInterface(serviceName, "/org/mpris/MediaPlayer2",
+                                           "org.mpris.MediaPlayer2.Player", QDBusConnection::sessionBus(), this);
 
-    QDBusConnection::sessionBus().connect(serviceName,
-                                          "/org/mpris/MediaPlayer2",
-                                          "org.freedesktop.DBus.Properties",
-                                          "PropertiesChanged",
-                                          this, SLOT(handleDBusSignal(QString, QVariantMap, QStringList)));
+    // CONNEXION SIGNAL : On utilise la signature générique QDBusMessage pour ne rien rater
+    QDBusConnection::sessionBus().connect(serviceName, "/org/mpris/MediaPlayer2",
+                                          "org.freedesktop.DBus.Properties", "PropertiesChanged",
+                                          this, SLOT(handleDBusSignal(QDBusMessage)));
 
     updateMetadata();
 }
 
-void BluetoothManager::handleDBusSignal(const QString &interface, const QVariantMap &changedProperties, const QStringList &) {
+// NOUVEAU SLOT DE RÉCEPTION UNIVERSEL
+void BluetoothManager::handleDBusSignal(const QDBusMessage &msg) {
+    QList<QVariant> args = msg.arguments();
+    if (args.count() < 2) return;
+
+    QString interface = args.at(0).toString();
     if (interface != "org.mpris.MediaPlayer2.Player") return;
 
+    QVariantMap changedProperties = unwrapVariant(args.at(1)).toMap();
+
     if (changedProperties.contains("Metadata")) {
+        qDebug() << "📢 Signal de changement de musique reçu !";
         parseMetadataMap(unwrapVariant(changedProperties["Metadata"]).toMap());
     }
 
     if (changedProperties.contains("PlaybackStatus")) {
-        m_isPlaying = (changedProperties["PlaybackStatus"].toString() == "Playing");
+        m_isPlaying = (unwrapVariant(changedProperties["PlaybackStatus"]).toString() == "Playing");
         emit statusChanged();
     }
 }
@@ -106,45 +104,29 @@ void BluetoothManager::handleDBusSignal(const QString &interface, const QVariant
 void BluetoothManager::updateMetadata() {
     if (m_currentService.isEmpty()) return;
 
-    // Récupération manuelle du Titre/Artiste
-    QDBusMessage msg = QDBusMessage::createMethodCall(
-        m_currentService, "/org/mpris/MediaPlayer2", "org.freedesktop.DBus.Properties", "Get");
+    QDBusMessage msg = QDBusMessage::createMethodCall(m_currentService, "/org/mpris/MediaPlayer2",
+                                                      "org.freedesktop.DBus.Properties", "Get");
     msg << "org.mpris.MediaPlayer2.Player" << "Metadata";
 
     QDBusMessage reply = QDBusConnection::sessionBus().call(msg);
     if (reply.type() == QDBusMessage::ReplyMessage && !reply.arguments().isEmpty()) {
         parseMetadataMap(unwrapVariant(reply.arguments().first()).toMap());
     }
-
-    // Récupération manuelle de l'état Play/Pause
-    QDBusMessage msgStatus = QDBusMessage::createMethodCall(
-        m_currentService, "/org/mpris/MediaPlayer2", "org.freedesktop.DBus.Properties", "Get");
-    msgStatus << "org.mpris.MediaPlayer2.Player" << "PlaybackStatus";
-    QDBusMessage replyS = QDBusConnection::sessionBus().call(msgStatus);
-    if (replyS.type() == QDBusMessage::ReplyMessage && !replyS.arguments().isEmpty()) {
-        m_isPlaying = (unwrapVariant(replyS.arguments().first()).toString() == "Playing");
-        emit statusChanged();
-    }
 }
 
 void BluetoothManager::parseMetadataMap(const QVariantMap &metadata) {
-    QString newTitle;
-    if (metadata.contains("xesam:title")) {
-        newTitle = unwrapVariant(metadata["xesam:title"]).toString();
-    }
-
+    QString newTitle = unwrapVariant(metadata["xesam:title"]).toString();
     QString newArtist;
-    if (metadata.contains("xesam:artist")) {
-        QVariant v = unwrapVariant(metadata["xesam:artist"]);
-        if (v.userType() == QMetaType::QStringList) newArtist = v.toStringList().join(", ");
-        else newArtist = v.toString();
-    }
+    QVariant v = unwrapVariant(metadata["xesam:artist"]);
+    if (v.userType() == QMetaType::QStringList) newArtist = v.toStringList().join(", ");
+    else newArtist = v.toString();
 
-    if (!newTitle.isEmpty()) {
+    // On vérifie si c'est vraiment différent avant de mettre à jour
+    if (!newTitle.isEmpty() && (newTitle != m_title || newArtist != m_artist)) {
         m_title = newTitle;
         m_artist = newArtist;
-        qDebug() << "🎵 Musique :" << m_title << "par" << m_artist;
-        emit metadataChanged();
+        qDebug() << "🎵 Nouvelle Musique :" << m_title << "par" << m_artist;
+        emit metadataChanged(); // C'est ce signal qui dit au QML de se rafraîchir
     }
 }
 
