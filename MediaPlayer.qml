@@ -19,6 +19,46 @@ Item {
         return (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s)
     }
 
+    // -------------------------
+    // Progression "simulée"
+    // -------------------------
+    property int uiPositionMs: 0
+
+    function clamp(val, minV, maxV) {
+        return Math.max(minV, Math.min(maxV, val))
+    }
+
+    // Quand le téléphone envoie une nouvelle position, on resynchronise l'UI
+    Connections {
+        target: bluetoothManager
+        function onPositionChanged() {
+            root.uiPositionMs = bluetoothManager.positionMs
+        }
+        function onMetadataChanged() {
+            // nouvelle piste => on resync aussi
+            root.uiPositionMs = bluetoothManager.positionMs
+        }
+        function onStatusChanged() {
+            // si on passe pause/play, pas besoin de resync, le timer gère
+        }
+    }
+
+    // Timer local : fait avancer uiPositionMs quand on est en lecture
+    Timer {
+        id: uiProgressTimer
+        interval: 250
+        repeat: true
+        running: true
+        onTriggered: {
+            if (bluetoothManager.isPlaying && bluetoothManager.durationMs > 0) {
+                root.uiPositionMs = root.clamp(root.uiPositionMs + interval, 0, bluetoothManager.durationMs)
+            }
+        }
+    }
+
+    // Au démarrage
+    Component.onCompleted: root.uiPositionMs = bluetoothManager.positionMs
+
     // --- Fond ---
     Rectangle {
         anchors.fill: parent
@@ -42,7 +82,6 @@ Item {
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignVCenter
 
-            // Halo
             Rectangle {
                 width: 340; height: 340
                 anchors.centerIn: parent
@@ -53,7 +92,6 @@ Item {
                 layer.effect: MultiEffect { blurEnabled: true; blurMax: 40; blur: 1.0 }
             }
 
-            // Vinyle
             Item {
                 width: 300; height: 300
                 anchors.centerIn: parent
@@ -65,12 +103,10 @@ Item {
                     border.color: "#222"
                     border.width: 1
 
-                    // Sillons
                     Rectangle { width: 280; height: 280; radius: 140; anchors.centerIn: parent; color: "transparent"; border.color: "#1a1a1a"; border.width: 2 }
                     Rectangle { width: 220; height: 220; radius: 110; anchors.centerIn: parent; color: "transparent"; border.color: "#1a1a1a"; border.width: 2 }
                     Rectangle { width: 160; height: 160; radius: 80;  anchors.centerIn: parent; color: "transparent"; border.color: "#1a1a1a"; border.width: 2 }
 
-                    // Label
                     Rectangle {
                         width: 110; height: 110; radius: 55
                         anchors.centerIn: parent
@@ -81,7 +117,6 @@ Item {
                         Text { anchors.centerIn: parent; text: "♫"; font.pixelSize: 45; color: "white" }
                     }
 
-                    // Rotation
                     RotationAnimation on rotation {
                         from: 0; to: 360
                         duration: 8000
@@ -101,7 +136,6 @@ Item {
             Layout.fillHeight: true
             spacing: 0
 
-            // ---- Titre / Artiste / Album ----
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 6
@@ -136,7 +170,7 @@ Item {
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 18 }
 
-            // ---- Progression (lecture seule) ----
+            // ---- Progression : non-interactif + avance localement ----
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
@@ -146,13 +180,14 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 60
 
-                    enabled: bluetoothManager.durationMs > 0
+                    // 🔒 totalement non interactif
+                    enabled: false
+
                     from: 0
                     to: Math.max(1, bluetoothManager.durationMs)
-                    value: Math.min(bluetoothManager.positionMs, bluetoothManager.durationMs)
-
-                    // Lecture seule (seek bluetooth pas fiable)
-                    onPressedChanged: if (pressed) pressed = false
+                    value: bluetoothManager.durationMs > 0
+                           ? Math.min(root.uiPositionMs, bluetoothManager.durationMs)
+                           : 0
 
                     background: Rectangle {
                         x: progressSlider.leftPadding
@@ -163,28 +198,21 @@ Item {
                         color: "#2a2f3a"
 
                         Rectangle {
-                            width: progressSlider.visualPosition * parent.width
+                            width: (bluetoothManager.durationMs > 0 ? (value / to) : 0) * parent.width
                             height: parent.height
                             color: root.accentColor
                             radius: 4
                         }
                     }
 
-                    handle: Rectangle {
-                        visible: progressSlider.enabled
-                        x: progressSlider.leftPadding + progressSlider.visualPosition * (progressSlider.availableWidth - width)
-                        y: parent.height / 2 - height / 2
-                        width: 34; height: 34; radius: 17
-                        color: "white"
-                        layer.enabled: true
-                        layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowBlur: 10 }
-                    }
+                    // handle caché
+                    handle: Item { }
                 }
 
                 RowLayout {
                     Layout.fillWidth: true
                     Label {
-                        text: bluetoothManager.durationMs > 0 ? formatTime(bluetoothManager.positionMs) : "--:--"
+                        text: bluetoothManager.durationMs > 0 ? formatTime(root.uiPositionMs) : "--:--"
                         color: "#8892a0"
                         font.pixelSize: 14
                     }
@@ -207,7 +235,6 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
-                // Prev
                 RoundButton {
                     Layout.preferredWidth: 70; Layout.preferredHeight: 70
                     background: Item {}
@@ -230,7 +257,6 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
-                // Play / Pause
                 RoundButton {
                     Layout.preferredWidth: 90; Layout.preferredHeight: 90
                     background: Rectangle { radius: 45; color: "white" }
@@ -265,7 +291,6 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
-                // Next
                 RoundButton {
                     Layout.preferredWidth: 70; Layout.preferredHeight: 70
                     background: Item {}
@@ -291,7 +316,7 @@ Item {
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 18 }
 
-            // ---- Volume (UI uniquement, pas de contrôle bluetooth universel) ----
+            // Volume (UI only)
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 20
