@@ -5,26 +5,40 @@
 #include <QDBusMetaType>
 #include <QDBusArgument>
 
-// --- FONCTION UTILITAIRE CORRIGÉE ---
+// --- FONCTION DE DÉBALLAGE CORRIGÉE ---
 QVariant unwrapVariant(const QVariant &var) {
-    // CORRECTION : On utilise qMetaTypeId pour identifier le type DBusArgument
+    // CORRECTION ICI : On utilise qMetaTypeId<T>() au lieu de QMetaType::T
     if (var.userType() == qMetaTypeId<QDBusArgument>()) {
         const QDBusArgument &arg = var.value<QDBusArgument>();
 
-        // Si c'est une variante emballée (boîte dans une boîte)
+        // Si c'est une "boîte" (Variant DBus)
         if (arg.currentType() == QDBusArgument::VariantType) {
             QVariant inner;
             arg >> inner;
-            return unwrapVariant(inner);
+            return unwrapVariant(inner); // On continue de creuser
         }
-        // Si c'est un tableau (ex: liste d'artistes)
+
+        // Si c'est une liste (ex: Artistes)
         if (arg.currentType() == QDBusArgument::ArrayType) {
             QStringList list;
             arg >> list;
             return list;
         }
+
+        // Si c'est une Map (ex: Metadata complète)
+        if (arg.currentType() == QDBusArgument::MapType) {
+            QVariantMap map;
+            arg >> map;
+            return map;
+        }
     }
-    return var; // C'est déjà une donnée simple
+
+    // Si c'est un QDBusVariant (autre type d'emballage)
+    if (var.userType() == qMetaTypeId<QDBusVariant>()) {
+        return unwrapVariant(var.value<QDBusVariant>().variant());
+    }
+
+    return var; // C'est une donnée simple (String, Int...)
 }
 
 BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
@@ -43,7 +57,7 @@ BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
     connect(watcher, &QDBusServiceWatcher::serviceRegistered, this, &BluetoothManager::connectToService);
     connect(watcher, &QDBusServiceWatcher::serviceUnregistered, this, [this](const QString &service){
         if (service == m_currentService) {
-            qDebug() << "⚠️ BluetoothManager: Déconnecté de" << service;
+            qDebug() << "⚠️ Déconnecté de" << service;
             m_title = "Déconnecté";
             m_artist = "";
             m_isPlaying = false;
@@ -58,7 +72,10 @@ BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
 }
 
 void BluetoothManager::findActivePlayer() {
-    QStringList services = QDBusConnection::sessionBus().interface()->registeredServiceNames();
+    QDBusConnectionBusInterface *bus = QDBusConnection::sessionBus().interface();
+    if (!bus) return;
+
+    QStringList services = bus->registeredServiceNames();
     for (const QString &service : services) {
         if (service.startsWith("org.mpris.MediaPlayer2.") && !service.endsWith(".mpris-proxy")) {
             connectToService(service);
@@ -91,11 +108,11 @@ void BluetoothManager::handleDBusSignal(const QString &interface, const QVariant
     if (interface != "org.mpris.MediaPlayer2.Player") return;
 
     if (changedProperties.contains("Metadata")) {
-        QVariant rawMeta = changedProperties["Metadata"];
-        QVariant unwrapped = unwrapVariant(rawMeta);
+        // Extraction forcée
+        QVariant raw = changedProperties["Metadata"];
+        QVariant unwrapped = unwrapVariant(raw);
 
-        // Conversion sécurisée en Map
-        if (unwrapped.canConvert<QVariantMap>()) {
+        if (unwrapped.typeId() == QMetaType::QVariantMap) {
             parseMetadataMap(unwrapped.toMap());
         }
     }
@@ -109,7 +126,7 @@ void BluetoothManager::handleDBusSignal(const QString &interface, const QVariant
 void BluetoothManager::updateMetadata() {
     if (m_currentService.isEmpty()) return;
 
-    // Appel direct via DBus
+    // Appel direct DBus pour éviter les conversions ratées de Qt
     QDBusMessage msg = QDBusMessage::createMethodCall(
         m_currentService, "/org/mpris/MediaPlayer2", "org.freedesktop.DBus.Properties", "Get");
     msg << "org.mpris.MediaPlayer2.Player" << "Metadata";
@@ -118,27 +135,24 @@ void BluetoothManager::updateMetadata() {
     if (reply.type() == QDBusMessage::ReplyMessage && !reply.arguments().isEmpty()) {
         QVariant rawReply = reply.arguments().first();
         QVariant unwrapped = unwrapVariant(rawReply);
-        if (unwrapped.canConvert<QVariantMap>()) {
+
+        if (unwrapped.typeId() == QMetaType::QVariantMap) {
             parseMetadataMap(unwrapped.toMap());
         }
     }
 
-    // Mise à jour du statut Play/Pause
-    QDBusMessage msgStatus = QDBusMessage::createMethodCall(
-        m_currentService, "/org/mpris/MediaPlayer2", "org.freedesktop.DBus.Properties", "Get");
-    msgStatus << "org.mpris.MediaPlayer2.Player" << "PlaybackStatus";
-    QDBusMessage replyStatus = QDBusConnection::sessionBus().call(msgStatus);
-    if (replyStatus.type() == QDBusMessage::ReplyMessage && !replyStatus.arguments().isEmpty()) {
-        m_isPlaying = (unwrapVariant(replyStatus.arguments().first()).toString() == "Playing");
+    // Status
+    if (m_playerInterface) {
+        QVariant s = m_playerInterface->property("PlaybackStatus");
+        m_isPlaying = (s.toString() == "Playing");
         emit statusChanged();
     }
 }
 
 void BluetoothManager::parseMetadataMap(const QVariantMap &metadata) {
-    // Debug des clés reçues
-    qDebug() << "--- Données Reçues ---";
+    // Debug pour voir ce qu'on reçoit
+    qDebug() << "--- Metadonnées Reçues ---";
     for(auto it = metadata.begin(); it != metadata.end(); ++it) {
-        // Conversion de la valeur en string pour affichage debug
         qDebug() << "Clé:" << it.key() << "Valeur:" << unwrapVariant(it.value()).toString();
     }
 
@@ -151,12 +165,9 @@ void BluetoothManager::parseMetadataMap(const QVariantMap &metadata) {
 
     QString newArtist;
     if (metadata.contains("xesam:artist")) {
-        QVariant artistVar = unwrapVariant(metadata["xesam:artist"]);
-        if (artistVar.canConvert<QStringList>()) {
-            newArtist = artistVar.toStringList().join(", ");
-        } else {
-            newArtist = artistVar.toString();
-        }
+        QVariant v = unwrapVariant(metadata["xesam:artist"]);
+        if (v.typeId() == QMetaType::QStringList) newArtist = v.toStringList().join(", ");
+        else newArtist = v.toString();
     } else if (metadata.contains("Artist")) {
         newArtist = unwrapVariant(metadata["Artist"]).toString();
     }
@@ -164,7 +175,6 @@ void BluetoothManager::parseMetadataMap(const QVariantMap &metadata) {
     if (!newTitle.isEmpty()) {
         m_title = newTitle;
         m_artist = newArtist;
-        qDebug() << "🎵 SUCCÈS :" << m_title << "-" << m_artist;
         emit metadataChanged();
     }
 }
