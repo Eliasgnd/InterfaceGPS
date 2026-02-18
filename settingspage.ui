@@ -42,6 +42,7 @@ QPushButton:pressed{background:#2d3245;}
       <property name="bottomMargin">
        <number>16</number>
       </property>
+
       <item>
        <widget class="QLabel" name="lblTitle">
         <property name="text">
@@ -52,6 +53,7 @@ QPushButton:pressed{background:#2d3245;}
         </property>
        </widget>
       </item>
+
       <item>
        <layout class="QHBoxLayout" name="rowTheme">
         <property name="spacing">
@@ -83,6 +85,7 @@ QPushButton:pressed{background:#2d3245;}
         </item>
        </layout>
       </item>
+
       <item>
        <layout class="QHBoxLayout" name="rowBrightness">
         <property name="spacing">
@@ -123,37 +126,53 @@ QPushButton:pressed{background:#2d3245;}
         </item>
        </layout>
       </item>
+
       <item>
        <widget class="QLabel" name="lblBluetoothTitle">
         <property name="text">
-         <string>Appareils Bluetooth</string>
+         <string>Gestion Bluetooth</string>
         </property>
         <property name="styleSheet">
          <string notr="true">QLabel{font-size:18px;font-weight:bold;margin-top:10px;}</string>
         </property>
        </widget>
       </item>
+
       <item>
        <layout class="QHBoxLayout" name="rowBluetoothButtons">
         <property name="spacing">
          <number>10</number>
         </property>
         <item>
-         <widget class="QPushButton" name="btnScan">
+         <widget class="QPushButton" name="btnVisible">
           <property name="text">
-           <string>Scanner</string>
+           <string>Rendre Visible (Appairage)</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="btnPair">
+         <widget class="QPushButton" name="btnForget">
           <property name="text">
-           <string>Connecter</string>
+           <string>Oublier l'appareil</string>
+          </property>
+          <property name="styleSheet">
+            <string notr="true">QPushButton{background-color:#852222;}</string>
           </property>
          </widget>
         </item>
        </layout>
       </item>
+
+      <item>
+       <widget class="QLabel" name="lblPaired">
+        <property name="text"><string>Appareils enregistrés :</string></property>
+        <property name="styleSheet"><string>color:#8892a0; font-size:14px;</string></property>
+       </widget>
+      </item>
+
       <item>
        <widget class="QListWidget" name="listDevices">
         <property name="maximumSize">
@@ -169,6 +188,7 @@ QListWidget::item:selected { background: #2a75ff; }</string>
         </property>
        </widget>
       </item>
+
       <item>
        <spacer name="spacerV">
         <property name="orientation">
