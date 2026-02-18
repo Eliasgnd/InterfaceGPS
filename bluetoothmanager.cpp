@@ -5,7 +5,7 @@
 #include <QDBusMetaType>
 #include <QDBusArgument>
 
-// --- FONCTION DE DÉBALLAGE ---
+// Fonction de déballage pour lire les données complexes du téléphone
 QVariant unwrapVariant(const QVariant &var) {
     if (var.userType() == qMetaTypeId<QDBusArgument>()) {
         const QDBusArgument &arg = var.value<QDBusArgument>();
@@ -42,7 +42,6 @@ BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
     connect(watcher, &QDBusServiceWatcher::serviceRegistered, this, &BluetoothManager::connectToService);
     connect(watcher, &QDBusServiceWatcher::serviceUnregistered, this, [this](const QString &service){
         if (service == m_currentService) {
-            qDebug() << "⚠️ Appareil déconnecté";
             m_title = "Déconnecté"; m_artist = ""; m_isPlaying = false;
             m_currentService.clear();
             emit metadataChanged(); emit statusChanged();
@@ -72,7 +71,7 @@ void BluetoothManager::connectToService(const QString &serviceName) {
     m_playerInterface = new QDBusInterface(serviceName, "/org/mpris/MediaPlayer2",
                                            "org.mpris.MediaPlayer2.Player", QDBusConnection::sessionBus(), this);
 
-    // CONNEXION SIGNAL : On utilise la signature générique QDBusMessage pour ne rien rater
+    // Connexion avec QDBusMessage pour ne rater aucun signal de changement
     QDBusConnection::sessionBus().connect(serviceName, "/org/mpris/MediaPlayer2",
                                           "org.freedesktop.DBus.Properties", "PropertiesChanged",
                                           this, SLOT(handleDBusSignal(QDBusMessage)));
@@ -80,7 +79,6 @@ void BluetoothManager::connectToService(const QString &serviceName) {
     updateMetadata();
 }
 
-// NOUVEAU SLOT DE RÉCEPTION UNIVERSEL
 void BluetoothManager::handleDBusSignal(const QDBusMessage &msg) {
     QList<QVariant> args = msg.arguments();
     if (args.count() < 2) return;
@@ -91,7 +89,7 @@ void BluetoothManager::handleDBusSignal(const QDBusMessage &msg) {
     QVariantMap changedProperties = unwrapVariant(args.at(1)).toMap();
 
     if (changedProperties.contains("Metadata")) {
-        qDebug() << "📢 Signal de changement de musique reçu !";
+        qDebug() << "📢 SIGNAL REÇU : Changement de musique détecté !";
         parseMetadataMap(unwrapVariant(changedProperties["Metadata"]).toMap());
     }
 
@@ -121,12 +119,11 @@ void BluetoothManager::parseMetadataMap(const QVariantMap &metadata) {
     if (v.userType() == QMetaType::QStringList) newArtist = v.toStringList().join(", ");
     else newArtist = v.toString();
 
-    // On vérifie si c'est vraiment différent avant de mettre à jour
-    if (!newTitle.isEmpty() && (newTitle != m_title || newArtist != m_artist)) {
+    if (!newTitle.isEmpty()) {
         m_title = newTitle;
         m_artist = newArtist;
-        qDebug() << "🎵 Nouvelle Musique :" << m_title << "par" << m_artist;
-        emit metadataChanged(); // C'est ce signal qui dit au QML de se rafraîchir
+        qDebug() << "🎵 Musique actuelle :" << m_title << "par" << m_artist;
+        emit metadataChanged(); // Force la mise à jour de l'UI QML
     }
 }
 
