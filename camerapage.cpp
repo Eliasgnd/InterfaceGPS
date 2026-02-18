@@ -11,24 +11,17 @@ CameraPage::CameraPage(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // MODIFICATION ICI : On utilise 'this' au lieu de 'ui->frameCamera'
-    // Cela permet d'afficher la vidéo en plein écran dans la page
-    QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0,0,0,0);
 
-    videoLabel = new QLabel(this);
-    videoLabel->setAlignment(Qt::AlignCenter);
-    videoLabel->setStyleSheet("background-color: black; color: white; font-size: 18px;");
-    videoLabel->setText("En attente du signal vidéo...\n(Port 4444)");
+    videoLabel = ui->lblVideo;
+
     videoLabel->setScaledContents(true);
+    videoLabel->setAlignment(Qt::AlignCenter);
 
-    layout->addWidget(videoLabel);
+    qDebug() << "[CAMERA] Constructeur OK. Label vidéo connecté à l'interface.";
 
-    // 2. PRÉPARATION DU RÉSEAU
     udpSocket = new QUdpSocket(this);
     connect(udpSocket, &QUdpSocket::readyRead, this, &CameraPage::processPendingDatagrams);
 }
-
 CameraPage::~CameraPage()
 {
     delete ui;
