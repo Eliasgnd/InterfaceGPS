@@ -2,124 +2,405 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtMultimedia
+import QtQuick.Shapes
+import QtQuick.Effects
 
 Item {
     id: root
     width: 800; height: 480
 
-    // --- LOGIQUE AUDIO ---
+    // --- ÉTATS ---
+    property bool isShuffle: false
+    property bool isRepeat: false
+    property bool isPlaylistOpen: false
+    readonly property color accentColor: "#2a75ff"
+
+    // --- FONCTIONS ---
+    function formatTime(ms) {
+        if (ms <= 0 || isNaN(ms)) return "00:00"
+        let totalSec = Math.floor(ms / 1000)
+        let m = Math.floor(totalSec / 60)
+        let s = totalSec % 60
+        return (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s)
+    }
+
+    // --- AUDIO ---
     MediaPlayer {
         id: player
         audioOutput: AudioOutput { volume: volumeSlider.value }
-        source: "qrc:/music/demo.mp3"
-        property var playlist: ["track1.mp3", "track2.mp3"]
+        source: "qrc:/demo.mp3"
     }
 
-    // --- UI ---
-
-    // 1. Fond sombre uni (assorti au reste de ton interface)
+    // --- FOND D'ÉCRAN ---
     Rectangle {
         anchors.fill: parent
-        color: "#171a21"
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#0f1115" }
+            GradientStop { position: 1.0; color: "#16181d" }
+        }
     }
 
-    // 2. Contenu principal
+    // --- LAYOUT PRINCIPAL ---
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 40
-        spacing: 40
+        spacing: 0
 
-        // A. REMPLACEMENT DE LA POCHETTE (Pas de JPG nécessaire)
-        Rectangle {
-            Layout.preferredWidth: 300
-            Layout.preferredHeight: 300
-            radius: 20
-            border.color: "#3d4455"
-            border.width: 2
-
-            // Un joli dégradé pour donner du relief
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#2d3245" }
-                GradientStop { position: 1.0; color: "#171a21" }
-            }
-
-            Text {
-                anchors.centerIn: parent
-                text: "🎵"
-                font.pixelSize: 100
-            }
-        }
-
-        // B. Contrôles (Droite)
-        ColumnLayout {
+        // === ZONE LECTEUR ===
+        Item {
             Layout.fillWidth: true
-            spacing: 20
+            Layout.fillHeight: true
 
-            // Titre et Artiste
-            Label {
-                text: "Titre de la chanson"
-                font.pixelSize: 32; font.bold: true; color: "white"
-            }
-            Label {
-                text: "Nom de l'artiste"
-                font.pixelSize: 22; color: "#b8c0cc"
-            }
-
-            // Barre de progression
-            Slider {
-                id: progressSlider
-                Layout.fillWidth: true
-                from: 0
-                to: player.duration > 0 ? player.duration : 1
-                value: player.position
-                onMoved: player.setPosition(value)
-            }
-
-            // Boutons de contrôle
             RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 40
+                anchors.fill: parent
+                anchors.margins: 40
+                anchors.bottomMargin: 20
+                spacing: 30
 
-                RoundButton {
-                    text: "⏮"
-                    font.pixelSize: 30
-                    onClicked: console.log("Précédent")
-                }
+                // --- 1. LE DISQUE ---
+                Item {
+                    Layout.preferredWidth: 320
+                    Layout.fillHeight: true
+                    Layout.alignment: Qt.AlignVCenter
 
-                RoundButton {
-                    text: player.playbackState === MediaPlayer.PlayingState ? "⏸" : "▶"
-                    font.pixelSize: 40
-                    Layout.preferredWidth: 80
-                    Layout.preferredHeight: 80
-                    onClicked: {
-                        if (player.playbackState === MediaPlayer.PlayingState) player.pause()
-                        else player.play()
+                    // Halo Bleu
+                    Rectangle {
+                        width: 340; height: 340
+                        anchors.centerIn: parent
+                        color: root.accentColor
+                        radius: 170
+                        opacity: 0.15
+                        layer.enabled: true
+                        layer.effect: MultiEffect { blurEnabled: true; blurMax: 40; blur: 1.0 }
+                    }
+
+                    // Vinyle
+                    Item {
+                        width: 300; height: 300
+                        anchors.centerIn: parent
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: width / 2
+                            color: "#050505"
+                            border.color: "#222"
+                            border.width: 1
+                            // Sillons
+                            Rectangle { width: 280; height: 280; radius: 140; anchors.centerIn: parent; color: "transparent"; border.color: "#1a1a1a"; border.width: 2 }
+                            Rectangle { width: 220; height: 220; radius: 110; anchors.centerIn: parent; color: "transparent"; border.color: "#1a1a1a"; border.width: 2 }
+                            Rectangle { width: 160; height: 160; radius: 80; anchors.centerIn: parent; color: "transparent"; border.color: "#1a1a1a"; border.width: 2 }
+                            // Label
+                            Rectangle {
+                                width: 110; height: 110; radius: 55
+                                anchors.centerIn: parent
+                                gradient: Gradient {
+                                    GradientStop { position: 0.0; color: "#003366" }
+                                    GradientStop { position: 1.0; color: "#2a75ff" }
+                                }
+                                Text { anchors.centerIn: parent; text: "♫"; font.pixelSize: 45; color: "white" }
+                            }
+                            // Animation
+                            RotationAnimation on rotation {
+                                from: 0; to: 360; duration: 8000; loops: Animation.Infinite
+                                running: true; paused: player.playbackState !== MediaPlayer.PlayingState
+                            }
+                        }
                     }
                 }
 
-                RoundButton {
-                    text: "⏭"
-                    font.pixelSize: 30
-                    onClicked: console.log("Suivant")
+                // --- 2. LES CONTRÔLES ---
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 0
+
+                    // Titre
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 5
+                        Label {
+                            Layout.fillWidth: true
+                            text: "On My Knees"
+                            font.pixelSize: 38; font.weight: Font.Bold; color: "white"
+                            elide: Text.ElideRight
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: "RÜFÜS DU SOL"
+                            font.pixelSize: 22; font.weight: Font.Medium; color: "#8892a0"
+                        }
+                    }
+
+                    Item { Layout.fillHeight: true; Layout.minimumHeight: 20 }
+
+                    // --- BARRE DE PROGRESSION (Version Tactile Améliorée) ---
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 0 // On gère l'espacement via la hauteur du slider
+
+                        Slider {
+                            id: progressSlider
+                            Layout.fillWidth: true
+                            // ERGONOMIE : On donne une hauteur tactile de 60px !
+                            // C'est invisible, mais ça permet de cliquer bien au dessus ou en dessous
+                            Layout.preferredHeight: 60
+
+                            from: 0
+                            to: player.duration > 0 ? player.duration : 1
+
+                            // Logique de déplacement
+                            Binding on value {
+                                when: !progressSlider.pressed
+                                value: player.position
+                            }
+                            onMoved: player.position = value
+
+                            // Fond (La barre fine) - Centrée verticalement dans la zone de 60px
+                            background: Rectangle {
+                                x: progressSlider.leftPadding
+                                // Centrage vertical parfait
+                                y: parent.height / 2 - height / 2
+                                width: progressSlider.availableWidth
+                                height: 8 // Barre un peu plus épaisse pour le visuel
+                                radius: 4
+                                color: "#2a2f3a"
+
+                                // Barre de progression colorée
+                                Rectangle {
+                                    width: progressSlider.visualPosition * parent.width
+                                    height: parent.height
+                                    color: root.accentColor
+                                    radius: 4
+                                }
+                            }
+
+                            // Poignée (Le rond) - Centrée verticalement
+                            handle: Rectangle {
+                                x: progressSlider.leftPadding + progressSlider.visualPosition * (progressSlider.availableWidth - width)
+                                y: parent.height / 2 - height / 2
+                                width: 34; height: 34; radius: 17 // Rond plus gros (34px)
+                                color: "white"
+                                // Ombre pour le relief
+                                layer.enabled: true
+                                layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowBlur: 10 }
+                            }
+                        }
+
+                        // Temps (juste en dessous de la grosse zone tactile)
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Label { text: formatTime(player.position); color: "#8892a0"; font.pixelSize: 14 }
+                            Item { Layout.fillWidth: true }
+                            Label { text: formatTime(player.duration); color: "#8892a0"; font.pixelSize: 14 }
+                        }
+                    }
+
+                    Item { Layout.fillHeight: true; Layout.minimumHeight: 20 }
+
+                    // BOUTONS DE CONTRÔLE
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignCenter
+                        spacing: 0
+
+                        // Shuffle
+                        Item { Layout.fillWidth: true }
+                        RoundButton {
+                            Layout.preferredWidth: 60; Layout.preferredHeight: 60 // Zone tactile augmentée
+                            background: Item{}
+                            contentItem: Shape {
+                                anchors.centerIn: parent; width: 24; height: 24
+                                ShapePath {
+                                    strokeWidth: 2; strokeColor: root.isShuffle ? root.accentColor : "#666"
+                                    fillColor: "transparent"; capStyle: ShapePath.RoundCap
+                                    startX: 0; startY: 18; PathCubic { control1X: 10; control1Y: 18; control2X: 14; control2Y: 6; x: 24; y: 6 }
+                                    PathMove { x: 0; y: 6 } PathCubic { control1X: 10; control1Y: 6; control2X: 14; control2Y: 18; x: 24; y: 18 }
+                                    PathMove { x: 20; y: 2 } PathLine { x: 24; y: 6 } PathLine { x: 20; y: 10 }
+                                    PathMove { x: 20; y: 14 } PathLine { x: 24; y: 18 } PathLine { x: 20; y: 22 }
+                                }
+                            }
+                            layer.enabled: root.isShuffle
+                            layer.effect: MultiEffect { shadowEnabled: true; shadowColor: root.accentColor; shadowBlur: 10 }
+                            onClicked: root.isShuffle = !root.isShuffle
+                        }
+
+                        // Prev
+                        Item { Layout.fillWidth: true }
+                        RoundButton {
+                            Layout.preferredWidth: 70; Layout.preferredHeight: 70
+                            background: Item{}
+                            contentItem: Shape {
+                                anchors.centerIn: parent; width: 28; height: 28
+                                ShapePath {
+                                    strokeWidth: 0; fillColor: "white"
+                                    startX: 26; startY: 0; PathLine { x: 26; y: 28 } PathLine { x: 4; y: 14 } PathLine { x: 26; y: 0 }
+                                    PathMove { x: 2; y: 0 } PathLine { x: 2; y: 28 } PathLine { x: 0; y: 28 } PathLine { x: 0; y: 0 }
+                                }
+                            }
+                            onClicked: console.log("Prev")
+                        }
+
+                        // PLAY / PAUSE
+                        Item { Layout.fillWidth: true }
+                        RoundButton {
+                            Layout.preferredWidth: 90; Layout.preferredHeight: 90
+                            background: Rectangle { radius: 45; color: "white" }
+                            contentItem: Item {
+                                anchors.fill: parent
+                                Row {
+                                    anchors.centerIn: parent; spacing: 7
+                                    visible: player.playbackState === MediaPlayer.PlayingState
+                                    Rectangle { width: 7; height: 28; color: "black"; radius: 1 }
+                                    Rectangle { width: 7; height: 28; color: "black"; radius: 1 }
+                                }
+                                Shape {
+                                    anchors.centerIn: parent; anchors.horizontalCenterOffset: 3
+                                    visible: player.playbackState !== MediaPlayer.PlayingState
+                                    ShapePath {
+                                        strokeWidth: 0; fillColor: "black"
+                                        startX: 0; startY: 0; PathLine { x: 0; y: 28 } PathLine { x: 24; y: 14 } PathLine { x: 0; y: 0 }
+                                    }
+                                }
+                            }
+                            onClicked: {
+                                if (player.playbackState === MediaPlayer.PlayingState) player.pause()
+                                else player.play()
+                            }
+                        }
+
+                        // Next
+                        Item { Layout.fillWidth: true }
+                        RoundButton {
+                            Layout.preferredWidth: 70; Layout.preferredHeight: 70
+                            background: Item{}
+                            contentItem: Shape {
+                                anchors.centerIn: parent; width: 28; height: 28
+                                ShapePath {
+                                    strokeWidth: 0; fillColor: "white"
+                                    startX: 2; startY: 0; PathLine { x: 2; y: 28 } PathLine { x: 24; y: 14 } PathLine { x: 2; y: 0 }
+                                    PathMove { x: 26; y: 0 } PathLine { x: 26; y: 28 } PathLine { x: 28; y: 28 } PathLine { x: 28; y: 0 }
+                                }
+                            }
+                            onClicked: console.log("Next")
+                        }
+
+                        // Repeat
+                        Item { Layout.fillWidth: true }
+                        RoundButton {
+                            Layout.preferredWidth: 60; Layout.preferredHeight: 60
+                            background: Item{}
+                            contentItem: Shape {
+                                anchors.centerIn: parent; width: 24; height: 24
+                                ShapePath {
+                                    strokeWidth: 2
+                                    strokeColor: root.isRepeat ? root.accentColor : "#666"
+                                    fillColor: "transparent"; capStyle: ShapePath.RoundCap
+                                    startX: 2; startY: 12;
+                                    PathArc { x: 22; y: 12; radiusX: 10; radiusY: 10; useLargeArc: true }
+                                    PathMove { x: 22; y: 8 } PathLine { x: 22; y: 12 } PathLine { x: 18; y: 12 }
+                                }
+                            }
+                            layer.enabled: root.isRepeat
+                            layer.effect: MultiEffect { shadowEnabled: true; shadowColor: root.accentColor; shadowBlur: 10 }
+                            onClicked: root.isRepeat = !root.isRepeat
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+
+                    Item { Layout.fillHeight: true; Layout.minimumHeight: 30 }
+
+                    // VOLUME & PLAYLIST TOGGLE
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 20
+                        Image { source: "qrc:/icons/volume_down.svg"; sourceSize.width: 24; sourceSize.height: 24; opacity: 0.7 }
+                        Slider {
+                            id: volumeSlider
+                            Layout.fillWidth: true
+                            // On agrandit aussi la zone tactile du volume
+                            Layout.preferredHeight: 50
+                            from: 0; to: 1.0; value: 0.7
+
+                            background: Rectangle {
+                                implicitHeight: 4; width: parent.width; height: 4; radius: 2; color: "#404040"
+                                anchors.centerIn: parent
+                                Rectangle { width: volumeSlider.visualPosition * parent.width; height: 4; radius: 2; color: root.accentColor }
+                            }
+                            handle: Rectangle {
+                                x: volumeSlider.leftPadding + volumeSlider.visualPosition * (volumeSlider.availableWidth - width)
+                                y: parent.height / 2 - height / 2
+                                width: 24; height: 24; radius: 12; color: "white" // Poignée plus grosse aussi
+                            }
+                        }
+                        // Bouton Playlist
+                        RoundButton {
+                            Layout.preferredWidth: 50; Layout.preferredHeight: 50
+                            background: Rectangle { color: root.isPlaylistOpen ? "#333" : "transparent"; radius: 8 }
+                            contentItem: Shape {
+                                anchors.centerIn: parent; width: 24; height: 24
+                                ShapePath {
+                                    strokeWidth: 2; strokeColor: root.isPlaylistOpen ? root.accentColor : "white"; capStyle: ShapePath.RoundCap
+                                    startX: 0; startY: 6; PathLine { x: 24; y: 6 }
+                                    PathMove { x: 0; y: 12 } PathLine { x: 24; y: 12 }
+                                    PathMove { x: 0; y: 18 } PathLine { x: 16; y: 18 }
+                                    PathMove { x: 19; y: 16 } PathLine { x: 19; y: 20 } PathLine { x: 23; y: 18 } PathLine { x: 19; y: 16 }
+                                }
+                            }
+                            onClicked: root.isPlaylistOpen = !root.isPlaylistOpen
+                        }
+                    }
                 }
             }
+        }
 
-            // Volume (On garde tes SVG ici)
-             RowLayout {
-                Image {
-                    source: "qrc:/icons/volume_down.svg"
-                    sourceSize.width: 24; sourceSize.height: 24
-                }
+        // === PANNEAU LATÉRAL (Playlist) ===
+        Rectangle {
+            id: playlistPanel
+            Layout.preferredWidth: root.isPlaylistOpen ? 300 : 0
+            Layout.fillHeight: true
+            Behavior on Layout.preferredWidth { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
 
-                Slider {
-                    id: volumeSlider
-                    Layout.fillWidth: true
-                    from: 0; to: 1.0; value: 0.7
-                }
+            clip: true
+            color: "#18181a"
+            Rectangle { width: 1; height: parent.height; color: "#333"; anchors.left: parent.left }
 
-                Image {
-                    source: "qrc:/icons/volume_up.svg"
-                    sourceSize.width: 24; sourceSize.height: 24
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 20
+                visible: playlistPanel.width > 50
+                spacing: 20
+                Label { text: "File d'attente"; font.pixelSize: 22; font.bold: true; color: "white" }
+
+                ListView {
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                    clip: true
+                    model: ListModel {
+                        ListElement { title: "On My Knees"; artist: "RÜFÜS DU SOL"; playing: true }
+                        ListElement { title: "Innerbloom"; artist: "RÜFÜS DU SOL"; playing: false }
+                        ListElement { title: "Underwater"; artist: "RÜFÜS DU SOL"; playing: false }
+                        ListElement { title: "Alive"; artist: "RÜFÜS DU SOL"; playing: false }
+                    }
+                    delegate: Item {
+                        width: ListView.view.width; height: 60
+                        RowLayout {
+                            anchors.fill: parent; spacing: 10
+                            Item {
+                                Layout.preferredWidth: 15; Layout.preferredHeight: 15
+                                visible: playing
+                                Row {
+                                    anchors.centerIn: parent; spacing: 2
+                                    Repeater {
+                                        model: 3
+                                        Rectangle { width: 3; height: 8 + Math.random()*8; color: root.accentColor; radius: 1 }
+                                    }
+                                }
+                            }
+                            Column {
+                                Layout.fillWidth: true
+                                Text { text: title; color: playing ? root.accentColor : "white"; font.pixelSize: 16; font.bold: true }
+                                Text { text: artist; color: "#888"; font.pixelSize: 12 }
+                            }
+                        }
+                        Rectangle { width: parent.width; height: 1; color: "#252525"; anchors.bottom: parent.bottom }
+                    }
                 }
             }
         }

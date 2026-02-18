@@ -2,6 +2,7 @@
     <qresource prefix="/">
         <file>map.qml</file>
         <file>MediaPlayer.qml</file>
+        <file>demo.mp3</file>
     </qresource>
     <qresource prefix="/icons">
         <file>dir_arrival.svg</file>
