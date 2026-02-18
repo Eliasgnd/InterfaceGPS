@@ -4,29 +4,55 @@
 #include <QDBusConnectionInterface>
 #include <QDBusMetaType>
 #include <QDBusArgument>
+#include <QTimer>
 
 // Fonction de déballage pour lire les données complexes du téléphone
 QVariant unwrapVariant(const QVariant &var) {
-    if (var.userType() == qMetaTypeId<QDBusArgument>()) {
-        const QDBusArgument &arg = var.value<QDBusArgument>();
-        if (arg.currentType() == QDBusArgument::VariantType) {
-            QVariant inner; arg >> inner;
-            return unwrapVariant(inner);
-        }
-        if (arg.currentType() == QDBusArgument::ArrayType) {
-            QStringList list; arg >> list;
-            return list;
-        }
-        if (arg.currentType() == QDBusArgument::MapType) {
-            QVariantMap map; arg >> map;
-            return map;
-        }
-    }
+    // QDBusVariant -> QVariant
     if (var.userType() == qMetaTypeId<QDBusVariant>()) {
         return unwrapVariant(var.value<QDBusVariant>().variant());
     }
+
+    // QDBusArgument -> QVariant (variant, map, array…)
+    if (var.userType() == qMetaTypeId<QDBusArgument>()) {
+        QDBusArgument arg = var.value<QDBusArgument>();
+
+        if (arg.currentType() == QDBusArgument::VariantType) {
+            QVariant inner;
+            arg >> inner;
+            return unwrapVariant(inner);
+        }
+
+        if (arg.currentType() == QDBusArgument::MapType) {
+            QVariantMap map;
+            arg >> map;
+            // unwrap récursif des valeurs
+            for (auto it = map.begin(); it != map.end(); ++it)
+                it.value() = unwrapVariant(it.value());
+            return map;
+        }
+
+        if (arg.currentType() == QDBusArgument::ArrayType) {
+            // Lire en QVariantList (plus général que QStringList)
+            QVariantList list;
+            arg >> list;
+            for (QVariant &v : list)
+                v = unwrapVariant(v);
+            return list;
+        }
+    }
+
+    // Si c’est déjà une QVariantList, unwrap récursif
+    if (var.typeId() == QMetaType::QVariantList) {
+        QVariantList list = var.toList();
+        for (QVariant &v : list)
+            v = unwrapVariant(v);
+        return list;
+    }
+
     return var;
 }
+
 
 BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
     qDBusRegisterMetaType<QVariantMap>();
@@ -42,11 +68,18 @@ BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
     connect(watcher, &QDBusServiceWatcher::serviceRegistered, this, &BluetoothManager::connectToService);
     connect(watcher, &QDBusServiceWatcher::serviceUnregistered, this, [this](const QString &service){
         if (service == m_currentService) {
-            m_title = "Déconnecté"; m_artist = ""; m_isPlaying = false;
+            m_title = "Déconnecté";
+            m_artist = "";
+            m_isPlaying = false;
             m_currentService.clear();
-            emit metadataChanged(); emit statusChanged();
+            emit metadataChanged();
+            emit statusChanged();
+
+            // 🔁 Re-scan et reconnexion auto
+            QTimer::singleShot(300, this, &BluetoothManager::findActivePlayer);
         }
     });
+
 
     findActivePlayer();
 }
@@ -56,7 +89,9 @@ void BluetoothManager::findActivePlayer() {
     if (!bus) return;
     QStringList services = bus->registeredServiceNames();
     for (const QString &service : services) {
-        if (service.startsWith("org.mpris.MediaPlayer2.") && !service.endsWith(".mpris-proxy")) {
+        if (service.startsWith("org.mpris.MediaPlayer2.") &&
+            !service.contains("mpris-proxy") &&
+            !service.contains("Bluetooth_Player")) {
             connectToService(service);
             return;
         }
@@ -113,17 +148,27 @@ void BluetoothManager::updateMetadata() {
 }
 
 void BluetoothManager::parseMetadataMap(const QVariantMap &metadata) {
-    QString newTitle = unwrapVariant(metadata["xesam:title"]).toString();
+    QString newTitle = unwrapVariant(metadata.value("xesam:title")).toString();
+
     QString newArtist;
-    QVariant v = unwrapVariant(metadata["xesam:artist"]);
-    if (v.userType() == QMetaType::QStringList) newArtist = v.toStringList().join(", ");
-    else newArtist = v.toString();
+    QVariant artistVar = unwrapVariant(metadata.value("xesam:artist"));
+
+    if (artistVar.canConvert<QStringList>()) {
+        newArtist = artistVar.toStringList().join(", ");
+    } else if (artistVar.typeId() == QMetaType::QVariantList) {
+        QStringList tmp;
+        for (const QVariant &it : artistVar.toList())
+            tmp << it.toString();
+        newArtist = tmp.join(", ");
+    } else {
+        newArtist = artistVar.toString();
+    }
 
     if (!newTitle.isEmpty()) {
         m_title = newTitle;
         m_artist = newArtist;
         qDebug() << "🎵 Musique actuelle :" << m_title << "par" << m_artist;
-        emit metadataChanged(); // Force la mise à jour de l'UI QML
+        emit metadataChanged();
     }
 }
 
