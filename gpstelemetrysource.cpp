@@ -88,7 +88,7 @@ void GpsTelemetrySource::onPositionUpdated(const QGeoPositionInfo &info) {
                 m_data->setHeading(course);
             }
         } else {
-            qDebug() << "GPS Fix mais PAS d'info de direction (Cap)";
+            //qDebug() << "GPS Fix mais PAS d'info de direction (Cap)";
         }
 
     } else {

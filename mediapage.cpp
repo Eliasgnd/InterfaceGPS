@@ -7,17 +7,18 @@
 MediaPage::MediaPage(QWidget *parent) : QWidget(parent), ui(new Ui::MediaPage) {
     ui->setupUi(this);
 
-    BluetoothManager* btManager = new BluetoothManager(this);
-    m_playerView->rootContext()->setContextProperty("bluetoothManager", btManager);
-
-    // Initialisation du QML
+    // 1. D'ABORD : On cr�e l'objet m_playerView
     m_playerView = new QQuickWidget(this);
     m_playerView->setResizeMode(QQuickWidget::SizeRootObjectToView);
 
-    // Charger le fichier QML créé à l'étape 2
+    // 2. ENSUITE : On peut acc�der � son rootContext() pour injecter le Bluetooth
+    BluetoothManager* btManager = new BluetoothManager(this);
+    m_playerView->rootContext()->setContextProperty("bluetoothManager", btManager);
+
+    // 3. ENFIN : On charge l'interface QML
     m_playerView->setSource(QUrl("qrc:/MediaPlayer.qml"));
 
-    // Ajouter au layout (suppose que tu as un layout vertical dans ton ui)
+    // Ajouter au layout
     ui->layoutPlayer->addWidget(m_playerView);
 }
 
