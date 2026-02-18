@@ -3,6 +3,7 @@
 #include "telemetrydata.h"
 #include <QMessageBox>
 #include <QDebug>
+#include <QProcess> // <--- Ajouté pour lancer bluetoothctl
 
 SettingsPage::SettingsPage(QWidget* parent)
     : QWidget(parent), ui(new Ui::SettingsPage)
@@ -27,13 +28,13 @@ SettingsPage::SettingsPage(QWidget* parent)
     // Par défaut : INVISIBLE mais CONNECTABLE (pour les téléphones déjà connus)
     m_localDevice->setHostMode(QBluetoothLocalDevice::HostConnectable);
 
-    // Timer pour couper la visibilité automatiquement après 2 minutes (sécurité)
+    // Timer pour couper la visibilité automatiquement après 2 minutes
     m_discoveryTimer = new QTimer(this);
     m_discoveryTimer->setSingleShot(true);
-    m_discoveryTimer->setInterval(120000); // 120 secondes = 2 minutes
+    m_discoveryTimer->setInterval(120000); // 120 secondes
     connect(m_discoveryTimer, &QTimer::timeout, this, &SettingsPage::stopDiscovery);
 
-    // Connexions Bluetooth système
+    // Connexions Bluetooth
     connect(m_localDevice, &QBluetoothLocalDevice::pairingFinished,
             this, &SettingsPage::pairingFinished);
     connect(m_localDevice, &QBluetoothLocalDevice::errorOccurred,
@@ -61,19 +62,33 @@ void SettingsPage::refreshPairedList()
 {
     ui->listDevices->clear();
 
-    // Récupère la liste des appareils déjà appairés (enregistrés par le système)
-    QList<QBluetoothAddress> pairedAddresses = m_localDevice->pairedDevices();
+    // Sur Qt6 Linux, pairedDevices() n'est plus dispo directement dans QBluetoothLocalDevice.
+    // On utilise l'outil système 'bluetoothctl' qui est standard sur Raspberry Pi OS.
+    QProcess process;
+    process.start("bluetoothctl", QStringList() << "paired-devices");
+    process.waitForFinished();
 
-    for (const QBluetoothAddress &addr : pairedAddresses) {
-        // On essaie de récupérer le statut. Le nom n'est pas toujours dispo hors connexion.
-        // On affiche l'adresse MAC pour être sûr d'identifier l'appareil.
-        QString label = addr.toString();
+    QString output = process.readAllStandardOutput();
+    QStringList lines = output.split('\n');
 
-        QListWidgetItem *item = new QListWidgetItem("📱 Appareil (" + label + ")", ui->listDevices);
-        item->setData(Qt::UserRole, label); // On stocke l'adresse pour pouvoir le supprimer
+    bool found = false;
+    for (const QString &line : lines) {
+        if (line.trimmed().isEmpty()) continue;
+
+        // Format attendu: "Device XX:XX:XX:XX:XX:XX Nom du téléphone"
+        QStringList parts = line.split(' ');
+        if (parts.size() >= 3 && parts[0] == "Device") {
+            QString mac = parts[1];
+            QString name = parts.mid(2).join(' '); // Le reste est le nom
+
+            QString label = name + " (" + mac + ")";
+            QListWidgetItem *item = new QListWidgetItem("📱 " + label, ui->listDevices);
+            item->setData(Qt::UserRole, mac); // On garde l'adresse MAC cachée
+            found = true;
+        }
     }
 
-    if (ui->listDevices->count() == 0) {
+    if (!found) {
         new QListWidgetItem("(Aucun appareil enregistré)", ui->listDevices);
         ui->btnForget->setEnabled(false);
     } else {
@@ -83,11 +98,9 @@ void SettingsPage::refreshPairedList()
 
 void SettingsPage::onVisibleClicked()
 {
-    // Si le bouton est coché (enfoncé), on devient visible
     if (ui->btnVisible->isChecked()) {
         setDiscoverable(true);
     } else {
-        // Sinon on redevient invisible manuellement
         setDiscoverable(false);
     }
 }
@@ -95,14 +108,11 @@ void SettingsPage::onVisibleClicked()
 void SettingsPage::setDiscoverable(bool enable)
 {
     if (enable) {
-        // On devient VISIBLE pour tous
         m_localDevice->setHostMode(QBluetoothLocalDevice::HostDiscoverable);
         ui->btnVisible->setText("Visible (120s max)...");
         ui->btnVisible->setChecked(true);
-        // On lance le chrono
         m_discoveryTimer->start();
     } else {
-        // On redevient INVISIBLE (mais connectable par ceux qui nous connaissent)
         m_localDevice->setHostMode(QBluetoothLocalDevice::HostConnectable);
         ui->btnVisible->setText("Rendre Visible (Appairage)");
         ui->btnVisible->setChecked(false);
@@ -112,7 +122,6 @@ void SettingsPage::setDiscoverable(bool enable)
 
 void SettingsPage::stopDiscovery()
 {
-    // Appelé automatiquement par le timer quand le temps est écoulé
     setDiscoverable(false);
 }
 
@@ -120,11 +129,10 @@ void SettingsPage::pairingFinished(const QBluetoothAddress &address, QBluetoothL
 {
     Q_UNUSED(address);
     if (status == QBluetoothLocalDevice::Paired) {
-        // C'est ici qu'on "dégage" les autres :
-        // Dès qu'un téléphone a fini de se connecter, on coupe la visibilité !
+        // Appairage réussi -> on redevient invisible
         setDiscoverable(false);
 
-        // On met à jour la liste pour voir le nouveau téléphone
+        // On rafraichit la liste
         refreshPairedList();
 
         QMessageBox::information(this, "Bluetooth", "Appareil connecté avec succès !");
@@ -137,15 +145,21 @@ void SettingsPage::onForgetClicked()
     if (!item) return;
 
     QString addressStr = item->data(Qt::UserRole).toString();
-    if (addressStr.isEmpty()) return; // Cas du message "(Aucun appareil)"
+    if (addressStr.isEmpty()) return;
 
     QBluetoothAddress address(addressStr);
 
-    // On supprime l'appairage (Oublier l'appareil)
-    m_localDevice->requestUnpairing(address, QBluetoothLocalDevice::Unpaired);
+    // CORRECTION QT6 : Pour "oublier", on demande un appairage avec le statut "Unpaired"
+    m_localDevice->requestPairing(address, QBluetoothLocalDevice::Unpaired);
 
-    // On enlève de la liste visuelle
-    refreshPairedList();
+    // Petit délai pour laisser le système traiter la commande, puis on rafraichit
+    // (Ou on supprime juste la ligne pour l'instant pour que ce soit réactif)
+    delete item;
+
+    if (ui->listDevices->count() == 0) {
+        new QListWidgetItem("(Aucun appareil enregistré)", ui->listDevices);
+        ui->btnForget->setEnabled(false);
+    }
 }
 
 void SettingsPage::errorOccurred(QBluetoothLocalDevice::Error error)
