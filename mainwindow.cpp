@@ -14,6 +14,8 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
 {
     ui->setupUi(this);
 
+    this->setFixedSize(1280, 800);
+
     // 1. Création des pages
     m_home = new HomePage(this);
     m_nav = new NavigationPage(this);

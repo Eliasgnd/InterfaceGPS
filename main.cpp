@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     gpsSource.start("/dev/serial0");
 
     MainWindow w(&telemetry);
-    w.showFullScreen();
+    w.show();
 
     return a.exec();
 }
