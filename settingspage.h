@@ -2,6 +2,7 @@
 #include <QWidget>
 #include <QBluetoothLocalDevice>
 #include <QTimer>
+#include <QSet> // <--- AJOUT
 
 namespace Ui { class SettingsPage; }
 class TelemetryData;
@@ -18,22 +19,24 @@ signals:
     void brightnessChanged(int value);
 
 private slots:
-    // Slots de l'interface
     void onVisibleClicked();
     void onForgetClicked();
 
-    // Slots Bluetooth
-    void pairingFinished(const QBluetoothAddress &address, QBluetoothLocalDevice::Pairing status);
     void errorOccurred(QBluetoothLocalDevice::Error error);
-    void stopDiscovery(); // Appelé auto par le timer pour cacher le bluetooth
+    void stopDiscovery();
+    void refreshPairedList(); // On va l'appeler avec le timer
 
 private:
-    void refreshPairedList();
     void setDiscoverable(bool enable);
 
     Ui::SettingsPage* ui;
     TelemetryData* m_t=nullptr;
 
     QBluetoothLocalDevice *m_localDevice;
-    QTimer *m_discoveryTimer; // Pour couper la visibilité auto
+    QTimer *m_discoveryTimer;
+
+    // --- NOUVELLES VARIABLES DE SURVEILLANCE ---
+    QTimer *m_pollTimer;
+    QString m_lastPairedOutput;
+    QSet<QString> m_knownMacs;
 };
