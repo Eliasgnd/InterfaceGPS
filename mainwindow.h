@@ -7,6 +7,7 @@ class NavigationPage;
 class CameraPage;
 class SettingsPage;
 class MediaPage; // <--- AJOUTER CETTE LIGNE (Forward Declaration)
+class HomeAssistant;
 
 namespace Ui { class MainWindow; }
 
@@ -22,6 +23,7 @@ private slots:
     void goCam();
     void goMedia();    // <--- AJOUTER CETTE LIGNE (Le slot existe maintenant)
     void goSettings();
+    void goHomeAssistant();
     void updateTopBarAndAlert();
 
 private:
@@ -33,4 +35,5 @@ private:
     CameraPage* m_cam=nullptr;
     MediaPage* m_media=nullptr;       // <--- AJOUTER CETTE LIGNE
     SettingsPage* m_settings=nullptr;
+    HomeAssistant* m_ha = nullptr;
 };

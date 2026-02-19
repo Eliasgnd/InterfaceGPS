@@ -1,5 +1,5 @@
 # Supprime les anciennes versions et mets exactement ceci :
-QT += core gui widgets positioning location quickwidgets qml quick serialport virtualkeyboard multimedia quickcontrols2 network dbus bluetooth
+QT += core gui widgets positioning location quickwidgets qml quick serialport virtualkeyboard multimedia quickcontrols2 network dbus bluetooth webenginewidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -14,6 +14,7 @@ SOURCES += \
     camerapage.cpp \
     clavier.cpp \
     gpstelemetrysource.cpp \
+    homeassistant.cpp \
     homepage.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -28,6 +29,7 @@ HEADERS += \
     camerapage.h \
     clavier.h \
     gpstelemetrysource.h \
+    homeassistant.h \
     homepage.h \
     mainwindow.h \
     mediapage.h \

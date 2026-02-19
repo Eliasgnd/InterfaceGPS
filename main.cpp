@@ -9,6 +9,17 @@
 #include <QCoreApplication>
 
 int main(int argc, char *argv[]) {
+
+    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+
+    qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
+            "--disable-web-security "
+            "--allow-running-insecure-content "
+            "--autoplay-policy=no-user-gesture-required "
+            "--ignore-certificate-errors "
+            "--no-sandbox "
+            "--disable-features=IsolateOrigins,site-per-process");
+
     // Force le style compatible avec la personnalisation QML
     QQuickStyle::setStyle("Fusion");
 

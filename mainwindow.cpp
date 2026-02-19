@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "homeassistant.h"
 #include "ui_mainwindow.h"
 #include "telemetrydata.h"
 #include "homepage.h"
@@ -22,6 +23,7 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     m_cam = new CameraPage(this);
     m_settings = new SettingsPage(this);
     m_media = new MediaPage(this);
+    m_ha = new HomeAssistant(this);
 
     // 2. Connexion de la télémétrie (Sauf pour la caméra vidéo qui n'en a pas besoin)
     m_home->bindTelemetry(m_t);
@@ -35,6 +37,7 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     ui->stackedPages->addWidget(m_cam);
     ui->stackedPages->addWidget(m_media);
     ui->stackedPages->addWidget(m_settings);
+    ui->stackedPages->addWidget(m_ha);
 
     // Page de démarrage
     ui->stackedPages->setCurrentWidget(m_home);
@@ -44,6 +47,7 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     connect(ui->btnNav, &QPushButton::clicked, this, &MainWindow::goNav);
     connect(ui->btnCam, &QPushButton::clicked, this, &MainWindow::goCam);
     connect(ui->btnSettings, &QPushButton::clicked, this, &MainWindow::goSettings);
+    connect(ui->btnHA, &QPushButton::clicked, this, &MainWindow::goHomeAssistant);
 
     // Assure-toi d'avoir créé le bouton 'btnMedia' dans mainwindow.ui
     connect(ui->btnMedia, &QPushButton::clicked, this, &MainWindow::goMedia);
@@ -124,4 +128,15 @@ void MainWindow::updateTopBarAndAlert()
                                           : "QFrame{background:#6B4B16;border-radius:10px;} QLabel{color:white;}"
                                       );
     }
+}
+
+void MainWindow::goHomeAssistant() {
+    m_cam->stopStream(); // Arrêt de la caméra important !
+
+    // On change de page
+    ui->stackedPages->setCurrentWidget(m_ha);
+
+    // On force le rafraîchissement système
+    QApplication::processEvents();
+    m_ha->setFocus();
 }
