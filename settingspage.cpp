@@ -40,11 +40,6 @@ SettingsPage::SettingsPage(QWidget* parent)
     connect(m_localDevice, &QBluetoothLocalDevice::errorOccurred,
             this, &SettingsPage::errorOccurred);
 
-    connect(m_localDevice, &QBluetoothLocalDevice::pairingDisplayConfirmation,
-            this, [this](const QBluetoothAddress &address, QString pin) {
-                qDebug() << "Auto-acceptation du code PIN:" << pin << "pour l'appareil" << address.toString();
-                m_localDevice->pairingConfirmation(true); // "Oui, j'accepte"
-            });
 
     // Connexions Boutons
     connect(ui->btnVisible, &QPushButton::clicked, this, &SettingsPage::onVisibleClicked);
@@ -114,12 +109,16 @@ void SettingsPage::onVisibleClicked()
 void SettingsPage::setDiscoverable(bool enable)
 {
     if (enable) {
-        m_localDevice->setHostMode(QBluetoothLocalDevice::HostDiscoverable);
+        // Au lieu d'utiliser Qt, on utilise la vraie commande système qui marche à 100%
+        QProcess::execute("bluetoothctl", QStringList() << "discoverable" << "on");
+
         ui->btnVisible->setText("Visible (120s max)...");
         ui->btnVisible->setChecked(true);
         m_discoveryTimer->start();
     } else {
-        m_localDevice->setHostMode(QBluetoothLocalDevice::HostConnectable);
+        // On coupe la visibilité via le système
+        QProcess::execute("bluetoothctl", QStringList() << "discoverable" << "off");
+
         ui->btnVisible->setText("Rendre Visible (Appairage)");
         ui->btnVisible->setChecked(false);
         m_discoveryTimer->stop();
