@@ -50,7 +50,7 @@ void SettingsPage::bindTelemetry(TelemetryData* t) { m_t = t; Q_UNUSED(m_t); }
 void SettingsPage::refreshPairedList()
 {
     QProcess process;
-    process.start("bluetoothctl", QStringList() << "paired-devices");
+    process.start("bluetoothctl", QStringList() << "devices");
     process.waitForFinished();
     QString output = process.readAllStandardOutput().trimmed();
 
