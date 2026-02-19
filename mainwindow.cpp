@@ -9,12 +9,13 @@
 #include "mediapage.h"
 
 #include <QStackedWidget>
+#include <QHBoxLayout>
+#include <QPushButton>
 
 MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     : QMainWindow(parent), ui(new Ui::MainWindow), m_t(telemetry)
 {
     ui->setupUi(this);
-
     this->setFixedSize(1280, 800);
 
     // 1. Création des pages
@@ -25,22 +26,33 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     m_media = new MediaPage(this);
     m_ha = new HomeAssistant(this);
 
-    // 2. Connexion de la télémétrie (Sauf pour la caméra vidéo qui n'en a pas besoin)
+    // Initialisation de la mémoire Split Screen par défaut
+    m_lastLeftApp = m_nav;
+    m_lastRightApp = m_media;
+
+    // 2. Connexion de la télémétrie
     m_home->bindTelemetry(m_t);
     m_nav->bindTelemetry(m_t);
-    // m_cam->bindTelemetry(m_t); // <--- SUPPRIMÉ car n'existe plus dans la nouvelle CameraPage
     m_settings->bindTelemetry(m_t);
 
-    // 3. Ajout des pages au StackedWidget (Vérifie que c'est bien 'stackedPages' dans le .ui)
-    ui->stackedPages->addWidget(m_home);
-    ui->stackedPages->addWidget(m_nav);
-    ui->stackedPages->addWidget(m_cam);
-    ui->stackedPages->addWidget(m_media);
-    ui->stackedPages->addWidget(m_settings);
-    ui->stackedPages->addWidget(m_ha);
+    // 3. Création du conteneur Split-Screen
+    QWidget* mainContainer = new QWidget(this);
+    m_mainLayout = new QHBoxLayout(mainContainer);
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+    m_mainLayout->setSpacing(10);
 
-    // Page de démarrage
-    ui->stackedPages->setCurrentWidget(m_home);
+    // Ajout de toutes les pages dans ce layout horizontal
+    m_mainLayout->addWidget(m_home);
+    m_mainLayout->addWidget(m_nav);
+    m_mainLayout->addWidget(m_cam);
+    m_mainLayout->addWidget(m_media);
+    m_mainLayout->addWidget(m_settings);
+    m_mainLayout->addWidget(m_ha);
+
+    // Remplacement de l'ancien QStackedWidget
+    int stackIndex = ui->verticalLayoutRoot->indexOf(ui->stackedPages);
+    ui->verticalLayoutRoot->insertWidget(stackIndex, mainContainer);
+    ui->stackedPages->hide();
 
     // 4. Connexion des boutons du menu bas
     connect(ui->btnHome, &QPushButton::clicked, this, &MainWindow::goHome);
@@ -48,9 +60,13 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     connect(ui->btnCam, &QPushButton::clicked, this, &MainWindow::goCam);
     connect(ui->btnSettings, &QPushButton::clicked, this, &MainWindow::goSettings);
     connect(ui->btnHA, &QPushButton::clicked, this, &MainWindow::goHomeAssistant);
-
-    // Assure-toi d'avoir créé le bouton 'btnMedia' dans mainwindow.ui
     connect(ui->btnMedia, &QPushButton::clicked, this, &MainWindow::goMedia);
+
+    // --- CRÉATION DU BOUTON SPLIT ---
+    m_btnSplit = new QPushButton("Split", this);
+    m_btnSplit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    ui->bottomNavLayout->insertWidget(3, m_btnSplit);
+    connect(m_btnSplit, &QPushButton::clicked, this, &MainWindow::goSplit);
 
     // Liens rapides depuis la Home
     connect(m_home, &HomePage::requestNavigation, this, &MainWindow::goNav);
@@ -64,6 +80,9 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     connect(m_t, &TelemetryData::reverseChanged, this, &MainWindow::updateTopBarAndAlert);
     connect(m_t, &TelemetryData::alertLevelChanged, this, &MainWindow::updateTopBarAndAlert);
     connect(m_t, &TelemetryData::alertTextChanged, this, &MainWindow::updateTopBarAndAlert);
+
+    // Page de démarrage
+    displayPages(m_home);
 }
 
 MainWindow::~MainWindow()
@@ -71,41 +90,80 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+// --- LOGIQUE D'AFFICHAGE DYNAMIQUE (GÉNÉRIQUE) ---
+void MainWindow::displayPages(QWidget* p1, QWidget* p2)
+{
+    m_isSplitMode = (p2 != nullptr);
+
+    // NOUVEAU : On prévient la page Media de se réduire (enlever le vinyle) si on est en Split
+    m_media->setCompactMode(m_isSplitMode);
+
+    // Parcourt tous les widgets du layout automatiquement
+    for (int i = 0; i < m_mainLayout->count(); ++i) {
+        QWidget* w = m_mainLayout->itemAt(i)->widget();
+        if (w) {
+            bool shouldShow = (w == p1 || w == p2);
+            w->setVisible(shouldShow);
+
+            // Si on est en Split et que le widget doit être affiché, on partage l'écran
+            if (shouldShow && m_isSplitMode) {
+                // p1 (GPS) prend 60% de la place (6), p2 (Media) prend 40% (4)
+                if (w == p1) {
+                    m_mainLayout->setStretchFactor(w, 6);
+                } else if (w == p2) {
+                    m_mainLayout->setStretchFactor(w, 4);
+                }
+            }
+        }
+    }
+}
+
 // --- NAVIGATION ---
+
+void MainWindow::goSplit()
+{
+    m_cam->stopStream();
+    // Affiche les deux dernières apps utilisées
+    displayPages(m_lastLeftApp, m_lastRightApp);
+}
 
 void MainWindow::goHome()
 {
-    // Important : Couper le flux vidéo si on vient de la caméra
     m_cam->stopStream();
-
-    ui->stackedPages->setCurrentWidget(m_home);
+    displayPages(m_home);
 }
 
 void MainWindow::goNav()
 {
     m_cam->stopStream();
-    ui->stackedPages->setCurrentWidget(m_nav);
-}
-
-void MainWindow::goCam()
-{
-    // 1. Afficher la page Caméra
-    ui->stackedPages->setCurrentWidget(m_cam);
-
-    // 2. Démarrer la réception vidéo UDP
-    m_cam->startStream();
+    m_lastLeftApp = m_nav;  // On enregistre ce GPS comme dernière App Gauche
+    displayPages(m_nav);
 }
 
 void MainWindow::goMedia()
 {
     m_cam->stopStream();
-    ui->stackedPages->setCurrentWidget(m_media);
+    m_lastRightApp = m_media; // On enregistre ce Media comme dernière App Droite
+    displayPages(m_media);
+}
+
+void MainWindow::goCam()
+{
+    displayPages(m_cam);
+    m_cam->startStream();
 }
 
 void MainWindow::goSettings()
 {
     m_cam->stopStream();
-    ui->stackedPages->setCurrentWidget(m_settings);
+    displayPages(m_settings);
+}
+
+void MainWindow::goHomeAssistant() {
+    m_cam->stopStream();
+    displayPages(m_ha);
+    QApplication::processEvents();
+    m_ha->setFocus();
 }
 
 // --- BARRE DE STATUT ---
@@ -128,15 +186,4 @@ void MainWindow::updateTopBarAndAlert()
                                           : "QFrame{background:#6B4B16;border-radius:10px;} QLabel{color:white;}"
                                       );
     }
-}
-
-void MainWindow::goHomeAssistant() {
-    m_cam->stopStream(); // Arrêt de la caméra important !
-
-    // On change de page
-    ui->stackedPages->setCurrentWidget(m_ha);
-
-    // On force le rafraîchissement système
-    QApplication::processEvents();
-    m_ha->setFocus();
 }

@@ -2,16 +2,17 @@
 #include "ui_mediapage.h"
 #include <QVBoxLayout>
 #include <QQmlContext>
+#include <QQuickItem> // <-- Indispensable pour communiquer avec le QML
 #include "bluetoothmanager.h"
 
 MediaPage::MediaPage(QWidget *parent) : QWidget(parent), ui(new Ui::MediaPage) {
     ui->setupUi(this);
 
-    // 1. D'ABORD : On cr�e l'objet m_playerView
+    // 1. D'ABORD : On crée l'objet m_playerView
     m_playerView = new QQuickWidget(this);
     m_playerView->setResizeMode(QQuickWidget::SizeRootObjectToView);
 
-    // 2. ENSUITE : On peut acc�der � son rootContext() pour injecter le Bluetooth
+    // 2. ENSUITE : On peut accéder à son rootContext() pour injecter le Bluetooth
     BluetoothManager* btManager = new BluetoothManager(this);
     m_playerView->rootContext()->setContextProperty("bluetoothManager", btManager);
 
@@ -23,3 +24,10 @@ MediaPage::MediaPage(QWidget *parent) : QWidget(parent), ui(new Ui::MediaPage) {
 }
 
 MediaPage::~MediaPage() { delete ui; }
+
+// --- NOUVEAU : Transmission du mode au QML ---
+void MediaPage::setCompactMode(bool compact) {
+    if (m_playerView && m_playerView->rootObject()) {
+        m_playerView->rootObject()->setProperty("isCompactMode", compact);
+    }
+}

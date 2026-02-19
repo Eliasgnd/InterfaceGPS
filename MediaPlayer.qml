@@ -11,6 +11,9 @@ Item {
 
     readonly property color accentColor: "#2a75ff"
 
+    // --- NOUVEAU : Propriété pilotée par le C++ ---
+    property bool isCompactMode: false
+
     function formatTime(ms) {
         if (ms <= 0 || isNaN(ms)) return "00:00"
         let totalSec = Math.floor(ms / 1000)
@@ -72,8 +75,11 @@ Item {
         anchors.bottomMargin: 20
         spacing: 30
 
-        // ... (PARTIE DISQUE / VINYLE RESTE IDENTIQUE) ...
+        // --- PARTIE DISQUE / VINYLE ---
         Item {
+            // --- NOUVEAU : Masquer en mode compact ---
+            visible: !root.isCompactMode
+
             Layout.preferredWidth: 320
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignVCenter
@@ -112,7 +118,7 @@ Item {
         ColumnLayout {
             Layout.fillWidth: true; Layout.fillHeight: true; spacing: 0
 
-            // Titres et Artistes (inchangé)
+            // Titres et Artistes
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 6
                 Label { Layout.fillWidth: true; text: bluetoothManager.title; font.pixelSize: 38; font.weight: Font.Bold; color: "white"; elide: Text.ElideRight }
@@ -122,23 +128,20 @@ Item {
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 18 }
 
-            // ---- BARRE DE PROGRESSION (MODIFIÉE) ----
+            // ---- BARRE DE PROGRESSION ----
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 8
 
-                // ON UTILISE PROGRESSBAR AU LIEU DE SLIDER
-                // C'est non-interactif par nature, parfait pour de l'affichage.
                 ProgressBar {
                     id: timeBar
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 8 // Hauteur fine
+                    Layout.preferredHeight: 8
 
                     from: 0
                     to: Math.max(1, bluetoothManager.durationMs)
                     value: bluetoothManager.durationMs > 0 ? root.uiPositionMs : 0
 
-                    // Personnalisation visuelle pour ressembler à ton ancien slider
                     background: Rectangle {
                         implicitWidth: 200
                         implicitHeight: 8
@@ -159,7 +162,6 @@ Item {
                     }
                 }
 
-                // Labels Temps
                 RowLayout {
                     Layout.fillWidth: true
                     Label {
@@ -176,7 +178,7 @@ Item {
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 18 }
 
-            // ---- Contrôles (Boutons) : inchangé ----
+            // ---- Contrôles (Boutons) ----
             RowLayout {
                 Layout.fillWidth: true; Layout.alignment: Qt.AlignCenter; spacing: 0
                 Item { Layout.fillWidth: true }
@@ -218,7 +220,7 @@ Item {
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 18 }
 
-            // ---- Volume (UI only) : inchangé ----
+            // ---- Volume ----
             RowLayout {
                 Layout.fillWidth: true; spacing: 20
                 Image { source: "qrc:/icons/volume_down.svg"; sourceSize.width: 24; sourceSize.height: 24; opacity: 0.7 }

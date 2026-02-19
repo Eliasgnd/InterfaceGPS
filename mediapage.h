@@ -10,6 +10,7 @@ public:
     explicit MediaPage(QWidget* parent=nullptr);
     ~MediaPage();
 
+    void setCompactMode(bool compact);
 private:
     Ui::MediaPage* ui;
     QQuickWidget* m_playerView;
