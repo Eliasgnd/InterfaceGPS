@@ -39,6 +39,9 @@ private:
     QTimer *m_pollTimer;
     QString m_lastPairedOutput;
     QSet<QString> m_knownMacs;
-
+    //pour 1 seul appareil connecter en même temps
+    void showAutoClosingMessage(const QString &title, const QString &text, int timeoutMs);
     QString m_lastActiveMac;
+
+
 };
