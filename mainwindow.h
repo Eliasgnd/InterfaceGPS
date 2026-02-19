@@ -28,6 +28,7 @@ private slots:
     void goHomeAssistant();
     void goSplit();
     void updateTopBarAndAlert();
+    void toggleSplitAndHome();
 
 private:
     Ui::MainWindow* ui;

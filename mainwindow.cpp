@@ -55,18 +55,23 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     ui->stackedPages->hide();
 
     // 4. Connexion des boutons du menu bas
-    connect(ui->btnHome, &QPushButton::clicked, this, &MainWindow::goHome);
+    ui->btnHome->hide(); // ON CACHE L'ANCIEN BOUTON HOME DU .UI
+    // connect(ui->btnHome, &QPushButton::clicked, this, &MainWindow::goHome); // Plus besoin de le connecter
+
     connect(ui->btnNav, &QPushButton::clicked, this, &MainWindow::goNav);
     connect(ui->btnCam, &QPushButton::clicked, this, &MainWindow::goCam);
     connect(ui->btnSettings, &QPushButton::clicked, this, &MainWindow::goSettings);
     connect(ui->btnHA, &QPushButton::clicked, this, &MainWindow::goHomeAssistant);
     connect(ui->btnMedia, &QPushButton::clicked, this, &MainWindow::goMedia);
 
-    // --- CRÉATION DU BOUTON SPLIT ---
-    m_btnSplit = new QPushButton("Split", this);
-    m_btnSplit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    ui->bottomNavLayout->insertWidget(3, m_btnSplit);
-    connect(m_btnSplit, &QPushButton::clicked, this, &MainWindow::goSplit);
+    // --- NOUVEAU BOUTON SPLIT / HOME (STYLE ANDROID AUTO) ---
+    m_btnSplit = new QPushButton(this);
+    m_btnSplit->setFixedSize(70, 70); // On force une taille carrée pour faire une belle icône
+    m_btnSplit->setCursor(Qt::PointingHandCursor);
+
+    // On l'insère à l'index 0 (Tout à gauche de la barre de navigation, à la place de l'ancien btnHome)
+    ui->bottomNavLayout->insertWidget(0, m_btnSplit);
+    connect(m_btnSplit, &QPushButton::clicked, this, &MainWindow::toggleSplitAndHome);
 
     // Liens rapides depuis la Home
     connect(m_home, &HomePage::requestNavigation, this, &MainWindow::goNav);
@@ -95,8 +100,22 @@ void MainWindow::displayPages(QWidget* p1, QWidget* p2)
 {
     m_isSplitMode = (p2 != nullptr);
 
-    // NOUVEAU : On prévient la page Media de se réduire (enlever le vinyle) si on est en Split
+    // On prévient la page Media de se réduire (enlever le vinyle) si on est en Split
     m_media->setCompactMode(m_isSplitMode);
+
+    // --- GESTION DU LOGO DU BOUTON (Dashboard vs Lanceur d'apps) ---
+    bool isHomeVisible = (p1 == m_home || p2 == m_home);
+    if (isHomeVisible) {
+        // Si on est sur l'accueil, le bouton affiche l'icône du Split (Dashboard)
+        m_btnSplit->setText("◫");
+    } else {
+        // Si on est dans une app (GPS, Musique) ou en Split, le bouton affiche le lanceur d'apps (Home)
+        m_btnSplit->setText("▦");
+    }
+
+    // Style du bouton Android Auto
+    m_btnSplit->setStyleSheet("QPushButton { font-size: 38px; color: white; background-color: transparent; border-radius: 12px; }"
+                              "QPushButton:pressed { background-color: #2a2f3a; }");
 
     // Parcourt tous les widgets du layout automatiquement
     for (int i = 0; i < m_mainLayout->count(); ++i) {
@@ -115,6 +134,18 @@ void MainWindow::displayPages(QWidget* p1, QWidget* p2)
                 }
             }
         }
+    }
+}
+
+// --- NOUVELLE FONCTION DE BASCULEMENT ANDROID AUTO ---
+void MainWindow::toggleSplitAndHome()
+{
+    if (m_home->isVisible()) {
+        // Si on est sur la Home, on lance le Split Screen avec nos 2 dernières apps
+        goSplit();
+    } else {
+        // Sinon (qu'on soit en plein écran ou en split), on retourne à la Home
+        goHome();
     }
 }
 
