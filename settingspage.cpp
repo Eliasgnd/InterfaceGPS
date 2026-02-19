@@ -127,15 +127,21 @@ void SettingsPage::stopDiscovery()
 
 void SettingsPage::pairingFinished(const QBluetoothAddress &address, QBluetoothLocalDevice::Pairing status)
 {
-    Q_UNUSED(address);
     if (status == QBluetoothLocalDevice::Paired) {
-        // Appairage réussi -> on redevient invisible
+        // 1. On redevient invisible
         setDiscoverable(false);
 
-        // On rafraichit la liste
+        // 2. SUR LINUX : Il faut absolument "Trust" (Faire confiance) à l'appareil
+        // sinon la connexion audio (A2DP) va bloquer ou timeout.
+        QProcess::execute("bluetoothctl", QStringList() << "trust" << address.toString());
+
+        // Optionnel : On peut même forcer la connexion dans la foulée
+        // QProcess::execute("bluetoothctl", QStringList() << "connect" << address.toString());
+
+        // 3. On met à jour l'affichage
         refreshPairedList();
 
-        QMessageBox::information(this, "Bluetooth", "Appareil connecté avec succès !");
+        QMessageBox::information(this, "Bluetooth", "Appareil connecté et autorisé avec succès !");
     }
 }
 
