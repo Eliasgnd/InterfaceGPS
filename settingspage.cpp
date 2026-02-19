@@ -40,6 +40,12 @@ SettingsPage::SettingsPage(QWidget* parent)
     connect(m_localDevice, &QBluetoothLocalDevice::errorOccurred,
             this, &SettingsPage::errorOccurred);
 
+    connect(m_localDevice, &QBluetoothLocalDevice::pairingDisplayConfirmation,
+            this, [this](const QBluetoothAddress &address, QString pin) {
+                qDebug() << "Auto-acceptation du code PIN:" << pin << "pour l'appareil" << address.toString();
+                m_localDevice->pairingConfirmation(true); // "Oui, j'accepte"
+            });
+
     // Connexions Boutons
     connect(ui->btnVisible, &QPushButton::clicked, this, &SettingsPage::onVisibleClicked);
     connect(ui->btnForget, &QPushButton::clicked, this, &SettingsPage::onForgetClicked);
