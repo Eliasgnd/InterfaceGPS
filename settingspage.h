@@ -39,4 +39,6 @@ private:
     QTimer *m_pollTimer;
     QString m_lastPairedOutput;
     QSet<QString> m_knownMacs;
+
+    QString m_lastActiveMac;
 };

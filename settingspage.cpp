@@ -68,18 +68,18 @@ void SettingsPage::refreshPairedList()
     process.waitForFinished();
     QString output = process.readAllStandardOutput().trimmed();
 
-    // On sauvegarde la MAC actuellement sélectionnée pour la restaurer après le rafraîchissement
     QString selectedMac;
     if (ui->listDevices->currentItem()) {
         selectedMac = ui->listDevices->currentItem()->data(Qt::UserRole).toString();
     }
 
-    // Note : On ne compare plus m_lastPairedOutput car l'état de connexion (Connected: yes/no)
-    // peut changer sans que la liste des appareils (devices) ne change.
     ui->listDevices->clear();
 
     QStringList lines = output.split('\n');
     bool found = false;
+
+    QStringList connectedMacs; // Liste de tous les appareils actuellement connectés
+    QString newcomerMac;       // Le petit nouveau qui vient d'arriver
 
     for (const QString &line : lines) {
         if (line.trimmed().isEmpty()) continue;
@@ -89,44 +89,62 @@ void SettingsPage::refreshPairedList()
             QString mac = parts[1];
             QString name = parts.mid(2).join(' ');
 
-            // --- VÉRIFICATION DE L'ÉTAT DE CONNEXION ---
+            // Vérification de l'état
             QProcess infoProcess;
             infoProcess.start("bluetoothctl", QStringList() << "info" << mac);
             infoProcess.waitForFinished();
             QString infoOutput = infoProcess.readAllStandardOutput();
             bool isConnected = infoOutput.contains("Connected: yes");
 
-            // Enregistrement automatique en "trust" pour les nouveaux appareils
-            if (!m_knownMacs.contains(mac)) {
-                m_knownMacs.insert(mac);
-                QProcess::execute("bluetoothctl", QStringList() << "trust" << mac);
-
-                if (ui->btnVisible->isChecked()) {
-                    setDiscoverable(false);
+            if (isConnected) {
+                connectedMacs << mac;
+                // Si cet appareil est connecté mais n'était pas l'actif au tour précédent,
+                // c'est lui le "dernier arrivé"
+                if (mac != m_lastActiveMac) {
+                    newcomerMac = mac;
                 }
             }
 
-            // Construction du label
-            QString label = name + " (" + mac + ")";
-            if (isConnected) {
-                label += " (connecté)";
+            // --- LOGIQUE TRUST AUTO (votre code existant) ---
+            if (!m_knownMacs.contains(mac)) {
+                m_knownMacs.insert(mac);
+                QProcess::execute("bluetoothctl", QStringList() << "trust" << mac);
+                if (ui->btnVisible->isChecked()) setDiscoverable(false);
             }
+
+            // Construction de l'item UI
+            QString label = name + " (" + mac + ")";
+            if (isConnected) label += " (connecté)";
 
             QListWidgetItem *item = new QListWidgetItem("📱 " + label, ui->listDevices);
-            item->setData(Qt::UserRole, mac); // Stockage de la MAC pour suppression
-
-            // --- MISE EN COULEUR SI CONNECTÉ ---
-            if (isConnected) {
-                item->setForeground(Qt::green); // Texte en vert
-            }
-
-            // Restaurer la sélection si c'était cet appareil
-            if (mac == selectedMac) {
-                ui->listDevices->setCurrentItem(item);
-            }
+            item->setData(Qt::UserRole, mac);
+            if (isConnected) item->setForeground(Qt::green);
+            if (mac == selectedMac) ui->listDevices->setCurrentItem(item);
 
             found = true;
         }
+    }
+
+    // --- GESTION DE L'EXCLUSIVITÉ (Dernier arrivé, premier servi) ---
+
+    // Si on a plusieurs connectés et qu'un nouveau a été détecté
+    if (connectedMacs.size() > 1 && !newcomerMac.isEmpty()) {
+        for (const QString &macToDisconnect : connectedMacs) {
+            if (macToDisconnect != newcomerMac) {
+                // On déconnecte l'ancien
+                QProcess::execute("bluetoothctl", QStringList() << "disconnect" << macToDisconnect);
+                qDebug() << "Exclusivité : Déconnexion de l'ancien appareil" << macToDisconnect;
+            }
+        }
+        m_lastActiveMac = newcomerMac;
+    }
+    // S'il n'y a qu'un seul connecté, on le mémorise simplement
+    else if (connectedMacs.size() == 1) {
+        m_lastActiveMac = connectedMacs.first();
+    }
+    // Si plus personne n'est connecté
+    else if (connectedMacs.isEmpty()) {
+        m_lastActiveMac = "";
     }
 
     if (!found) {
