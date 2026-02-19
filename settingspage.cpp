@@ -24,7 +24,7 @@ SettingsPage::SettingsPage(QWidget* parent)
 
     m_localDevice = new QBluetoothLocalDevice(this);
 
-    // Timer pour la visibilité Bluetooth
+    // Timer pour la visibilité Bluetooth (120 secondes)
     m_discoveryTimer = new QTimer(this);
     m_discoveryTimer->setSingleShot(true);
     m_discoveryTimer->setInterval(120000);
@@ -49,6 +49,7 @@ SettingsPage::SettingsPage(QWidget* parent)
     });
 
     // --- TIMER DE SURVEILLANCE ---
+    // Vérifie l'état des appareils toutes les 2 secondes
     m_pollTimer = new QTimer(this);
     connect(m_pollTimer, &QTimer::timeout, this, &SettingsPage::refreshPairedList);
     m_pollTimer->start(2000);
@@ -67,12 +68,14 @@ void SettingsPage::refreshPairedList()
     process.waitForFinished();
     QString output = process.readAllStandardOutput().trimmed();
 
-    // Optimisation : ne pas rafraîchir si la sortie système n'a pas changé
-    if (output == m_lastPairedOutput && ui->listDevices->count() > 0) {
-        return;
+    // On sauvegarde la MAC actuellement sélectionnée pour la restaurer après le rafraîchissement
+    QString selectedMac;
+    if (ui->listDevices->currentItem()) {
+        selectedMac = ui->listDevices->currentItem()->data(Qt::UserRole).toString();
     }
 
-    m_lastPairedOutput = output;
+    // Note : On ne compare plus m_lastPairedOutput car l'état de connexion (Connected: yes/no)
+    // peut changer sans que la liste des appareils (devices) ne change.
     ui->listDevices->clear();
 
     QStringList lines = output.split('\n');
@@ -86,7 +89,14 @@ void SettingsPage::refreshPairedList()
             QString mac = parts[1];
             QString name = parts.mid(2).join(' ');
 
-            // Enregistrement automatique en mode "trust" pour les nouveaux appareils
+            // --- VÉRIFICATION DE L'ÉTAT DE CONNEXION ---
+            QProcess infoProcess;
+            infoProcess.start("bluetoothctl", QStringList() << "info" << mac);
+            infoProcess.waitForFinished();
+            QString infoOutput = infoProcess.readAllStandardOutput();
+            bool isConnected = infoOutput.contains("Connected: yes");
+
+            // Enregistrement automatique en "trust" pour les nouveaux appareils
             if (!m_knownMacs.contains(mac)) {
                 m_knownMacs.insert(mac);
                 QProcess::execute("bluetoothctl", QStringList() << "trust" << mac);
@@ -96,9 +106,25 @@ void SettingsPage::refreshPairedList()
                 }
             }
 
+            // Construction du label
             QString label = name + " (" + mac + ")";
+            if (isConnected) {
+                label += " (connecté)";
+            }
+
             QListWidgetItem *item = new QListWidgetItem("📱 " + label, ui->listDevices);
             item->setData(Qt::UserRole, mac); // Stockage de la MAC pour suppression
+
+            // --- MISE EN COULEUR SI CONNECTÉ ---
+            if (isConnected) {
+                item->setForeground(Qt::green); // Texte en vert
+            }
+
+            // Restaurer la sélection si c'était cet appareil
+            if (mac == selectedMac) {
+                ui->listDevices->setCurrentItem(item);
+            }
+
             found = true;
         }
     }
@@ -140,7 +166,8 @@ void SettingsPage::onForgetClicked()
     if (!item) return;
 
     QString mac = item->data(Qt::UserRole).toString();
-    QString name = item->text().remove("📱 "); // Nettoyage du nom pour la popup
+    // Nettoyage du nom pour la popup (on enlève l'icône et le statut de connexion)
+    QString name = item->text().remove("📱 ").remove(" (connecté)");
     if (mac.isEmpty()) return;
 
     // --- BOITE DE CONFIRMATION ---
@@ -154,7 +181,7 @@ void SettingsPage::onForgetClicked()
     // Suppression effective via le système
     QProcess::execute("bluetoothctl", QStringList() << "remove" << mac);
 
-    // Mise à jour immédiate de l'interface et du cache
+    // Mise à jour immédiate
     m_knownMacs.remove(mac);
     m_lastPairedOutput.clear();
     ui->listDevices->clear();
