@@ -10,19 +10,21 @@ SettingsPage::SettingsPage(QWidget* parent)
 {
     ui->setupUi(this);
 
+    // Connexion du slider de luminosité
     connect(ui->sliderBrightness, &QSlider::valueChanged, this, [this](int v){
         ui->lblBrightnessValue->setText(QString::number(v));
         emit brightnessChanged(v);
     });
 
+    // Connexion du changement de thème
     connect(ui->cmbTheme, qOverload<int>(&QComboBox::currentIndexChanged),
             this, [this](int idx){
                 emit themeChanged(idx);
             });
 
-
     m_localDevice = new QBluetoothLocalDevice(this);
 
+    // Timer pour la visibilité Bluetooth
     m_discoveryTimer = new QTimer(this);
     m_discoveryTimer->setSingleShot(true);
     m_discoveryTimer->setInterval(120000);
@@ -34,8 +36,19 @@ SettingsPage::SettingsPage(QWidget* parent)
     connect(ui->btnVisible, &QPushButton::clicked, this, &SettingsPage::onVisibleClicked);
     connect(ui->btnForget, &QPushButton::clicked, this, &SettingsPage::onForgetClicked);
 
-    // --- LE TIMER DE SURVEILLANCE ---
-    // Il va vérifier la liste des appareils toutes les 2 secondes
+    // --- LOGIQUE D'ACTIVATION DU BOUTON SUPPRIMER ---
+    // Le bouton est désactivé par défaut
+    ui->btnForget->setEnabled(false);
+
+    // Il ne s'active que si un appareil valide est sélectionné dans la liste
+    connect(ui->listDevices, &QListWidget::itemSelectionChanged, this, [this](){
+        QListWidgetItem *item = ui->listDevices->currentItem();
+        // On vérifie que l'item existe et possède une adresse MAC (Data Role)
+        bool hasSelection = item && !item->data(Qt::UserRole).toString().isEmpty();
+        ui->btnForget->setEnabled(hasSelection);
+    });
+
+    // --- TIMER DE SURVEILLANCE ---
     m_pollTimer = new QTimer(this);
     connect(m_pollTimer, &QTimer::timeout, this, &SettingsPage::refreshPairedList);
     m_pollTimer->start(2000);
@@ -54,7 +67,7 @@ void SettingsPage::refreshPairedList()
     process.waitForFinished();
     QString output = process.readAllStandardOutput().trimmed();
 
-    // Si la liste n'a pas changé depuis la dernière seconde, on ne fait rien pour éviter que l'écran clignote
+    // Optimisation : ne pas rafraîchir si la sortie système n'a pas changé
     if (output == m_lastPairedOutput && ui->listDevices->count() > 0) {
         return;
     }
@@ -73,14 +86,11 @@ void SettingsPage::refreshPairedList()
             QString mac = parts[1];
             QString name = parts.mid(2).join(' ');
 
-            // Si on détecte un nouvel appareil qu'on ne connaissait pas avant
+            // Enregistrement automatique en mode "trust" pour les nouveaux appareils
             if (!m_knownMacs.contains(mac)) {
                 m_knownMacs.insert(mac);
-
-                // On s'assure qu'il est en "trust" (au cas où le système l'aurait oublié)
                 QProcess::execute("bluetoothctl", QStringList() << "trust" << mac);
 
-                // Si on était en mode "Recherche", on arrête tout !
                 if (ui->btnVisible->isChecked()) {
                     setDiscoverable(false);
                 }
@@ -88,7 +98,7 @@ void SettingsPage::refreshPairedList()
 
             QString label = name + " (" + mac + ")";
             QListWidgetItem *item = new QListWidgetItem("📱 " + label, ui->listDevices);
-            item->setData(Qt::UserRole, mac);
+            item->setData(Qt::UserRole, mac); // Stockage de la MAC pour suppression
             found = true;
         }
     }
@@ -96,30 +106,22 @@ void SettingsPage::refreshPairedList()
     if (!found) {
         new QListWidgetItem("(Aucun appareil enregistré)", ui->listDevices);
         ui->btnForget->setEnabled(false);
-    } else {
-        ui->btnForget->setEnabled(true);
     }
 }
 
 void SettingsPage::onVisibleClicked()
 {
-    if (ui->btnVisible->isChecked()) {
-        setDiscoverable(true);
-    } else {
-        setDiscoverable(false);
-    }
+    setDiscoverable(ui->btnVisible->isChecked());
 }
 
 void SettingsPage::setDiscoverable(bool enable)
 {
     if (enable) {
-        // Commande système pure pour être visible
         QProcess::execute("bluetoothctl", QStringList() << "discoverable" << "on");
         ui->btnVisible->setText("Visible (120s max)...");
         ui->btnVisible->setChecked(true);
         m_discoveryTimer->start();
     } else {
-        // Commande système pure pour être invisible
         QProcess::execute("bluetoothctl", QStringList() << "discoverable" << "off");
         ui->btnVisible->setText("Rendre Visible (Appairage)");
         ui->btnVisible->setChecked(false);
@@ -138,14 +140,25 @@ void SettingsPage::onForgetClicked()
     if (!item) return;
 
     QString mac = item->data(Qt::UserRole).toString();
+    QString name = item->text().remove("📱 "); // Nettoyage du nom pour la popup
     if (mac.isEmpty()) return;
 
-    // Demande au système de supprimer l'appareil
+    // --- BOITE DE CONFIRMATION ---
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Supprimer l'appareil",
+                                  QString("Voulez-vous vraiment oublier l'appareil %1 ?").arg(name),
+                                  QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::No) return;
+
+    // Suppression effective via le système
     QProcess::execute("bluetoothctl", QStringList() << "remove" << mac);
 
-    // On l'enlève de notre liste "connue" et on force le rafraîchissement
+    // Mise à jour immédiate de l'interface et du cache
     m_knownMacs.remove(mac);
     m_lastPairedOutput.clear();
+    ui->listDevices->clear();
+    ui->btnForget->setEnabled(false);
 
     refreshPairedList();
 }
