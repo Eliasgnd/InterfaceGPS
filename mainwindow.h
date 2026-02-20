@@ -2,9 +2,10 @@
 #include <QMainWindow>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QSettings> // <--- AJOUT POUR LA SAUVEGARDE
 
 class TelemetryData;
-class HomePage;
+// class HomePage; <--- SUPPRIMÉ
 class NavigationPage;
 class CameraPage;
 class SettingsPage;
@@ -20,7 +21,6 @@ public:
     ~MainWindow();
 
 private slots:
-    void goHome();
     void goNav();
     void goCam();
     void goMedia();
@@ -34,22 +34,24 @@ private:
     Ui::MainWindow* ui;
     TelemetryData* m_t=nullptr;
 
-    HomePage* m_home=nullptr;
+    // HomePage* m_home=nullptr; <--- SUPPRIMÉ
     NavigationPage* m_nav=nullptr;
     CameraPage* m_cam=nullptr;
     MediaPage* m_media=nullptr;
     SettingsPage* m_settings=nullptr;
     HomeAssistant* m_ha = nullptr;
 
-    // --- NOUVEAUTÉS POUR LE SPLIT SCREEN ---
     QHBoxLayout* m_mainLayout = nullptr;
     QPushButton* m_btnSplit = nullptr;
     bool m_isSplitMode = false;
 
-    // MÉMOIRE DES DERNIÈRES APPLICATIONS OUVERTES
-    QWidget* m_lastLeftApp = nullptr;  // Ex: Navigation, Waze, Maps
-    QWidget* m_lastRightApp = nullptr; // Ex: Musique, Spotify, Téléphone
+    QWidget* m_lastLeftApp = nullptr;
+    QWidget* m_lastRightApp = nullptr;
 
-    // Fonction maîtresse dynamique
     void displayPages(QWidget* page1, QWidget* page2 = nullptr);
+
+    // --- NOUVELLES FONCTIONS DE MÉMOIRE ---
+    void saveSplitState();
+    QString widgetToString(QWidget* w);
+    QWidget* stringToWidget(const QString& name);
 };
