@@ -1,3 +1,7 @@
+// Rôle architectural: façade widget de la navigation cartographique.
+// Responsabilités: relier la vue QML de carte, la recherche d'adresses et le clavier virtuel.
+// Dépendances principales: QWidget, QQuickWidget, Clavier, TelemetryData et services HTTP Mapbox.
+
 #ifndef NAVIGATIONPAGE_H
 #define NAVIGATIONPAGE_H
 
@@ -13,7 +17,7 @@ class TelemetryData;
 class QCompleter;
 class QStringListModel;
 class QTimer;
-class Clavier; // <--- 1. AJOUTE CETTE LIGNE ICI (Forward Declaration)
+class Clavier;
 
 class NavigationPage : public QWidget {
     Q_OBJECT
@@ -44,8 +48,8 @@ private:
     bool m_ignoreTextUpdate = false;
     QVariantList m_lastCalculatedRoute;
 
-    // 2. VÉRIFIE QUE CETTE LIGNE EST BIEN ÉCRITE (Erreur C2143 venait d'ici)
+
     Clavier* m_currentClavier = nullptr;
 };
 
-#endif // NAVIGATIONPAGE_H
+#endif

@@ -1,3 +1,7 @@
+// Rôle architectural: implémentation de la gestion des réglages et du Bluetooth local.
+// Responsabilités: scanner les périphériques, appliquer les règles d'exclusivité et exposer les retours d'état à l'utilisateur.
+// Dépendances principales: bluetoothctl via QProcess, timers de surveillance et UI Qt Widgets.
+
 #include "settingspage.h"
 #include "ui_settingspage.h"
 #include "telemetrydata.h"
@@ -11,16 +15,16 @@ SettingsPage::SettingsPage(QWidget* parent)
 {
     ui->setupUi(this);
 
-    // Initialisation de la variable de suivi
+
     m_lastActiveMac = "";
 
-    // Connexion du slider de luminosité
+
     connect(ui->sliderBrightness, &QSlider::valueChanged, this, [this](int v){
         ui->lblBrightnessValue->setText(QString::number(v));
         emit brightnessChanged(v);
     });
 
-    // Connexion du changement de thème
+
     connect(ui->cmbTheme, qOverload<int>(&QComboBox::currentIndexChanged),
             this, [this](int idx){
                 emit themeChanged(idx);
@@ -28,7 +32,7 @@ SettingsPage::SettingsPage(QWidget* parent)
 
     m_localDevice = new QBluetoothLocalDevice(this);
 
-    // Timer pour la visibilité Bluetooth (120 secondes)
+
     m_discoveryTimer = new QTimer(this);
     m_discoveryTimer->setSingleShot(true);
     m_discoveryTimer->setInterval(120000);
@@ -40,7 +44,7 @@ SettingsPage::SettingsPage(QWidget* parent)
     connect(ui->btnVisible, &QPushButton::clicked, this, &SettingsPage::onVisibleClicked);
     connect(ui->btnForget, &QPushButton::clicked, this, &SettingsPage::onForgetClicked);
 
-    // --- LOGIQUE D'ACTIVATION DU BOUTON SUPPRIMER ---
+
     ui->btnForget->setEnabled(false);
     connect(ui->listDevices, &QListWidget::itemSelectionChanged, this, [this](){
         QListWidgetItem *item = ui->listDevices->currentItem();
@@ -48,7 +52,7 @@ SettingsPage::SettingsPage(QWidget* parent)
         ui->btnForget->setEnabled(hasSelection);
     });
 
-    // --- TIMER DE SURVEILLANCE ---
+
     m_pollTimer = new QTimer(this);
     connect(m_pollTimer, &QTimer::timeout, this, &SettingsPage::refreshPairedList);
     m_pollTimer->start(2000);
@@ -60,7 +64,6 @@ SettingsPage::~SettingsPage() { delete ui; }
 
 void SettingsPage::bindTelemetry(TelemetryData* t) { m_t = t; Q_UNUSED(m_t); }
 
-// Fonction utilitaire pour afficher un message qui se ferme tout seul
 void SettingsPage::showAutoClosingMessage(const QString &title, const QString &text, int timeoutMs)
 {
     QMessageBox *msgBox = new QMessageBox(this);
@@ -70,7 +73,7 @@ void SettingsPage::showAutoClosingMessage(const QString &title, const QString &t
     msgBox->setIcon(QMessageBox::Information);
     msgBox->show();
 
-    // Fermeture automatique après timeoutMs
+
     QTimer::singleShot(timeoutMs, msgBox, [msgBox]() {
         msgBox->close();
         msgBox->deleteLater();
@@ -79,6 +82,7 @@ void SettingsPage::showAutoClosingMessage(const QString &title, const QString &t
 
 void SettingsPage::refreshPairedList()
 {
+    // Source de vérité Bluetooth: bluetoothctl est interrogé périodiquement pour refléter l'état système réel.
     QProcess process;
     process.start("bluetoothctl", QStringList() << "devices");
     process.waitForFinished();
@@ -96,9 +100,10 @@ void SettingsPage::refreshPairedList()
 
     QString newcomerMac;
     QString newcomerName;
-    QMap<QString, QString> connectedDevices; // MAC -> Nom
+    QMap<QString, QString> connectedDevices;
 
     for (const QString &line : lines) {
+        // Format attendu: "Device <MAC> <Nom>". Les lignes invalides sont ignorées.
         if (line.trimmed().isEmpty()) continue;
 
         QStringList parts = line.split(' ');
@@ -106,7 +111,7 @@ void SettingsPage::refreshPairedList()
             QString mac = parts[1];
             QString name = parts.mid(2).join(' ');
 
-            // Vérification de l'état de connexion via bluetoothctl info
+
             QProcess infoProcess;
             infoProcess.start("bluetoothctl", QStringList() << "info" << mac);
             infoProcess.waitForFinished();
@@ -115,21 +120,21 @@ void SettingsPage::refreshPairedList()
 
             if (isConnected) {
                 connectedDevices.insert(mac, name);
-                // Si c'est un appareil connecté qui n'était pas l'actif au dernier scan
+
                 if (mac != m_lastActiveMac) {
                     newcomerMac = mac;
                     newcomerName = name;
                 }
             }
 
-            // Trust automatique
+
             if (!m_knownMacs.contains(mac)) {
                 m_knownMacs.insert(mac);
                 QProcess::execute("bluetoothctl", QStringList() << "trust" << mac);
                 if (ui->btnVisible->isChecked()) setDiscoverable(false);
             }
 
-            // Construction de l'affichage
+
             QString label = name + " (" + mac + ")";
             if (isConnected) label += " (connecté)";
 
@@ -147,11 +152,12 @@ void SettingsPage::refreshPairedList()
         }
     }
 
-    // --- LOGIQUE D'EXCLUSIVITÉ (Dernier arrivé, premier servi) ---
+
+    // Règle métier: un seul appareil audio actif pour éviter les conflits A2DP/HFP.
     if (connectedDevices.size() > 1 && !newcomerMac.isEmpty()) {
         QString oldDeviceName;
 
-        // On déconnecte tous ceux qui ne sont pas le "petit nouveau"
+
         QMapIterator<QString, QString> i(connectedDevices);
         while (i.hasNext()) {
             i.next();
@@ -162,7 +168,7 @@ void SettingsPage::refreshPairedList()
             }
         }
 
-        // Alerte visuelle temporaire
+
         showAutoClosingMessage("Changement d'appareil",
                                QString("Priorité à '%1'.\n'%2' a été déconnecté.")
                                    .arg(newcomerName).arg(oldDeviceName),
@@ -194,6 +200,7 @@ void SettingsPage::setDiscoverable(bool enable)
         QProcess::execute("bluetoothctl", QStringList() << "discoverable" << "on");
         ui->btnVisible->setText("Visible (120s max)...");
         ui->btnVisible->setChecked(true);
+        // Fenêtre courte pour limiter l'exposition Bluetooth permanente du véhicule.
         m_discoveryTimer->start();
     } else {
         QProcess::execute("bluetoothctl", QStringList() << "discoverable" << "off");

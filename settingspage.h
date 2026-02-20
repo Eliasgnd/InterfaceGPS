@@ -1,8 +1,12 @@
+// Rôle architectural: page de configuration système et Bluetooth utilisateur.
+// Responsabilités: piloter les préférences UI et administrer la liste des périphériques appairés.
+// Dépendances principales: QWidget, QProcess, QTimer et widgets de formulaire Qt.
+
 #pragma once
 #include <QWidget>
 #include <QBluetoothLocalDevice>
 #include <QTimer>
-#include <QSet> // <--- AJOUT
+#include <QSet>
 
 namespace Ui { class SettingsPage; }
 class TelemetryData;
@@ -24,7 +28,7 @@ private slots:
 
     void errorOccurred(QBluetoothLocalDevice::Error error);
     void stopDiscovery();
-    void refreshPairedList(); // On va l'appeler avec le timer
+    void refreshPairedList();
 
 private:
     void setDiscoverable(bool enable);
@@ -35,11 +39,11 @@ private:
     QBluetoothLocalDevice *m_localDevice;
     QTimer *m_discoveryTimer;
 
-    // --- NOUVELLES VARIABLES DE SURVEILLANCE ---
+
     QTimer *m_pollTimer;
     QString m_lastPairedOutput;
     QSet<QString> m_knownMacs;
-    //pour 1 seul appareil connecter en même temps
+
     void showAutoClosingMessage(const QString &title, const QString &text, int timeoutMs);
     QString m_lastActiveMac;
 

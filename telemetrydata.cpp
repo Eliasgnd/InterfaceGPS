@@ -1,3 +1,7 @@
+// Rôle architectural: implémentation du modèle de données télémétriques.
+// Responsabilités: appliquer la validation minimale des valeurs et émettre les notifications de changement.
+// Dépendances principales: QtGlobal/QtMath et contrat de propriétés de TelemetryData.
+
 #include "telemetrydata.h"
 #include <QtGlobal>
 #include <QtMath>
@@ -42,4 +46,3 @@ void TelemetryData::setHeading(double v){
     m_heading = v;
     emit headingChanged();
 }
-

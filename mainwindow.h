@@ -1,11 +1,14 @@
+// Rôle architectural: orchestrateur principal des pages du tableau de bord véhicule.
+// Responsabilités: gérer la navigation, la persistance d'état et la composition des modules fonctionnels.
+// Dépendances principales: QMainWindow, pages métiers, TelemetryData et QSettings.
+
 #pragma once
 #include <QMainWindow>
 #include <QHBoxLayout>
 #include <QPushButton>
-#include <QSettings> // <--- AJOUT POUR LA SAUVEGARDE
+#include <QSettings>
 
 class TelemetryData;
-// class HomePage; <--- SUPPRIMÉ
 class NavigationPage;
 class CameraPage;
 class SettingsPage;
@@ -34,7 +37,7 @@ private:
     Ui::MainWindow* ui;
     TelemetryData* m_t=nullptr;
 
-    // HomePage* m_home=nullptr; <--- SUPPRIMÉ
+
     NavigationPage* m_nav=nullptr;
     CameraPage* m_cam=nullptr;
     MediaPage* m_media=nullptr;
@@ -50,7 +53,7 @@ private:
 
     void displayPages(QWidget* page1, QWidget* page2 = nullptr);
 
-    // --- NOUVELLES FONCTIONS DE MÉMOIRE ---
+
     void saveSplitState();
     QString widgetToString(QWidget* w);
     QWidget* stringToWidget(const QString& name);

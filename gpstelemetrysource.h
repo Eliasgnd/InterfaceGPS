@@ -1,7 +1,11 @@
+// Rôle architectural: source de télémétrie GPS branchée sur un flux NMEA série.
+// Responsabilités: démarrer/arrêter la lecture et publier les mises à jour de position vers TelemetryData.
+// Dépendances principales: QSerialPort, QNmeaPositionInfoSource et QGeoPositionInfo.
+
 #pragma once
 #include <QObject>
 #include <QSerialPort>
-#include <QNmeaPositionInfoSource> // <--- Le moteur GPS de Qt
+#include <QNmeaPositionInfoSource>
 #include <QGeoPositionInfo>
 
 class TelemetryData;
@@ -16,11 +20,11 @@ public:
     void stop();
 
 private slots:
-    // On remplace onReadyRead par ce slot officiel de Qt Positioning
+
     void onPositionUpdated(const QGeoPositionInfo &info);
 
 private:
     TelemetryData* m_data = nullptr;
     QSerialPort* m_serial = nullptr;
-    QNmeaPositionInfoSource* m_nmeaSource = nullptr; // <--- L'objet magique
+    QNmeaPositionInfoSource* m_nmeaSource = nullptr;
 };

@@ -1,3 +1,7 @@
+// Rôle architectural: modèle central de télémétrie partagé entre modules C++ et QML.
+// Responsabilités: stocker les mesures courantes et notifier les changements via propriétés Qt.
+// Dépendances principales: QObject, propriétés Q_PROPERTY et couche de signalisation Qt.
+
 #pragma once
 #include <QObject>
 #include <QVariantList>

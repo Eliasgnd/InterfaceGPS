@@ -1,3 +1,7 @@
+// Rôle architectural: conteneur widget de l'expérience média QML.
+// Responsabilités: héberger la vue QML et injecter les dépendances C++ nécessaires.
+// Dépendances principales: QWidget, QQuickWidget et BluetoothManager.
+
 #pragma once
 #include <QWidget>
 #include <QQuickWidget>

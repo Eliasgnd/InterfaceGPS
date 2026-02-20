@@ -1,9 +1,13 @@
+// Rôle architectural: page UI dédiée au flux caméra embarqué.
+// Responsabilités: gérer le cycle de vie de l'écoute UDP et l'affichage du dernier frame reçu.
+// Dépendances principales: QWidget, QUdpSocket, QLabel et l'UI générée par Qt Designer.
+
 #ifndef CAMERAPAGE_H
 #define CAMERAPAGE_H
 
 #include <QWidget>
-#include <QUdpSocket> // Pour recevoir les données
-#include <QLabel>     // Pour afficher l'image
+#include <QUdpSocket>
+#include <QLabel>
 
 namespace Ui {
 class CameraPage;
@@ -18,11 +22,11 @@ public:
     ~CameraPage();
 
 public slots:
-    void startStream(); // Appelé quand on arrive sur la page
-    void stopStream();  // Appelé quand on quitte la page
+    void startStream();
+    void stopStream();
 
 private slots:
-    void processPendingDatagrams(); // Appelé à chaque réception d'image
+    void processPendingDatagrams();
 
 private:
     Ui::CameraPage *ui;
@@ -30,4 +34,4 @@ private:
     QLabel *videoLabel;
 };
 
-#endif // CAMERAPAGE_H
+#endif

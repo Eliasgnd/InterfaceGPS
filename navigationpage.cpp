@@ -1,7 +1,11 @@
+// Rôle architectural: implémentation de la page de navigation GPS.
+// Responsabilités: piloter la carte QML, interroger les services de géocodage et synchroniser les suggestions de recherche.
+// Dépendances principales: QQuickWidget/QQmlContext, QNetworkAccessManager et clavier virtuel.
+
 #include "navigationpage.h"
 #include "ui_navigationpage.h"
 #include "telemetrydata.h"
-#include "clavier.h" // <--- INCLUSION DE TON CLAVIER
+#include "clavier.h"
 #include <QCompleter>
 #include <QStringListModel>
 #include <QTimer>
@@ -15,9 +19,10 @@
 NavigationPage::NavigationPage(QWidget* parent)
     : QWidget(parent), ui(new Ui::NavigationPage)
 {
+    // Cette page joue le rôle de contrôleur: elle coordonne QML, réseau et clavier virtuel.
     ui->setupUi(this);
 
-    // --- 1. CONFIGURATION AUTOCOMPLETION ---
+
     m_suggestionsModel = new QStringListModel(this);
     m_searchCompleter = new QCompleter(m_suggestionsModel, this);
     m_searchCompleter->setCaseSensitivity(Qt::CaseInsensitive);
@@ -25,8 +30,8 @@ NavigationPage::NavigationPage(QWidget* parent)
     m_searchCompleter->setCompletionMode(QCompleter::UnfilteredPopupCompletion);
     ui->editSearch->setCompleter(m_searchCompleter);
 
-    // --- 2. INSTALLATION DE L'EVENT FILTER ---
-    // On dit à editSearch de nous envoyer ses événements (clics, etc.)
+
+
     ui->editSearch->installEventFilter(this);
 
     m_suggestionDebounceTimer = new QTimer(this);
@@ -45,7 +50,8 @@ NavigationPage::NavigationPage(QWidget* parent)
         }
     });
 
-    // --- 3. CONFIGURATION CARTE QML ---
+
+    // QQuickWidget héberge la carte QML dans la hiérarchie QWidget existante.
     m_mapView = new QQuickWidget(this);
     QString mapboxKey = QString::fromLocal8Bit(qgetenv("MAPBOX_API_KEY")).trimmed();
     QString hereKey = QString::fromLocal8Bit(qgetenv("HERE_API_KEY")).trimmed();
@@ -70,7 +76,7 @@ NavigationPage::NavigationPage(QWidget* parent)
     ui->lblMap->setVisible(false);
     ui->mapLayout->addWidget(m_mapView);
 
-    // --- 4. BOUTONS ---
+
     connect(ui->btnZoomIn, &QPushButton::clicked, this, [this](){
         if (m_mapView && m_mapView->rootObject()) {
             double z = m_mapView->rootObject()->property("carZoom").toDouble();
@@ -96,30 +102,31 @@ NavigationPage::NavigationPage(QWidget* parent)
     });
 }
 
-// --- GESTION DU CLIC SUR LA BARRE DE RECHERCHE ---
 bool NavigationPage::eventFilter(QObject *obj, QEvent *event)
 {
+    // On intercepte le focus de la barre de recherche pour imposer le clavier applicatif.
     if (obj == ui->editSearch && event->type() == QEvent::MouseButtonPress) {
         openVirtualKeyboard();
-        return true; // On arrête l'événement ici pour ne pas avoir le focus standard
+        return true;
     }
     return QWidget::eventFilter(obj, event);
 }
 
 void NavigationPage::openVirtualKeyboard()
 {
+    // Le clavier est modal pour éviter la coexistence avec le clavier système Qt.
     Clavier clavier(this);
-    m_currentClavier = &clavier; // On enregistre le pointeur
+    m_currentClavier = &clavier;
 
-    // On pré-remplit le clavier avec ce qui est déjà écrit
+
     clavier.setInitialText(ui->editSearch->text());
 
-    // --- CONNEXION TEMPS RÉEL ---
-    // Dès qu'on tape sur le clavier, on met à jour la barre de recherche invisible
-    // et on déclenche la recherche Mapbox
+
+
+
     connect(&clavier, &Clavier::textChangedExternally, this, [this](const QString &text){
         ui->editSearch->setText(text);
-        // On force le déclenchement de la recherche de suggestions
+
         triggerSuggestionsSearch();
     });
 
@@ -129,21 +136,22 @@ void NavigationPage::openVirtualKeyboard()
         requestRouteForText(res);
     }
 
-    m_currentClavier = nullptr; // On nettoie le pointeur après fermeture
+    m_currentClavier = nullptr;
 }
 
 NavigationPage::~NavigationPage(){ delete ui; }
 
 void NavigationPage::onSuggestionsReceived(const QString& jsonSuggestions) {
+    // Deux sorties sont alimentées: la liste Qt Widgets et la liste du clavier custom.
     QJsonDocument doc = QJsonDocument::fromJson(jsonSuggestions.toUtf8());
     QJsonArray arr = doc.array();
     QStringList suggestions;
     for(const auto& val : arr) suggestions << val.toString();
 
-    // 1. Mise à jour de la liste standard (si le clavier est fermé)
+
     m_suggestionsModel->setStringList(suggestions);
 
-    // 2. NOUVEAU : Si le clavier est ouvert, on lui envoie les suggestions !
+
     if (m_currentClavier) {
         m_currentClavier->displaySuggestions(suggestions);
     }
@@ -186,6 +194,7 @@ void NavigationPage::onSuggestionChosen(const QString& suggestion) {
 }
 
 void NavigationPage::triggerSuggestionsSearch() {
+    // Le debouncing côté QTimer limite les appels Mapbox pendant la frappe rapide.
     QString query = ui->editSearch->text().trimmed();
     if (query.size() < 3) return;
     if (m_mapView && m_mapView->rootObject()) {

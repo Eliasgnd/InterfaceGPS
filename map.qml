@@ -1,3 +1,7 @@
+// Rôle architectural: vue cartographique principale utilisée par la page navigation.
+// Responsabilités: afficher la position véhicule, gérer itinéraire/traffic et orchestrer les interactions utilisateur.
+// Dépendances principales: Qt Location, Qt Positioning, API Mapbox Directions/Geocoding et clavier virtuel.
+
 import QtQuick
 import QtLocation
 import QtPositioning
@@ -7,9 +11,11 @@ import QtQuick.VirtualKeyboard
 
 Item {
     id: root
+
+    // Cette vue centralise les états de navigation consommés par le C++ et le QML.
     width: 600; height: 400
 
-    // --- PROPRIÉTÉS ---
+
     property double carLat: 48.2715
     property double carLon: 4.0645
     property double carZoom: 17
@@ -17,27 +23,27 @@ Item {
     property double carSpeed: 0
     property bool autoFollow: true
 
-    // Zoom Intelligent
+
     property bool enableSpeedZoom: true
     property bool internalZoomChange: false
 
-    // NAVIGATION
+
     property string nextInstruction: ""
     property string distanceToNextTurn: ""
     property int nextManeuverDirection: 0
 
-    // GUIDAGE AVANCÉ
+
     property var routeSteps: []
     property int currentStepIndex: 0
     property double lastDistToStep: 999999
 
-    // STATISTIQUES
+
     property string remainingDistString: "-- km"
     property string remainingTimeString: "-- min"
     property string arrivalTimeString: "--:--"
     property real realRouteSpeed: 13.8
 
-    // TRACÉ ET TRAFIC MULTICOLORE
+
     property var routePoints: []
     property var finalDestination: null
     property bool isRecalculating: false
@@ -47,14 +53,15 @@ Item {
 
     property var routeSpeedLimits: []
     property var routeCongestions: []
-    property var trafficSegments: [] // Ne gère que l'orange et le rouge
+    property var trafficSegments: []
 
-    // SIGNAUX
+
     signal routeInfoUpdated(string distance, string duration)
     signal suggestionsUpdated(string suggestions)
     signal routeReadyForSimulation(var pathObj)
 
-    // --- 1. PLUGIN STANDARD (OSM + CartoDB Dark) ---
+
+    // Fond CartoDB Dark via plugin OSM: compromis lisibilité nocturne / simplicité de déploiement.
     Plugin {
         id: mapPlugin
         name: "osm"
@@ -78,14 +85,15 @@ Item {
         bearing: autoFollow ? carHeading : manualBearing
         tilt: autoFollow ? 45 : 0
 
-        // Animations fluides
+
         Behavior on center { enabled: !root.autoFollow && !mapDragHandler.active; CoordinateAnimation { duration: 250; easing.type: Easing.InOutQuad } }
         Behavior on zoomLevel { NumberAnimation { duration: 800; easing.type: Easing.InOutQuad } }
         Behavior on bearing { RotationAnimation { direction: RotationAnimation.Shortest; duration: 600 } }
         Behavior on tilt { NumberAnimation { duration: 800 } }
 
-        // --- GESTION DU CLIC (Destination) ---
-        // TapHandler détecte le clic sans bloquer le glissement
+
+
+        // Un tap fixe une destination et déclenche le recalcul d'itinéraire côté API Mapbox.
         TapHandler {
             onTapped: (event) => {
                 var coord = map.toCoordinate(event.position)
@@ -96,7 +104,7 @@ Item {
                     root.nextInstruction = "Calcul..."
                     root.isRecalculating = true
 
-                    // Désactive le suivi automatique (comportement GPS standard)
+
                     root.autoFollow = false
 
                     root.requestRouteWithTraffic(
@@ -107,14 +115,15 @@ Item {
             }
         }
 
-        // --- GESTION DU GLISSEMENT (Déplacement Carte) ---
+
+        // Le drag sort volontairement du mode auto-follow pour respecter l'intention utilisateur.
         DragHandler {
             id: mapDragHandler
-            target: null // On ne déplace pas un objet, on pan la map
+            target: null
             onTranslationChanged: (delta) => {
-                // Déplace la carte selon le mouvement du doigt/souris
+
                 map.pan(-delta.x, -delta.y)
-                // Dès qu'on bouge la carte, on coupe le suivi automatique
+
                 root.autoFollow = false
             }
         }
@@ -123,13 +132,13 @@ Item {
             onWheel: (event) => {
                 var step = event.angleDelta.y > 0 ? 1 : -1;
                 root.carZoom = Math.max(2, Math.min(20, root.carZoom + step))
-                // Le zoom manuel désactive aussi le zoom auto temporairement
+
                 root.enableSpeedZoom = false
             }
         }
 
-        // --- DESSINATEUR DE ROUTE ---
-        // 1. La ligne bleue de base
+
+
         MapPolyline {
             id: visualRouteLine
             line.width: 8
@@ -138,7 +147,7 @@ Item {
             z: 1
         }
 
-        // 2. Les lignes de trafic Orange/Rouge
+
         MapItemView {
             model: root.trafficSegments
             delegate: MapPolyline {
@@ -150,7 +159,7 @@ Item {
             }
         }
 
-        // 3. Marqueur de destination (Drapeau)
+
         MapQuickItem {
             visible: root.finalDestination !== null
             coordinate: root.finalDestination !== null ? root.finalDestination : QtPositioning.coordinate(0,0)
@@ -166,7 +175,7 @@ Item {
             }
         }
 
-        // 4. La Voiture
+
         MapQuickItem {
             id: carMarker
             coordinate: QtPositioning.coordinate(carLat, carLon)
@@ -178,7 +187,7 @@ Item {
                 width: 100; height: 100
                 enabled: false
 
-                // Halo
+
                 Rectangle {
                     id: haloRect
                     anchors.centerIn: parent
@@ -198,7 +207,7 @@ Item {
                     }
                 }
 
-                // Flèche Waze
+
                 Item {
                     anchors.centerIn: parent
                     width: 60; height: 60
@@ -230,7 +239,7 @@ Item {
         }
     }
 
-    // --- REQUÊTES API ---
+
     function requestRouteWithTraffic(startCoord, endCoord) {
         if (typeof mapboxApiKey === "undefined" || mapboxApiKey === "") return;
 
@@ -256,7 +265,7 @@ Item {
                         routeInfoUpdated((distMeters / 1000).toFixed(1) + " km", Math.round(durationSec / 60) + " min");
                         updateStatsFromDuration(durationSec, distMeters);
 
-                        // Extraction des points
+
                         var coords = route.geometry.coordinates;
                         var newPoints = [];
                         var simplePath = [];
@@ -291,7 +300,7 @@ Item {
         http.send();
     }
 
-    // --- FONCTIONS VISUELLES ET TRAFIC ---
+
     function updateRouteVisuals() {
         if (!root.routePoints || root.routePoints.length === 0) {
             root.trafficSegments = [];
@@ -551,7 +560,7 @@ Item {
         }
     }
 
-    // --- ANIMATIONS & LOGIQUE ---
+
     onCarLatChanged: {
         if (autoFollow) {
             map.center = QtPositioning.coordinate(carLat, carLon);
@@ -588,7 +597,7 @@ Item {
         if (autoFollow) map.center = QtPositioning.coordinate(carLat, carLon);
     }
 
-    // --- INTERFACE UTILISATEUR ---
+
     Rectangle {
         id: navPanel
         visible: (routePoints.length > 0 || isRecalculating) && nextInstruction.length > 0
@@ -651,14 +660,14 @@ Item {
     }
     InputPanel {
             id: inputPanel
-            z: 99 // Toujours au dessus
-            y: root.height // Caché par défaut en bas
+            z: 99
+            y: root.height
             anchors.left: parent.left
             anchors.right: parent.right
 
             states: State {
                 name: "visible"
-                // Quand le clavier doit être vu, il remonte
+
                 when: inputPanel.active
                 PropertyChanges {
                     target: inputPanel

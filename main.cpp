@@ -1,3 +1,7 @@
+// Rôle architectural: point d'entrée de l'application InterfaceGPS.
+// Responsabilités: initialiser Qt, configurer le runtime et démarrer la fenêtre principale.
+// Dépendances principales: QApplication, QQuickStyle, cache local et MainWindow.
+
 #include <QApplication>
 #include <QLoggingCategory>
 #include <QQuickStyle>
@@ -20,7 +24,7 @@ int main(int argc, char *argv[]) {
             "--no-sandbox "
             "--disable-features=IsolateOrigins,site-per-process");
 
-    // Force le style compatible avec la personnalisation QML
+
     QQuickStyle::setStyle("Fusion");
 
     QLoggingCategory::setFilterRules(
@@ -32,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     QApplication a(argc, argv);
 
-    // Configuration du cache pour les cartes
+
     QString cachePath = QCoreApplication::applicationDirPath() + "/qtlocation_cache";
     QDir().mkpath(cachePath);
     qputenv("QTLOCATION_OSM_CACHE_DIR", cachePath.toUtf8());
