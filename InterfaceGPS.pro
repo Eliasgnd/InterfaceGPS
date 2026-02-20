@@ -15,7 +15,6 @@ SOURCES += \
     clavier.cpp \
     gpstelemetrysource.cpp \
     homeassistant.cpp \
-    homepage.cpp \
     main.cpp \
     mainwindow.cpp \
     mediapage.cpp \
@@ -30,7 +29,6 @@ HEADERS += \
     clavier.h \
     gpstelemetrysource.h \
     homeassistant.h \
-    homepage.h \
     mainwindow.h \
     mediapage.h \
     mocktelemetrysource.h \
@@ -40,7 +38,6 @@ HEADERS += \
 
 FORMS += \
     camerapage.ui \
-    homepage.ui \
     mainwindow.ui \
     mediapage.ui \
     navigationpage.ui \
