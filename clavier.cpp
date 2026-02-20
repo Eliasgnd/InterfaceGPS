@@ -1,3 +1,7 @@
+// Rôle architectural: implémentation du clavier virtuel transverse à l'application.
+// Responsabilités: orchestrer les interactions tactiles, les accents, la suppression continue et l'historique local.
+// Dépendances principales: Qt Widgets, signaux/slots, QTimer et persistance QSettings.
+
 #include "clavier.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -7,7 +11,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
 {
     setWindowTitle("Clavier GPS");
 
-    // MODIF 1 : Fenêtre plus large (1000px) pour ne pas couper le bouton supprimer
+
     setFixedSize(1000, 750);
     currentLayout = AZERTY;
 
@@ -15,13 +19,13 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     mainLayout->setSpacing(10);
     mainLayout->setContentsMargins(15, 15, 15, 15);
 
-    // MODIF 2 : Le STRETCH en haut est la clé.
-    // Il pousse tout vers le bas. Quand la liste s'affiche, elle monte vers le haut.
+
+
     mainLayout->addStretch(1);
 
     suggestionList = new QListWidget(this);
     suggestionList->setVisible(false);
-    suggestionList->setMaximumHeight(160); // Un peu plus grand pour la visibilité
+    suggestionList->setMaximumHeight(160);
     suggestionList->setStyleSheet("font-size: 20px; background: white; color: black; border-radius: 10px;");
     mainLayout->addWidget(suggestionList);
 
@@ -30,7 +34,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     lineEdit->setStyleSheet("font-size: 24px; padding: 10px; font-weight: bold; background: #2a2f3a; color: white; border-radius: 8px;");
     mainLayout->addWidget(lineEdit);
 
-    // Clic sur une suggestion
+
     connect(suggestionList, &QListWidget::itemClicked, this, [=](QListWidgetItem *item){
         lineEdit->setText(item->text());
         suggestionList->hide();
@@ -40,13 +44,13 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     gridLayout = new QGridLayout();
     gridLayout->setSpacing(8);
 
-    // Tailles XL pour les touches
+
     int btnW = 85;
     int btnH = 80;
     QString keyStyle = "QPushButton { font-size: 22px; font-weight: bold; border-radius: 8px; background: #333a4a; color: white; } "
                        "QPushButton:pressed { background: #4a5468; }";
 
-    // Chiffres (Ligne 0)
+
     QStringList chiffres = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"};
     for (int i = 0; i < chiffres.size(); ++i) {
         QPushButton *btn = new QPushButton(chiffres[i], this);
@@ -56,7 +60,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
         gridLayout->addWidget(btn, 0, i);
     }
 
-    // Bouton de suppression (placé à droite des chiffres)
+
     QPushButton *btnDel = new QPushButton("⌫", this);
     btnDel->setFixedSize(110, btnH);
     btnDel->setStyleSheet("QPushButton { font-size: 26px; background: #852222; color: white; border-radius: 8px; font-weight: bold; }");
@@ -64,7 +68,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     connect(btnDel, &QPushButton::released, this, &Clavier::stopDelete);
     gridLayout->addWidget(btnDel, 0, 10);
 
-    // Lettres
+
     QStringList r1 = {"A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P"};
     QStringList r2 = {"Q", "S", "D", "F", "G", "H", "J", "K", "L", "M"};
     QStringList r3 = {"W", "X", "C", "V", "B", "N"};
@@ -100,7 +104,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     connect(shiftButton, &QPushButton::clicked, this, &Clavier::toggleShift);
     gridLayout->addWidget(shiftButton, 3, 9, 1, 2);
 
-    // Ligne du bas
+
     langueButton = new QPushButton("🌍 AZERTY", this);
     langueButton->setFixedSize(140, btnH);
     langueButton->setStyleSheet(keyStyle);
@@ -131,7 +135,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     connect(btnVal, &QPushButton::clicked, this, &Clavier::validateText);
     gridLayout->addWidget(btnVal, 4, 9, 1, 2);
 
-    // Symboles (init cachés)
+
     QStringList syms = {"@","#","$","%","&","*","(",")","-","+","=","/","\\","{","}","[","]",";",":","\"","<",">",",",".","?","!","|"};
     int sRow = 1, sCol = 0;
     for (const QString &s : syms) {
@@ -168,7 +172,6 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     updateKeyboardLayout();
 }
 
-// --- LOGIQUE IDENTIQUE AUX VERSIONS PRÉCÉDENTES ---
 void Clavier::handleButton() {
     QPushButton *btn = qobject_cast<QPushButton *>(sender());
     if (btn) {

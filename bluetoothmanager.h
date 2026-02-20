@@ -1,3 +1,7 @@
+// Rôle architectural: interface de contrôle média Bluetooth via MPRIS/DBus.
+// Responsabilités: exposer les métadonnées, l'état de lecture et les commandes au reste de l'application.
+// Dépendances principales: Qt DBus et les services org.mpris.MediaPlayer2.*.
+
 #ifndef BLUETOOTHMANAGER_H
 #define BLUETOOTHMANAGER_H
 
@@ -13,7 +17,7 @@ class BluetoothManager : public QObject {
 
     Q_PROPERTY(bool isPlaying READ isPlaying NOTIFY statusChanged)
 
-    // Temps (ms) pour le QML
+
     Q_PROPERTY(qint64 positionMs READ positionMs NOTIFY positionChanged)
     Q_PROPERTY(qint64 durationMs READ durationMs NOTIFY metadataChanged)
 

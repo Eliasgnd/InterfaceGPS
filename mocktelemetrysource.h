@@ -1,8 +1,11 @@
+// Rôle architectural: source de télémétrie simulée pour démonstration et tests d'interface.
+// Responsabilités: générer un déplacement GPS plausible et des mesures dynamiques sans matériel réel.
+// Dépendances principales: QTimer, QGeoCoordinate et TelemetryData.
+
 #pragma once
 #include <QObject>
 #include <QTimer>
 #include <QList>
-// QGeoCoordinate est très pratique pour les calculs de distance/azimut
 #include <QGeoCoordinate>
 
 class TelemetryData;
@@ -25,12 +28,12 @@ private:
     TelemetryData* m_data = nullptr;
     QTimer m_timer;
 
-    // Pour la simulation de route
-    QList<QGeoCoordinate> m_route; // Liste des points GPS du trajet
-    int m_currentWaypointIndex = 0; // Point qu'on essaie d'atteindre
-    QGeoCoordinate m_currentPos;    // Position actuelle exacte
 
-    // Simulation batterie/vitesse
+    QList<QGeoCoordinate> m_route;
+    int m_currentWaypointIndex = 0;
+    QGeoCoordinate m_currentPos;
+
+
     double m_speedTarget = 50.0;
     double m_currentSpeed = 0.0;
     int m_batt = 100;

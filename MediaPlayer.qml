@@ -1,3 +1,7 @@
+// Rôle architectural: interface média QML consommée par MediaPage.
+// Responsabilités: rendre les métadonnées de lecture, les contrôles transport et les états compact/normal.
+// Dépendances principales: composant BluetoothManager exposé par C++ et contrôles Qt Quick Controls 2.
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -6,12 +10,14 @@ import QtQuick.Effects
 
 Item {
     id: root
+
+    // Vue purement déclarative: l'état fonctionnel provient de BluetoothManager exposé depuis C++.
     width: 800
     height: 480
 
     readonly property color accentColor: "#2a75ff"
 
-    // --- NOUVEAU : Propriété pilotée par le C++ ---
+
     property bool isCompactMode: false
 
     function formatTime(ms) {
@@ -22,45 +28,47 @@ Item {
         return (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s)
     }
 
-    // -------------------------
-    // LOGIQUE DE SIMULATION DU TEMPS
-    // -------------------------
+
+
+
     property int uiPositionMs: 0
 
     function clamp(val, minV, maxV) {
         return Math.max(minV, Math.min(maxV, val))
     }
 
-    // Synchronisation avec le C++ quand une info arrive
+
+    // Les signaux DBus peuvent être irréguliers selon le lecteur; cette synchro garde la barre cohérente.
     Connections {
         target: bluetoothManager
         function onPositionChanged() { root.uiPositionMs = bluetoothManager.positionMs }
         function onMetadataChanged() { root.uiPositionMs = bluetoothManager.positionMs }
-        // Quand le statut change (Play/Pause), on force une resynchro
+
         function onStatusChanged() {
              if(bluetoothManager.isPlaying) root.uiPositionMs = bluetoothManager.positionMs
         }
     }
 
-    // TIMER DE SIMULATION (Compteur)
-    // Avance de 1 seconde toutes les secondes si la musique joue
+
+
+    // Le timer simule une progression locale fluide entre deux mises à jour DBus.
     Timer {
         id: uiProgressTimer
-        interval: 1000 // Avance "de seconde en seconde"
+        interval: 1000
         repeat: true
-        running: bluetoothManager.isPlaying // Ne tourne que si lecture en cours
+        running: bluetoothManager.isPlaying
         onTriggered: {
             if (bluetoothManager.durationMs > 0) {
-                // On ajoute 1000ms au temps affiché
+
                 root.uiPositionMs = root.clamp(root.uiPositionMs + 1000, 0, bluetoothManager.durationMs)
             }
         }
     }
 
-    // Au démarrage
+
     Component.onCompleted: root.uiPositionMs = bluetoothManager.positionMs
 
-    // --- Fond ---
+
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
@@ -75,9 +83,9 @@ Item {
         anchors.bottomMargin: 20
         spacing: 30
 
-        // --- PARTIE DISQUE / VINYLE ---
+
         Item {
-            // --- NOUVEAU : Masquer en mode compact ---
+
             visible: !root.isCompactMode
 
             Layout.preferredWidth: 320
@@ -112,13 +120,13 @@ Item {
             }
         }
 
-        // =====================
-        // 2) Infos + contrôles
-        // =====================
+
+
+
         ColumnLayout {
             Layout.fillWidth: true; Layout.fillHeight: true; spacing: 0
 
-            // Titres et Artistes
+
             ColumnLayout {
                 Layout.fillWidth: true; spacing: 6
                 Label { Layout.fillWidth: true; text: bluetoothManager.title; font.pixelSize: 38; font.weight: Font.Bold; color: "white"; elide: Text.ElideRight }
@@ -128,7 +136,7 @@ Item {
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 18 }
 
-            // ---- BARRE DE PROGRESSION ----
+
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 8
@@ -178,7 +186,7 @@ Item {
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 18 }
 
-            // ---- Contrôles (Boutons) ----
+
             RowLayout {
                 Layout.fillWidth: true; Layout.alignment: Qt.AlignCenter; spacing: 0
                 Item { Layout.fillWidth: true }
@@ -220,7 +228,7 @@ Item {
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 18 }
 
-            // ---- Volume ----
+
             RowLayout {
                 Layout.fillWidth: true; spacing: 20
                 Image { source: "qrc:/icons/volume_down.svg"; sourceSize.width: 24; sourceSize.height: 24; opacity: 0.7 }

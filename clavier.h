@@ -1,3 +1,7 @@
+// Rôle architectural: clavier virtuel propriétaire utilisé par les écrans de saisie.
+// Responsabilités: capturer le texte, proposer des suggestions et gérer les variantes de disposition.
+// Dépendances principales: QDialog, widgets Qt, QSettings et timers d'interaction.
+
 #ifndef CLAVIER_H
 #define CLAVIER_H
 
@@ -18,7 +22,7 @@ public:
     explicit Clavier(QWidget *parent = nullptr);
     QString getText() const;
 
-    // Fonctions pour le lien avec NavigationPage
+
     void setInitialText(const QString &text);
     void displaySuggestions(const QStringList &suggestions);
 
@@ -84,4 +88,4 @@ private:
     void saveUsageHistory() const;
 };
 
-#endif // CLAVIER_H
+#endif

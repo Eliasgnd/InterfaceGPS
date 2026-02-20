@@ -1,8 +1,11 @@
+// Rôle architectural: implémentation de la fenêtre principale de l'application.
+// Responsabilités: initialiser les pages, connecter la navigation et synchroniser l'état global de l'interface.
+// Dépendances principales: UI générée, modules page (navigation, média, caméra, réglages) et services Qt.
+
 #include "mainwindow.h"
 #include "homeassistant.h"
 #include "ui_mainwindow.h"
 #include "telemetrydata.h"
-// #include "homepage.h" <--- SUPPRIMÉ
 #include "navigationpage.h"
 #include "camerapage.h"
 #include "settingspage.h"
@@ -16,31 +19,33 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     : QMainWindow(parent), ui(new Ui::MainWindow), m_t(telemetry)
 {
     ui->setupUi(this);
+    // Format fixe: l'interface est pensée pour l'écran embarqué du véhicule.
     this->setFixedSize(1280, 800);
 
-    // 1. On limite la hauteur de la frame qui contient les boutons
-    ui->bottomNavFrame->setFixedHeight(75); // Tu peux baisser à 60 ou 70 selon tes goûts
 
-    // 2. On réduit les marges internes pour que les boutons ne soient pas écrasés
+    ui->bottomNavFrame->setFixedHeight(75);
+
+
     ui->bottomNavLayout->setContentsMargins(10, 2, 10, 5);
     ui->bottomNavLayout->setSpacing(15);
 
-    // 3. IMPORTANT : On dit au layout vertical de TOUT donner à la zone centrale
-    // Si ton layout principal dans le .ui s'appelle verticalLayoutRoot :
-    ui->verticalLayoutRoot->setStretch(0, 1); // La zone des pages (index 0) prend tout le stretch
-    ui->verticalLayoutRoot->setStretch(1, 0); // La barre du bas (index 1) ne s'étire pas
 
-    // --- 1. MASQUER LA BARRE INUTILE ---
-    ui->topBarFrame->hide(); // On gagne toute la hauteur !
 
-    // 2. Création des pages (Sans HomePage)
+    ui->verticalLayoutRoot->setStretch(0, 1);
+    ui->verticalLayoutRoot->setStretch(1, 0);
+
+
+    ui->topBarFrame->hide();
+
+
+    // Chaque page reste instanciée en permanence pour préserver son état entre les changements d'onglet.
     m_nav = new NavigationPage(this);
     m_cam = new CameraPage(this);
     m_settings = new SettingsPage(this);
     m_media = new MediaPage(this);
     m_ha = new HomeAssistant(this);
 
-    // --- 3. CHARGEMENT DE LA MÉMOIRE (QSettings) ---
+
     QSettings settings("EliasCorp", "GPSApp");
     QString leftAppStr = settings.value("Split/Left", "Nav").toString();
     QString rightAppStr = settings.value("Split/Right", "Media").toString();
@@ -48,17 +53,18 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     m_lastLeftApp = stringToWidget(leftAppStr);
     m_lastRightApp = stringToWidget(rightAppStr);
 
-    // 4. Connexion de la télémétrie
+
+    // TelemetryData sert de bus applicatif partagé entre les modules C++/QML.
     m_nav->bindTelemetry(m_t);
     m_settings->bindTelemetry(m_t);
 
-    // 5. Création du conteneur Split-Screen
+
     QWidget* mainContainer = new QWidget(this);
     m_mainLayout = new QHBoxLayout(mainContainer);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(10);
 
-    // Ajout de toutes les pages
+
     m_mainLayout->addWidget(m_nav);
     m_mainLayout->addWidget(m_cam);
     m_mainLayout->addWidget(m_media);
@@ -69,7 +75,7 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     ui->verticalLayoutRoot->insertWidget(stackIndex, mainContainer);
     ui->stackedPages->hide();
 
-    // 6. Boutons
+
     ui->btnHome->hide();
 
     connect(ui->btnNav, &QPushButton::clicked, this, &MainWindow::goNav);
@@ -85,17 +91,16 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     ui->bottomNavLayout->insertWidget(0, m_btnSplit);
     connect(m_btnSplit, &QPushButton::clicked, this, &MainWindow::toggleSplitAndHome);
 
-    // Alertes (même si on cache le topBar, on garde l'alertFrame au cas où)
+
     connect(m_t, &TelemetryData::alertLevelChanged, this, &MainWindow::updateTopBarAndAlert);
     connect(m_t, &TelemetryData::alertTextChanged, this, &MainWindow::updateTopBarAndAlert);
 
-    // --- 7. DÉMARRAGE DIRECT EN SPLIT ---
+
     goSplit();
 }
 
 MainWindow::~MainWindow() { delete ui; }
 
-// --- OUTILS DE MÉMOIRE ---
 QString MainWindow::widgetToString(QWidget* w) {
     if (w == m_nav) return "Nav";
     if (w == m_media) return "Media";
@@ -119,13 +124,13 @@ void MainWindow::saveSplitState() {
     settings.setValue("Split/Right", widgetToString(m_lastRightApp));
 }
 
-// --- LOGIQUE D'AFFICHAGE ---
 void MainWindow::displayPages(QWidget* p1, QWidget* p2)
 {
+    // p1 est la page principale; p2 active le mode split (écran divisé).
     m_isSplitMode = (p2 != nullptr);
     m_media->setCompactMode(m_isSplitMode);
 
-    // Plus de Home, le bouton affiche ◫ pour forcer le Split si on est en plein écran
+
     m_btnSplit->setText(m_isSplitMode ? "▦" : "◫");
 
     m_btnSplit->setStyleSheet("QPushButton { font-size: 38px; color: white; background-color: transparent; border-radius: 12px; }"
@@ -146,11 +151,12 @@ void MainWindow::displayPages(QWidget* p1, QWidget* p2)
 }
 
 void MainWindow::toggleSplitAndHome() {
-    // Si on est en plein écran, on repasse en split
+
     if (!m_isSplitMode) goSplit();
 }
 
 void MainWindow::goSplit() {
+    // Le flux caméra est arrêté hors de sa page pour réduire CPU et trafic réseau.
     m_cam->stopStream();
     displayPages(m_lastLeftApp, m_lastRightApp);
 }
@@ -158,14 +164,14 @@ void MainWindow::goSplit() {
 void MainWindow::goNav() {
     m_cam->stopStream();
     m_lastLeftApp = m_nav;
-    saveSplitState(); // <-- On sauvegarde !
+    saveSplitState();
     displayPages(m_nav);
 }
 
 void MainWindow::goMedia() {
     m_cam->stopStream();
     m_lastRightApp = m_media;
-    saveSplitState(); // <-- On sauvegarde !
+    saveSplitState();
     displayPages(m_media);
 }
 
@@ -186,6 +192,7 @@ void MainWindow::goHomeAssistant() {
 }
 
 void MainWindow::updateTopBarAndAlert() {
+    // La top bar matérialise la criticité sécurité; elle reste silencieuse en niveau 0.
     if(m_t->alertLevel() == 0){
         ui->alertFrame->setVisible(false);
     } else {

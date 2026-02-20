@@ -1,3 +1,7 @@
+// Rôle architectural: implémentation de la page caméra du tableau de bord.
+// Responsabilités: ouvrir/fermer l'écoute réseau et convertir les datagrammes JPEG en image affichable.
+// Dépendances principales: Qt Network, Qt Widgets et pipeline UDP local.
+
 #include "camerapage.h"
 #include "ui_camerapage.h"
 #include <QVBoxLayout>
@@ -29,9 +33,9 @@ CameraPage::~CameraPage()
 
 void CameraPage::startStream()
 {
-    // On vérifie si on n'écoute pas déjà
+
     if (udpSocket->state() != QAbstractSocket::BoundState) {
-        // QHostAddress::Any = On accepte les images venant de n'importe qui (PC, Pi, Tel)
+
         bool success = udpSocket->bind(QHostAddress::Any, 4444);
 
         if (success) {
@@ -46,29 +50,29 @@ void CameraPage::startStream()
 
 void CameraPage::stopStream()
 {
-    // On ferme la connexion pour économiser la batterie/CPU quand on n'est pas sur la page
+
     if (udpSocket->isOpen()) {
         udpSocket->close();
         qDebug() << "CAMERA: Arrêt du flux";
         videoLabel->setText("Caméra en pause");
-        videoLabel->clear(); // Efface la dernière image
+        videoLabel->clear();
     }
 }
 
 void CameraPage::processPendingDatagrams()
 {
     while (udpSocket->hasPendingDatagrams()) {
-        // 1. Récupération du paquet brut
+
         QNetworkDatagram datagram = udpSocket->receiveDatagram();
         QByteArray data = datagram.data();
 
-        // 2. Conversion des données (JPG) en Image Qt
+
         QPixmap pixmap;
         if (pixmap.loadFromData(data, "JPG")) {
-            // 3. Affichage
+
             videoLabel->setPixmap(pixmap);
         } else {
-            // Si l'image est corrompue (paquet incomplet), on ignore
+
              qDebug() << "CAMERA: Image reçue invalide";
         }
     }
