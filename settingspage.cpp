@@ -18,18 +18,6 @@ SettingsPage::SettingsPage(QWidget* parent)
 
     m_lastActiveMac = "";
 
-
-    connect(ui->sliderBrightness, &QSlider::valueChanged, this, [this](int v){
-        ui->lblBrightnessValue->setText(QString::number(v));
-        emit brightnessChanged(v);
-    });
-
-
-    connect(ui->cmbTheme, qOverload<int>(&QComboBox::currentIndexChanged),
-            this, [this](int idx){
-                emit themeChanged(idx);
-            });
-
     m_localDevice = new QBluetoothLocalDevice(this);
 
 

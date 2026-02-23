@@ -89,19 +89,6 @@ QPushButton:pressed{background:#2d3245;}
          <property name="bottomMargin">
           <number>10</number>
          </property>
-         <item>
-          <widget class="QLabel" name="lblMap">
-           <property name="styleSheet">
-            <string notr="true">QLabel{color:#b8c0cc;font-size:16px;}</string>
-           </property>
-           <property name="text">
-            <string>Carte (OSM) - placeholder</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
         </layout>
        </widget>
       </item>

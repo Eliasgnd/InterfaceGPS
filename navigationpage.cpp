@@ -72,7 +72,6 @@ NavigationPage::NavigationPage(QWidget* parent)
     });
 
     m_mapView->setSource(QUrl("qrc:/map.qml"));
-    ui->lblMap->setVisible(false);
     ui->mapLayout->addWidget(m_mapView);
 
 

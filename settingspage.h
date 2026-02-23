@@ -16,9 +16,6 @@ class SettingsPage : public QWidget {
 public:
     explicit SettingsPage(QWidget* parent=nullptr);
     ~SettingsPage();
-signals:
-    void themeChanged(int themeIndex);
-    void brightnessChanged(int value);
 
 private slots:
     void onVisibleClicked();
@@ -42,6 +39,4 @@ private:
 
     void showAutoClosingMessage(const QString &title, const QString &text, int timeoutMs);
     QString m_lastActiveMac;
-
-
 };
