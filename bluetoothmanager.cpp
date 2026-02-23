@@ -1,6 +1,10 @@
-// Rôle architectural: implémentation DBus du gestionnaire multimédia Bluetooth.
-// Responsabilités: découvrir un lecteur MPRIS actif, synchroniser les métadonnées et piloter la lecture.
-// Dépendances principales: QDBusConnection, QDBusInterface, QDBusServiceWatcher et modèle MPRIS.
+/**
+ * @file bluetoothmanager.cpp
+ * @brief Implémentation DBus du gestionnaire multimédia Bluetooth.
+ * @details Responsabilités : Découvrir un lecteur MPRIS actif, synchroniser les métadonnées
+ * et piloter la lecture. Utilise des mécanismes avancés de décodage des QVariant imbriqués de DBus.
+ * Dépendances principales : QDBusConnection, QDBusInterface, QDBusServiceWatcher et le modèle MPRIS.
+ */
 
 #include "bluetoothmanager.h"
 #include <QDebug>
@@ -10,7 +14,13 @@
 #include <QDBusArgument>
 #include <QTimer>
 
-// Normalise les enveloppes DBus imbriquées pour simplifier le parsing MPRIS.
+/**
+ * @brief Normalise les enveloppes DBus imbriquées pour simplifier le parsing MPRIS.
+ * @details DBus a tendance à encapsuler les types complexes dans de multiples couches de QVariant.
+ * Cette fonction récursive "déshabille" ces variables pour obtenir le type C++ primitif utilisable.
+ * @param var Le QVariant potentiellement encapsulé reçu de DBus.
+ * @return Un QVariant purifié et exploitable directement.
+ */
 static QVariant unwrapVariant(const QVariant &var) {
     if (var.userType() == qMetaTypeId<QDBusVariant>()) {
         return unwrapVariant(var.value<QDBusVariant>().variant());
@@ -53,9 +63,11 @@ static QVariant unwrapVariant(const QVariant &var) {
 }
 
 BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
+    // Enregistrement des types complexes requis par le système QtDBus
     qDBusRegisterMetaType<QVariantMap>();
     qDBusRegisterMetaType<QList<QVariant>>();
 
+    // Création d'un Watcher pour être alerté dès qu'un lecteur multimédia s'allume ou s'éteint
     auto *watcher = new QDBusServiceWatcher(
         "org.mpris.MediaPlayer2*",
         QDBusConnection::sessionBus(),
@@ -69,6 +81,7 @@ BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
     connect(watcher, &QDBusServiceWatcher::serviceUnregistered,
             this, [this](const QString &service){
                 if (service == m_currentService) {
+                    // Si le lecteur actuel se déconnecte, on réinitialise l'interface
                     m_title = "Déconnecté";
                     m_artist = "";
                     m_album = "";
@@ -81,7 +94,7 @@ BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent) {
                     emit statusChanged();
                     emit positionChanged();
 
-
+                    // On patiente un instant puis on cherche si un autre lecteur a pris le relais
                     QTimer::singleShot(300, this, &BluetoothManager::findActivePlayer);
                 }
             });
@@ -95,9 +108,9 @@ void BluetoothManager::findActivePlayer() {
 
     const QStringList services = bus->registeredServiceNames();
 
-
-    // Certains wrappers MPRIS exposent des services éphémères; ce filtre
-    // réduit les bascules de lecteur qui dégradent l'UX sur des reconnections rapides.
+    // Priorité 1 : On cherche un "vrai" lecteur multimédia actif.
+    // Certains wrappers MPRIS (comme mpris-proxy) exposent des services éphémères ;
+    // ce filtre réduit les bascules de lecteur intempestives qui dégradent l'UX sur des reconnexions rapides.
     for (const QString &service : services) {
         if (service.startsWith("org.mpris.MediaPlayer2.") &&
             !service.contains("mpris-proxy") &&
@@ -107,8 +120,8 @@ void BluetoothManager::findActivePlayer() {
         }
     }
 
-
-    // Repli volontaire: on préfère un lecteur potentiellement imparfait plutôt qu'une UI vide.
+    // Priorité 2 (Repli) : Si aucun vrai lecteur n'est trouvé, on accepte les proxy Bluetooth.
+    // On préfère un lecteur potentiellement imparfait plutôt qu'une UI vide.
     for (const QString &service : services) {
         if (service.startsWith("org.mpris.MediaPlayer2.") &&
             !service.endsWith(".mpris-proxy")) {
@@ -125,13 +138,15 @@ void BluetoothManager::connectToService(const QString &serviceName) {
     qDebug() << "✅ Connexion au lecteur :" << serviceName;
     m_currentService = serviceName;
 
-
-    // Une seule subscription PropertiesChanged est conservée pour éviter les doublons de notifications.
+    // Une seule subscription PropertiesChanged est conservée pour éviter les doublons de notifications
+    // (on nettoie l'ancienne écoute avant d'en créer une nouvelle).
     QDBusConnection::sessionBus().disconnect(QString(), "/org/mpris/MediaPlayer2",
                                              "org.freedesktop.DBus.Properties", "PropertiesChanged",
                                              this, SLOT(handleDBusSignal(QDBusMessage)));
 
     delete m_playerInterface;
+
+    // Création de l'interface qui nous permet d'envoyer des commandes (Play/Pause)
     m_playerInterface = new QDBusInterface(
         serviceName,
         "/org/mpris/MediaPlayer2",
@@ -140,7 +155,7 @@ void BluetoothManager::connectToService(const QString &serviceName) {
         this
         );
 
-
+    // Connexion pour écouter les changements asynchrones (ex: l'utilisateur a changé de musique sur son téléphone)
     QDBusConnection::sessionBus().connect(
         serviceName,
         "/org/mpris/MediaPlayer2",
@@ -150,7 +165,7 @@ void BluetoothManager::connectToService(const QString &serviceName) {
         SLOT(handleDBusSignal(QDBusMessage))
         );
 
-
+    // Initialisation immédiate de l'état (récupération des données courantes)
     updateMetadata();
     updatePlaybackStatus();
     updatePosition();
@@ -173,8 +188,6 @@ void BluetoothManager::handleDBusSignal(const QDBusMessage &msg) {
     if (changed.contains("PlaybackStatus")) {
         m_isPlaying = (unwrapVariant(changed.value("PlaybackStatus")).toString() == "Playing");
         emit statusChanged();
-
-
 
         if (m_isPlaying) {
             updatePosition();
@@ -224,7 +237,6 @@ void BluetoothManager::updatePlaybackStatus() {
 }
 
 void BluetoothManager::updatePosition() {
-    // Position fournie en microsecondes par MPRIS, convertie en millisecondes pour le binding QML.
     if (m_currentService.isEmpty()) return;
 
     QDBusMessage msg = QDBusMessage::createMethodCall(
@@ -237,6 +249,8 @@ void BluetoothManager::updatePosition() {
 
     QDBusMessage reply = QDBusConnection::sessionBus().call(msg);
     if (reply.type() == QDBusMessage::ReplyMessage && !reply.arguments().isEmpty()) {
+        // La position est fournie en microsecondes par MPRIS,
+        // on la convertit en millisecondes pour notre binding QML.
         const qint64 posUs = unwrapVariant(reply.arguments().first()).toLongLong();
         m_positionMs = posUs / 1000;
         emit positionChanged();
@@ -250,6 +264,7 @@ void BluetoothManager::parseMetadataMap(const QVariantMap &metadata) {
     QString newArtist;
     const QVariant artistVar = unwrapVariant(metadata.value("xesam:artist"));
 
+    // L'artiste peut être un simple String ou une Liste de Strings (feat.)
     if (artistVar.canConvert<QStringList>()) {
         newArtist = artistVar.toStringList().join(", ");
     } else if (artistVar.typeId() == QMetaType::QVariantList) {
@@ -261,12 +276,12 @@ void BluetoothManager::parseMetadataMap(const QVariantMap &metadata) {
         newArtist = artistVar.toString();
     }
 
-
     const qint64 lenUs = unwrapVariant(metadata.value("mpris:length")).toLongLong();
     const qint64 newDurationMs = (lenUs > 0) ? (lenUs / 1000) : 0;
 
     bool changed = false;
 
+    // On vérifie s'il y a eu un vrai changement avant d'émettre les signaux
     if (!newTitle.isEmpty() && newTitle != m_title) { m_title = newTitle; changed = true; }
     if (newArtist != m_artist) { m_artist = newArtist; changed = true; }
     if (newAlbum != m_album) { m_album = newAlbum; changed = true; }

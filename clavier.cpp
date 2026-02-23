@@ -1,6 +1,10 @@
-// Rôle architectural: implémentation du clavier virtuel transverse à l'application.
-// Responsabilités: orchestrer les interactions tactiles, les accents, la suppression continue et l'historique local.
-// Dépendances principales: Qt Widgets, signaux/slots, QTimer et persistance QSettings.
+/**
+ * @file clavier.cpp
+ * @brief Implémentation du clavier virtuel transverse à l'application.
+ * @details Responsabilités : Orchestrer les interactions tactiles complexes comme les accents dynamiques,
+ * la suppression continue (backspace maintenu), et la mémorisation de l'historique local.
+ * Dépendances principales : Qt Widgets, signaux/slots, QTimer et persistance QSettings.
+ */
 
 #include "clavier.h"
 #include <QVBoxLayout>
@@ -11,7 +15,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
 {
     setWindowTitle("Clavier GPS");
 
-
+    // Dimensions fixes adaptées à l'écran embarqué
     setFixedSize(1000, 750);
     currentLayout = AZERTY;
 
@@ -19,38 +23,39 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     mainLayout->setSpacing(10);
     mainLayout->setContentsMargins(15, 15, 15, 15);
 
-
-
+    // Pousse le clavier vers le bas de l'écran
     mainLayout->addStretch(1);
 
+    // --- LISTE DE SUGGESTIONS ---
     suggestionList = new QListWidget(this);
     suggestionList->setVisible(false);
     suggestionList->setMaximumHeight(160);
     suggestionList->setStyleSheet("font-size: 20px; background: white; color: black; border-radius: 10px;");
     mainLayout->addWidget(suggestionList);
 
+    // --- CHAMP DE SAISIE ---
     lineEdit = new QLineEdit(this);
     lineEdit->setFixedHeight(65);
     lineEdit->setStyleSheet("font-size: 24px; padding: 10px; font-weight: bold; background: #2a2f3a; color: white; border-radius: 8px;");
     mainLayout->addWidget(lineEdit);
 
-
+    // Si on clique sur une suggestion, on remplit le champ de saisie et on masque la liste
     connect(suggestionList, &QListWidget::itemClicked, this, [=](QListWidgetItem *item){
         lineEdit->setText(item->text());
         suggestionList->hide();
         emit textChangedExternally(lineEdit->text());
     });
 
+    // --- GRILLE DES TOUCHES ---
     gridLayout = new QGridLayout();
     gridLayout->setSpacing(8);
-
 
     int btnW = 85;
     int btnH = 80;
     QString keyStyle = "QPushButton { font-size: 22px; font-weight: bold; border-radius: 8px; background: #333a4a; color: white; } "
                        "QPushButton:pressed { background: #4a5468; }";
 
-
+    // 1. Ligne des chiffres
     QStringList chiffres = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"};
     for (int i = 0; i < chiffres.size(); ++i) {
         QPushButton *btn = new QPushButton(chiffres[i], this);
@@ -60,7 +65,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
         gridLayout->addWidget(btn, 0, i);
     }
 
-
+    // Bouton de suppression (Backspace)
     QPushButton *btnDel = new QPushButton("⌫", this);
     btnDel->setFixedSize(110, btnH);
     btnDel->setStyleSheet("QPushButton { font-size: 26px; background: #852222; color: white; border-radius: 8px; font-weight: bold; }");
@@ -68,11 +73,12 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     connect(btnDel, &QPushButton::released, this, &Clavier::stopDelete);
     gridLayout->addWidget(btnDel, 0, 10);
 
-
+    // 2. Lignes de lettres
     QStringList r1 = {"A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P"};
     QStringList r2 = {"Q", "S", "D", "F", "G", "H", "J", "K", "L", "M"};
     QStringList r3 = {"W", "X", "C", "V", "B", "N"};
 
+    // Lambda générique pour instancier les rangées de lettres
     auto createRow = [&](const QStringList& keys, int rowIdx, QList<QPushButton*>& list, int colOffset = 0) {
         for (int i = 0; i < keys.size(); ++i) {
             QPushButton *btn = new QPushButton(keys[i], this);
@@ -91,6 +97,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     createRow(r2, 2, row2Buttons);
     createRow(r3, 3, row3Buttons, 1);
 
+    // 3. Boutons spéciaux
     apostropheButton = new QPushButton("'", this);
     apostropheButton->setFixedSize(btnW, btnH);
     apostropheButton->setStyleSheet(keyStyle);
@@ -103,7 +110,6 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     shiftButton->setStyleSheet(keyStyle);
     connect(shiftButton, &QPushButton::clicked, this, &Clavier::toggleShift);
     gridLayout->addWidget(shiftButton, 3, 9, 1, 2);
-
 
     langueButton = new QPushButton("🌍 AZERTY", this);
     langueButton->setFixedSize(140, btnH);
@@ -135,7 +141,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     connect(btnVal, &QPushButton::clicked, this, &Clavier::validateText);
     gridLayout->addWidget(btnVal, 4, 9, 1, 2);
 
-
+    // 4. Clavier des symboles alternatifs (Masqué par défaut)
     QStringList syms = {"@","#","$","%","&","*","(",")","-","+","=","/","\\","{","}","[","]",";",":","\"","<",">",",",".","?","!","|"};
     int sRow = 1, sCol = 0;
     for (const QString &s : syms) {
@@ -151,6 +157,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
 
     mainLayout->addLayout(gridLayout);
 
+    // --- CONFIGURATION DES TIMERS (Interaction prolongée) ---
     deleteTimer = new QTimer(this);
     deleteDelayTimer = new QTimer(this);
     deleteDelayTimer->setSingleShot(true);
@@ -161,6 +168,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     longPressTimer->setSingleShot(true);
     connect(longPressTimer, &QTimer::timeout, this, &Clavier::handleLongPress);
 
+    // --- DICTIONNAIRE DES ACCENTS ---
     accentMap.insert("e", {"é", "è", "ê", "ë"});
     accentMap.insert("a", {"à", "â"});
     accentMap.insert("i", {"î", "ï"});
@@ -168,6 +176,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     accentMap.insert("u", {"û", "ù"});
     accentMap.insert("c", {"ç"});
 
+    // --- INITIALISATION FINALE ---
     loadUsageHistory();
     updateKeyboardLayout();
 }
@@ -177,35 +186,71 @@ void Clavier::handleButton() {
     if (btn) {
         lineEdit->insert(btn->text());
         emit textChangedExternally(lineEdit->text());
-        if (majusculeActive && !shiftLock) { majusculeActive = false; updateKeys(); }
+
+        // Si la majuscule (non verrouillée) était active, on repasse en minuscules après 1 lettre
+        if (majusculeActive && !shiftLock) {
+            majusculeActive = false;
+            updateKeys();
+        }
     }
 }
-void Clavier::deleteChar() { lineEdit->backspace(); emit textChangedExternally(lineEdit->text()); }
-void Clavier::validateText() { saveUsageHistory(); accept(); }
+
+void Clavier::deleteChar() {
+    lineEdit->backspace();
+    emit textChangedExternally(lineEdit->text());
+}
+
+void Clavier::validateText() {
+    saveUsageHistory();
+    accept(); // Ferme la boîte de dialogue modale
+}
+
 void Clavier::toggleShift() {
-    if (!majusculeActive) { majusculeActive = true; shiftLock = false; }
-    else if (!shiftLock) { shiftLock = true; }
-    else { majusculeActive = false; shiftLock = false; }
+    // Logique cyclique: Minuscule -> Majuscule 1 lettre -> Caps Lock -> Minuscule
+    if (!majusculeActive) {
+        majusculeActive = true;
+        shiftLock = false;
+    }
+    else if (!shiftLock) {
+        shiftLock = true;
+    }
+    else {
+        majusculeActive = false;
+        shiftLock = false;
+    }
     updateKeys();
 }
+
 void Clavier::updateKeys() {
     for (QPushButton *btn : allButtons) {
         QString t = btn->text();
         btn->setText((majusculeActive || shiftLock) ? t.toUpper() : t.toLower());
     }
 }
-void Clavier::addSpace() { lineEdit->insert(" "); emit textChangedExternally(lineEdit->text()); }
-void Clavier::addUnderscore() { lineEdit->insert("_"); emit textChangedExternally(lineEdit->text()); }
+
+void Clavier::addSpace() {
+    lineEdit->insert(" ");
+    emit textChangedExternally(lineEdit->text());
+}
+
+void Clavier::addUnderscore() {
+    lineEdit->insert("_");
+    emit textChangedExternally(lineEdit->text());
+}
+
 void Clavier::switchKeyboard() {
     isSymbolMode = !isSymbolMode;
+    // Bascule la visibilité des tableaux de touches
     for (QPushButton *b : allButtons) b->setVisible(!isSymbolMode);
     for (QPushButton *b : symbolButtons) b->setVisible(isSymbolMode);
     switchButton->setText(isSymbolMode ? "ABC" : "123?");
 }
+
 void Clavier::switchLayout() {
     currentLayout = (currentLayout == AZERTY) ? QWERTY : AZERTY;
     updateKeyboardLayout();
 }
+
 void Clavier::updateKeyboardLayout() {
     QStringList n1, n2, n3;
     if (currentLayout == AZERTY) {
@@ -219,44 +264,107 @@ void Clavier::updateKeyboardLayout() {
         n3 = {"Z", "X", "C", "V", "B", "N", "M"};
         langueButton->setText("🌍 QWERTY");
     }
-    for (int i=0; i<row1Buttons.size() && i<n1.size(); ++i) row1Buttons[i]->setText(n1[i]);
-    for (int i=0; i<row2Buttons.size() && i<n2.size(); ++i) row2Buttons[i]->setText(n2[i]);
-    for (int i=0; i<row3Buttons.size() && i<n3.size(); ++i) row3Buttons[i]->setText(n3[i]);
+
+    // Réaffectation des textes sur les boutons existants
+    for (int i = 0; i < row1Buttons.size() && i < n1.size(); ++i) row1Buttons[i]->setText(n1[i]);
+    for (int i = 0; i < row2Buttons.size() && i < n2.size(); ++i) row2Buttons[i]->setText(n2[i]);
+    for (int i = 0; i < row3Buttons.size() && i < n3.size(); ++i) row3Buttons[i]->setText(n3[i]);
+
     updateKeys();
 }
-void Clavier::startLongPress() { currentLongPressButton = qobject_cast<QPushButton*>(sender()); longPressTimer->start(500); }
-void Clavier::stopLongPress() { longPressTimer->stop(); }
-void Clavier::handleLongPress() { if (currentLongPressButton && accentMap.contains(currentLongPressButton->text().toLower())) showAccentPopup(currentLongPressButton); }
+
+void Clavier::startLongPress() {
+    currentLongPressButton = qobject_cast<QPushButton*>(sender());
+    longPressTimer->start(500);
+}
+
+void Clavier::stopLongPress() {
+    longPressTimer->stop();
+}
+
+void Clavier::handleLongPress() {
+    if (currentLongPressButton && accentMap.contains(currentLongPressButton->text().toLower())) {
+        showAccentPopup(currentLongPressButton);
+    }
+}
+
 void Clavier::showAccentPopup(QPushButton* btn) {
     if (accentPopup) return;
+
     accentPopup = new QWidget(this, Qt::Popup);
     accentPopup->setAttribute(Qt::WA_DeleteOnClose);
+
     QHBoxLayout *l = new QHBoxLayout(accentPopup);
     QStringList accs = accentMap.value(btn->text().toLower());
+
+    // Création des touches d'accents dynamiques
     for (const QString &a : accs) {
         QPushButton *ab = new QPushButton(majusculeActive ? a.toUpper() : a, accentPopup);
         ab->setFixedSize(50, 50);
         connect(ab, &QPushButton::clicked, this, &Clavier::insertAccent);
         l->addWidget(ab);
     }
+
+    // Positionnement de la popup juste au-dessus de la touche pressée
     accentPopup->move(btn->mapToGlobal(QPoint(0, -60)));
     accentPopup->show();
 }
+
 void Clavier::insertAccent() {
     QPushButton *b = qobject_cast<QPushButton*>(sender());
-    if (b) { lineEdit->insert(b->text()); emit textChangedExternally(lineEdit->text()); }
-    if (accentPopup) { accentPopup->close(); accentPopup = nullptr; }
+    if (b) {
+        lineEdit->insert(b->text());
+        emit textChangedExternally(lineEdit->text());
+    }
+    if (accentPopup) {
+        accentPopup->close();
+        accentPopup = nullptr;
+    }
 }
-void Clavier::startDeleteDelay() { deleteChar(); deleteDelayTimer->start(500); }
-void Clavier::startDelete() { deleteTimer->start(75); }
-void Clavier::stopDelete() { deleteTimer->stop(); deleteDelayTimer->stop(); }
-void Clavier::loadUsageHistory() { QSettings s("EliasCorp", "GPSApp"); usageHistory = s.value("Clavier/UsageHistory").toStringList(); }
-void Clavier::saveUsageHistory() const { QSettings s("EliasCorp", "GPSApp"); s.setValue("Clavier/UsageHistory", usageHistory); }
-QString Clavier::getText() const { return lineEdit->text(); }
-void Clavier::setInitialText(const QString &text) { lineEdit->setText(text); lineEdit->setCursorPosition(text.length()); }
+
+void Clavier::startDeleteDelay() {
+    deleteChar();
+    deleteDelayTimer->start(500); // Attend 500ms avant de supprimer à la chaîne
+}
+
+void Clavier::startDelete() {
+    deleteTimer->start(75); // Supprime 1 caractère toutes les 75ms
+}
+
+void Clavier::stopDelete() {
+    deleteTimer->stop();
+    deleteDelayTimer->stop();
+}
+
+void Clavier::loadUsageHistory() {
+    QSettings s("EliasCorp", "GPSApp");
+    usageHistory = s.value("Clavier/UsageHistory").toStringList();
+}
+
+void Clavier::saveUsageHistory() const {
+    QSettings s("EliasCorp", "GPSApp");
+    s.setValue("Clavier/UsageHistory", usageHistory);
+}
+
+QString Clavier::getText() const {
+    return lineEdit->text();
+}
+
+void Clavier::setInitialText(const QString &text) {
+    lineEdit->setText(text);
+    lineEdit->setCursorPosition(text.length());
+}
+
 void Clavier::displaySuggestions(const QStringList &suggestions) {
     suggestionList->clear();
-    if (!suggestions.isEmpty()) { suggestionList->addItems(suggestions); suggestionList->show(); }
-    else { suggestionList->hide(); }
+    if (!suggestions.isEmpty()) {
+        suggestionList->addItems(suggestions);
+        suggestionList->show();
+    } else {
+        suggestionList->hide();
+    }
 }
-void Clavier::hideAccentPopup() { if (accentPopup) accentPopup->hide(); }
+
+void Clavier::hideAccentPopup() {
+    if (accentPopup) accentPopup->hide();
+}
