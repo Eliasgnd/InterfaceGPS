@@ -46,7 +46,6 @@ signals:
     void headingChanged();
     void alertTextChanged();
     void alertLevelChanged();
-    void simulateRouteRequested(QVariantList routeCoords);
 
 private:
     double m_speedKmh = 0.0;

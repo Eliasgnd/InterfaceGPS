@@ -68,7 +68,6 @@ private:
     QTimer *deleteDelayTimer;
     QTimer *longPressTimer;
     QWidget *accentPopup = nullptr;
-    QWidget *overlay = nullptr;
 
     enum KeyboardLayout { AZERTY, QWERTY };
     KeyboardLayout currentLayout;
@@ -80,7 +79,6 @@ private:
     QStringList usageHistory;
 
     void updateKeys();
-    void updateKeyboard();
     void updateKeyboardLayout();
     void hideAccentPopup();
     void showAccentPopup(QPushButton* button);

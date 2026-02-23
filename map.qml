@@ -7,7 +7,6 @@ import QtLocation
 import QtPositioning
 import QtQuick.Effects
 import QtQuick.Shapes
-import QtQuick.VirtualKeyboard
 
 Item {
     id: root
@@ -658,32 +657,4 @@ Item {
             color: "black"
         }
     }
-    InputPanel {
-            id: inputPanel
-            z: 99
-            y: root.height
-            anchors.left: parent.left
-            anchors.right: parent.right
-
-            states: State {
-                name: "visible"
-
-                when: inputPanel.active
-                PropertyChanges {
-                    target: inputPanel
-                    y: root.height - inputPanel.height
-                }
-            }
-
-            transitions: Transition {
-                from: ""
-                to: "visible"
-                reversible: true
-                NumberAnimation {
-                    properties: "y"
-                    duration: 250
-                    easing.type: Easing.InOutQuad
-                }
-            }
-        }
 }

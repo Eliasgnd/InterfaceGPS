@@ -95,11 +95,6 @@ NavigationPage::NavigationPage(QWidget* parent)
     connect(ui->btnSearch, &QPushButton::clicked, this, [this](){
         requestRouteForText(ui->editSearch->text());
     });
-    connect(ui->btnSimulate, &QPushButton::clicked, this, [this](){
-        if(m_t && !m_lastCalculatedRoute.isEmpty()){
-            emit m_t->simulateRouteRequested(m_lastCalculatedRoute);
-        }
-    });
 }
 
 bool NavigationPage::eventFilter(QObject *obj, QEvent *event)

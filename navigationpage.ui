@@ -2,12 +2,27 @@
 <ui version="4.0">
  <class>NavigationPage</class>
  <widget class="QWidget" name="NavigationPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>621</width>
+    <height>448</height>
+   </rect>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="leftMargin"><number>14</number></property>
-   <property name="topMargin"><number>14</number></property>
-   <property name="rightMargin"><number>14</number></property>
-   <property name="bottomMargin"><number>14</number></property>
-
+   <property name="leftMargin">
+    <number>14</number>
+   </property>
+   <property name="topMargin">
+    <number>14</number>
+   </property>
+   <property name="rightMargin">
+    <number>14</number>
+   </property>
+   <property name="bottomMargin">
+    <number>14</number>
+   </property>
    <item>
     <widget class="QFrame" name="frame">
      <property name="styleSheet">
@@ -20,15 +35,26 @@ QPushButton:pressed{background:#2d3245;}
       </string>
      </property>
      <layout class="QVBoxLayout" name="layoutInner">
-      <property name="leftMargin"><number>14</number></property>
-      <property name="topMargin"><number>14</number></property>
-      <property name="rightMargin"><number>14</number></property>
-      <property name="bottomMargin"><number>14</number></property>
-      <property name="spacing"><number>10</number></property>
-
+      <property name="spacing">
+       <number>10</number>
+      </property>
+      <property name="leftMargin">
+       <number>14</number>
+      </property>
+      <property name="topMargin">
+       <number>14</number>
+      </property>
+      <property name="rightMargin">
+       <number>14</number>
+      </property>
+      <property name="bottomMargin">
+       <number>14</number>
+      </property>
       <item>
        <layout class="QHBoxLayout" name="rowSearch">
-        <property name="spacing"><number>10</number></property>
+        <property name="spacing">
+         <number>10</number>
+        </property>
         <item>
          <widget class="QLineEdit" name="editSearch">
           <property name="placeholderText">
@@ -41,62 +67,108 @@ QPushButton:pressed{background:#2d3245;}
           <property name="text">
            <string>Aller</string>
           </property>
-          <property name="minimumWidth"><number>100</number></property>
          </widget>
         </item>
        </layout>
       </item>
-
       <item>
        <widget class="QFrame" name="mapPlaceholder">
-        <property name="minimumHeight"><number>240</number></property>
         <property name="styleSheet">
          <string notr="true">QFrame{background:#0f1115;border-radius:14px;border:1px solid #2a2f3a;}</string>
         </property>
         <layout class="QVBoxLayout" name="mapLayout">
-         <property name="leftMargin"><number>10</number></property>
-         <property name="topMargin"><number>10</number></property>
-         <property name="rightMargin"><number>10</number></property>
-         <property name="bottomMargin"><number>10</number></property>
+         <property name="leftMargin">
+          <number>10</number>
+         </property>
+         <property name="topMargin">
+          <number>10</number>
+         </property>
+         <property name="rightMargin">
+          <number>10</number>
+         </property>
+         <property name="bottomMargin">
+          <number>10</number>
+         </property>
          <item>
           <widget class="QLabel" name="lblMap">
-           <property name="text"><string>Carte (OSM) - placeholder</string></property>
-           <property name="alignment"><set>Qt::AlignCenter</set></property>
-           <property name="styleSheet"><string notr="true">QLabel{color:#b8c0cc;font-size:16px;}</string></property>
+           <property name="styleSheet">
+            <string notr="true">QLabel{color:#b8c0cc;font-size:16px;}</string>
+           </property>
+           <property name="text">
+            <string>Carte (OSM) - placeholder</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
           </widget>
          </item>
         </layout>
        </widget>
       </item>
-
       <item>
        <layout class="QHBoxLayout" name="rowInfo">
-        <property name="spacing"><number>10</number></property>
-        <item><widget class="QLabel" name="lblLat"><property name="text"><string>lat: --</string></property><property name="styleSheet"><string notr="true">QLabel{font-size:16px;}</string></property></widget></item>
-        <item><widget class="QLabel" name="lblLon"><property name="text"><string>lon: --</string></property><property name="styleSheet"><string notr="true">QLabel{font-size:16px;}</string></property></widget></item>
+        <property name="spacing">
+         <number>10</number>
+        </property>
         <item>
-         <spacer name="sp">
-          <property name="orientation"><enum>Qt::Horizontal</enum></property>
-          <property name="sizeHint" stdset="0"><size><width>160</width><height>10</height></size></property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnSimulate">
+         <widget class="QLabel" name="lblLat">
+          <property name="styleSheet">
+           <string notr="true">QLabel{font-size:16px;}</string>
+          </property>
           <property name="text">
-           <string>Simuler</string>
+           <string>lat: --</string>
           </property>
          </widget>
         </item>
-        <item><widget class="QPushButton" name="btnCenter"><property name="text"><string>Centrer</string></property></widget></item>
-        <item><widget class="QPushButton" name="btnZoomIn"><property name="text"><string>Zoom +</string></property></widget></item>
-        <item><widget class="QPushButton" name="btnZoomOut"><property name="text"><string>Zoom -</string></property></widget></item>
+        <item>
+         <widget class="QLabel" name="lblLon">
+          <property name="styleSheet">
+           <string notr="true">QLabel{font-size:16px;}</string>
+          </property>
+          <property name="text">
+           <string>lon: --</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="sp">
+          <property name="orientation">
+           <enum>Qt::Orientation::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>160</width>
+            <height>10</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnCenter">
+          <property name="text">
+           <string>Centrer</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnZoomIn">
+          <property name="text">
+           <string>Zoom +</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnZoomOut">
+          <property name="text">
+           <string>Zoom -</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
-
      </layout>
     </widget>
    </item>
-
   </layout>
  </widget>
  <resources/>
