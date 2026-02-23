@@ -65,7 +65,6 @@ NavigationPage::NavigationPage(QWidget* parent)
         if (!root) return;
         connect(root, SIGNAL(routeInfoUpdated(QString,QString)), this, SLOT(onRouteInfoReceived(QString,QString)));
         connect(root, SIGNAL(suggestionsUpdated(QString)), this, SLOT(onSuggestionsReceived(QString)));
-        connect(root, SIGNAL(routeReadyForSimulation(QVariant)), this, SLOT(onRouteReadyForSimulation(QVariant)));
     };
 
     connect(m_mapView, &QQuickWidget::statusChanged, this, [setupQmlConnections](QQuickWidget::Status status){
@@ -197,6 +196,3 @@ void NavigationPage::triggerSuggestionsSearch() {
     }
 }
 
-void NavigationPage::onRouteReadyForSimulation(const QVariant& pathObj) {
-    m_lastCalculatedRoute = pathObj.toList();
-}

@@ -46,7 +46,6 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
 
     // TelemetryData sert de bus applicatif partagé entre les modules C++/QML.
     m_nav->bindTelemetry(m_t);
-    m_settings->bindTelemetry(m_t);
 
     QWidget* mainContainer = new QWidget(this);
     m_mainLayout = new QHBoxLayout(mainContainer);

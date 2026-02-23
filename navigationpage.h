@@ -33,7 +33,6 @@ private slots:
     void onSuggestionChosen(const QString& suggestion);
     void triggerSuggestionsSearch();
     void onSuggestionsReceived(const QString& jsonSuggestions);
-    void onRouteReadyForSimulation(const QVariant& pathObj);
 
 private:
     void requestRouteForText(const QString& destination);
@@ -46,8 +45,6 @@ private:
     QStringListModel* m_suggestionsModel = nullptr;
     QTimer* m_suggestionDebounceTimer = nullptr;
     bool m_ignoreTextUpdate = false;
-    QVariantList m_lastCalculatedRoute;
-
 
     Clavier* m_currentClavier = nullptr;
 };

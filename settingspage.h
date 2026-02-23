@@ -16,8 +16,6 @@ class SettingsPage : public QWidget {
 public:
     explicit SettingsPage(QWidget* parent=nullptr);
     ~SettingsPage();
-    void bindTelemetry(TelemetryData* t);
-
 signals:
     void themeChanged(int themeIndex);
     void brightnessChanged(int value);
@@ -34,7 +32,6 @@ private:
     void setDiscoverable(bool enable);
 
     Ui::SettingsPage* ui;
-    TelemetryData* m_t=nullptr;
 
     QBluetoothLocalDevice *m_localDevice;
     QTimer *m_discoveryTimer;

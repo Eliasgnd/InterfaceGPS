@@ -57,8 +57,6 @@ Item {
 
     signal routeInfoUpdated(string distance, string duration)
     signal suggestionsUpdated(string suggestions)
-    signal routeReadyForSimulation(var pathObj)
-
 
     // Fond CartoDB Dark via plugin OSM: compromis lisibilité nocturne / simplicité de déploiement.
     Plugin {
@@ -274,8 +272,6 @@ Item {
                         }
                         routePoints = newPoints;
                         root.trafficSegments = [];
-
-                        routeReadyForSimulation(simplePath);
 
                         if (route.legs && route.legs[0] && route.legs[0].annotation) {
                             routeSpeedLimits = route.legs[0].annotation.maxspeed ? route.legs[0].annotation.maxspeed : [];

@@ -24,7 +24,6 @@ class HomeAssistant : public QWidget {
     Q_OBJECT
 public:
     explicit HomeAssistant(QWidget* parent = nullptr);
-    void setUrl(const QString& url);
 
 private slots:
     void openKeyboard();

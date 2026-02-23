@@ -62,8 +62,6 @@ SettingsPage::SettingsPage(QWidget* parent)
 
 SettingsPage::~SettingsPage() { delete ui; }
 
-void SettingsPage::bindTelemetry(TelemetryData* t) { m_t = t; Q_UNUSED(m_t); }
-
 void SettingsPage::showAutoClosingMessage(const QString &title, const QString &text, int timeoutMs)
 {
     QMessageBox *msgBox = new QMessageBox(this);
