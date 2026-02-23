@@ -12,15 +12,6 @@ void TelemetryData::setSpeedKmh(double v){
     if (qFuzzyCompare(m_speedKmh, v)) return;
     m_speedKmh=v; emit speedKmhChanged();
 }
-void TelemetryData::setBatteryPercent(int v){
-    v=qBound(0, v, 100);
-    if (m_batteryPercent==v) return;
-    m_batteryPercent=v; emit batteryPercentChanged();
-}
-void TelemetryData::setReverse(bool v){
-    if (m_reverse==v) return;
-    m_reverse=v; emit reverseChanged();
-}
 void TelemetryData::setGpsOk(bool v){
     if (m_gpsOk==v) return;
     m_gpsOk=v; emit gpsOkChanged();

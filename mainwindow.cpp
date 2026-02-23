@@ -22,21 +22,13 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     // Format fixe: l'interface est pensée pour l'écran embarqué du véhicule.
     this->setFixedSize(1280, 800);
 
-
     ui->bottomNavFrame->setFixedHeight(75);
-
 
     ui->bottomNavLayout->setContentsMargins(10, 2, 10, 5);
     ui->bottomNavLayout->setSpacing(15);
 
-
-
     ui->verticalLayoutRoot->setStretch(0, 1);
     ui->verticalLayoutRoot->setStretch(1, 0);
-
-
-    ui->topBarFrame->hide();
-
 
     // Chaque page reste instanciée en permanence pour préserver son état entre les changements d'onglet.
     m_nav = new NavigationPage(this);
@@ -45,7 +37,6 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     m_media = new MediaPage(this);
     m_ha = new HomeAssistant(this);
 
-
     QSettings settings("EliasCorp", "GPSApp");
     QString leftAppStr = settings.value("Split/Left", "Nav").toString();
     QString rightAppStr = settings.value("Split/Right", "Media").toString();
@@ -53,17 +44,14 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     m_lastLeftApp = stringToWidget(leftAppStr);
     m_lastRightApp = stringToWidget(rightAppStr);
 
-
     // TelemetryData sert de bus applicatif partagé entre les modules C++/QML.
     m_nav->bindTelemetry(m_t);
     m_settings->bindTelemetry(m_t);
-
 
     QWidget* mainContainer = new QWidget(this);
     m_mainLayout = new QHBoxLayout(mainContainer);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(10);
-
 
     m_mainLayout->addWidget(m_nav);
     m_mainLayout->addWidget(m_cam);
@@ -74,9 +62,6 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     int stackIndex = ui->verticalLayoutRoot->indexOf(ui->stackedPages);
     ui->verticalLayoutRoot->insertWidget(stackIndex, mainContainer);
     ui->stackedPages->hide();
-
-
-    ui->btnHome->hide();
 
     connect(ui->btnNav, &QPushButton::clicked, this, &MainWindow::goNav);
     connect(ui->btnCam, &QPushButton::clicked, this, &MainWindow::goCam);
@@ -91,10 +76,8 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     ui->bottomNavLayout->insertWidget(0, m_btnSplit);
     connect(m_btnSplit, &QPushButton::clicked, this, &MainWindow::toggleSplitAndHome);
 
-
     connect(m_t, &TelemetryData::alertLevelChanged, this, &MainWindow::updateTopBarAndAlert);
     connect(m_t, &TelemetryData::alertTextChanged, this, &MainWindow::updateTopBarAndAlert);
-
 
     goSplit();
 }
@@ -130,7 +113,6 @@ void MainWindow::displayPages(QWidget* p1, QWidget* p2)
     m_isSplitMode = (p2 != nullptr);
     m_media->setCompactMode(m_isSplitMode);
 
-
     m_btnSplit->setText(m_isSplitMode ? "▦" : "◫");
 
     m_btnSplit->setStyleSheet("QPushButton { font-size: 38px; color: white; background-color: transparent; border-radius: 12px; }"
@@ -151,7 +133,6 @@ void MainWindow::displayPages(QWidget* p1, QWidget* p2)
 }
 
 void MainWindow::toggleSplitAndHome() {
-
     if (!m_isSplitMode) goSplit();
 }
 

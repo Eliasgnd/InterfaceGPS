@@ -18,7 +18,6 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     mediapage.cpp \
-    mocktelemetrysource.cpp \
     navigationpage.cpp \
     settingspage.cpp \
     telemetrydata.cpp
@@ -31,7 +30,6 @@ HEADERS += \
     homeassistant.h \
     mainwindow.h \
     mediapage.h \
-    mocktelemetrysource.h \
     navigationpage.h \
     settingspage.h \
     telemetrydata.h
