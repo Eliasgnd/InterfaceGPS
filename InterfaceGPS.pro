@@ -10,6 +10,7 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    androidautopage.cpp \
     bluetoothmanager.cpp \
     camerapage.cpp \
     clavier.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
     telemetrydata.cpp
 
 HEADERS += \
+    androidautopage.h \
     bluetoothmanager.h \
     camerapage.h \
     clavier.h \
@@ -52,3 +54,24 @@ DISTFILES += \
 
 RESOURCES += \
     resources.qrc
+
+# --- MODULE ANDROID AUTO (PI 4 / LINUX UNIQUEMENT) ---
+linux {
+    message("Architecture Linux détectée : Activation du module Android Auto")
+
+    # Cette variable permet d'activer le code C++ spécifique
+    DEFINES += ENABLE_ANDROID_AUTO
+
+    # Chemins vers les en-têtes (dossiers créés lors de tes compilations)
+    INCLUDEPATH += /usr/local/include \
+                   /home/gand/openauto/include \
+                   /home/gand/aasdk/include
+
+    # Bibliothèques à lier
+    LIBS += -L/usr/local/lib -laasdk -laasdk_proto -lrtaudio -lopenauto
+    LIBS += -lprotobuf -lusb-1.0 -lssl -lcrypto -lboost_system -lboost_thread
+
+    # Moteur vidéo GStreamer pour l'accélération matérielle
+    CONFIG += link_pkgconfig
+    PKGCONFIG += gstreamer-1.0 gstreamer-video-1.0 gstreamer-app-1.0
+}

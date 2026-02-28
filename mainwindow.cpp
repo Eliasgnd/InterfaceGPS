@@ -15,6 +15,10 @@
 #include "settingspage.h"
 #include "mediapage.h"
 
+#ifdef ENABLE_ANDROID_AUTO
+#include "androidautopage.h"
+#endif
+
 #include <QStackedWidget>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -36,14 +40,16 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     ui->verticalLayoutRoot->setStretch(0, 1);
     ui->verticalLayoutRoot->setStretch(1, 0);
 
-    // Instanciation des pages.
-    // Chaque page est instanciée une seule fois et reste en mémoire pour préserver son état
-    // (ex: ne pas avoir à recharger la carte OSM à chaque clic sur l'onglet Navigation).
+    // Instanciation des pages classiques
     m_nav = new NavigationPage(this);
     m_cam = new CameraPage(this);
     m_settings = new SettingsPage(this);
     m_media = new MediaPage(this);
     m_ha = new HomeAssistant(this);
+
+#ifdef ENABLE_ANDROID_AUTO
+    m_aa = new AndroidAutoPage(this);
+#endif
 
     // Restauration du dernier état de l'écran partagé (persistance utilisateur)
     QSettings settings("EliasCorp", "GPSApp");
@@ -68,6 +74,10 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     m_mainLayout->addWidget(m_settings);
     m_mainLayout->addWidget(m_ha);
 
+#ifdef ENABLE_ANDROID_AUTO
+    m_mainLayout->addWidget(m_aa);
+#endif
+
     // Remplacement de l'ancien QStackedWidget (inutilisé) par notre layout dynamique
     int stackIndex = ui->verticalLayoutRoot->indexOf(ui->stackedPages);
     ui->verticalLayoutRoot->insertWidget(stackIndex, mainContainer);
@@ -79,6 +89,10 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     connect(ui->btnSettings, &QPushButton::clicked, this, &MainWindow::goSettings);
     connect(ui->btnHA, &QPushButton::clicked, this, &MainWindow::goHomeAssistant);
     connect(ui->btnMedia, &QPushButton::clicked, this, &MainWindow::goMedia);
+
+    // /!\ IMPORTANT : Assure-toi d'avoir ajouté un bouton nommé "btnAA" dans mainwindow.ui
+    // avant de compiler, sinon cette ligne va générer une erreur "no member named 'btnAA'".
+    // connect(ui->btnAA, &QPushButton::clicked, this, &MainWindow::goAndroidAuto);
 
     // Création dynamique du bouton pour activer le mode Split-Screen
     m_btnSplit = new QPushButton(this);
@@ -101,6 +115,9 @@ MainWindow::~MainWindow() {
 }
 
 QString MainWindow::widgetToString(QWidget* w) {
+#ifdef ENABLE_ANDROID_AUTO
+    if (w == m_aa) return "AA";
+#endif
     if (w == m_nav) return "Nav";
     if (w == m_media) return "Media";
     if (w == m_cam) return "Cam";
@@ -110,6 +127,9 @@ QString MainWindow::widgetToString(QWidget* w) {
 }
 
 QWidget* MainWindow::stringToWidget(const QString& name) {
+#ifdef ENABLE_ANDROID_AUTO
+    if (name == "AA") return m_aa;
+#endif
     if (name == "Media") return m_media;
     if (name == "Cam") return m_cam;
     if (name == "Settings") return m_settings;
@@ -160,9 +180,17 @@ void MainWindow::toggleSplitAndHome() {
 
 void MainWindow::goSplit() {
     // OPTIMISATION CRITIQUE : Le flux caméra est systématiquement arrêté hors de sa page
-    // pour réduire drastiquement la charge CPU et le trafic réseau.
     m_cam->stopStream();
     displayPages(m_lastLeftApp, m_lastRightApp);
+}
+
+void MainWindow::goAndroidAuto() {
+    m_cam->stopStream();
+#ifdef ENABLE_ANDROID_AUTO
+    m_lastLeftApp = m_aa; // Définit AA comme application gauche si on passe en split-screen
+    saveSplitState();
+    displayPages(m_aa);
+#endif
 }
 
 void MainWindow::goNav() {

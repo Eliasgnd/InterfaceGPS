@@ -19,6 +19,10 @@ class SettingsPage;
 class MediaPage;
 class HomeAssistant;
 
+#ifdef ENABLE_ANDROID_AUTO
+class AndroidAutoPage;
+#endif
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -55,6 +59,7 @@ private slots:
     void goMedia();            ///< Affiche la page Média (et la définit comme application droite en mode split).
     void goSettings();         ///< Affiche la page Paramètres.
     void goHomeAssistant();    ///< Affiche la page Domotique.
+    void goAndroidAuto();      ///< Affiche la page Android Auto.
     void goSplit();            ///< Active le mode écran partagé (Split-Screen) avec les dernières applications utilisées.
 
     // --- SLOTS UTILITAIRES ---
@@ -80,6 +85,10 @@ private:
     MediaPage* m_media = nullptr;
     SettingsPage* m_settings = nullptr;
     HomeAssistant* m_ha = nullptr;
+
+#ifdef ENABLE_ANDROID_AUTO
+    AndroidAutoPage* m_aa = nullptr; ///< Instance de la page Android Auto
+#endif
 
     // --- GESTION DE L'AFFICHAGE ---
     QHBoxLayout* m_mainLayout = nullptr; ///< Layout principal contenant toutes les pages.
