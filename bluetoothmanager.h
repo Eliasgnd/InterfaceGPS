@@ -2,7 +2,7 @@
  * @file bluetoothmanager.h
  * @brief Rôle architectural : Interface de contrôle média Bluetooth via MPRIS/DBus.
  * @details Responsabilités : Exposer les métadonnées (titre, artiste), l'état de lecture
- * et les commandes (Play, Pause, Next) au reste de l'application (notamment à QML).
+ * et les commandes (Play, Pause, Next) au reste de l'application (notamment à MediaPlayer.QML).
  * Dépendances principales : Qt DBus et les services org.mpris.MediaPlayer2.*.
  */
 
@@ -18,7 +18,7 @@
  * * Cette classe écoute le bus de session DBus pour détecter la présence de lecteurs
  * compatibles MPRIS (ex: Spotify, lecteur Bluetooth du téléphone connecté, VLC).
  * * Elle expose ensuite ces données sous forme de propriétés Qt (Q_PROPERTY) pour
- * permettre une intégration fluide et réactive avec l'interface graphique (QML/C++).
+ * permettre une intégration avec l'interface graphique (QML/C++).
  */
 class BluetoothManager : public QObject {
     Q_OBJECT

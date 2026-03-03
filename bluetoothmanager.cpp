@@ -135,7 +135,7 @@ void BluetoothManager::connectToService(const QString &serviceName) {
     if (serviceName.isEmpty()) return;
     if (serviceName == m_currentService && m_playerInterface) return;
 
-    qDebug() << "✅ Connexion au lecteur :" << serviceName;
+    qDebug() << " Connexion au lecteur :" << serviceName;
     m_currentService = serviceName;
 
     // Une seule subscription PropertiesChanged est conservée pour éviter les doublons de notifications
