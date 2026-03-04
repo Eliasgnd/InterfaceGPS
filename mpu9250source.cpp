@@ -62,10 +62,12 @@ void Mpu9250Source::readSensor() {
 
     float dt = m_elapsedTimer.restart() / 1000.0f;
 
+    // 1. Lecture Accel/Gyro
     ioctl(m_fileDescriptor, I2C_SLAVE, 0x68);
     char reg = 0x3B;
     char dataAG[14];
     if (write(m_fileDescriptor, &reg, 1) == 1 && read(m_fileDescriptor, dataAG, 14) == 14) {
+
         float ax = (int16_t)((dataAG[0] << 8) | dataAG[1]) * (2.0f / 32768.0f);
         float ay = (int16_t)((dataAG[2] << 8) | dataAG[3]) * (2.0f / 32768.0f);
         float az = (int16_t)((dataAG[4] << 8) | dataAG[5]) * (2.0f / 32768.0f);
@@ -73,32 +75,44 @@ void Mpu9250Source::readSensor() {
         float gy = (int16_t)((dataAG[10] << 8) | dataAG[11]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
         float gz = (int16_t)((dataAG[12] << 8) | dataAG[13]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
 
+        // 2. Lecture Magnétomètre
         ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
         char st1;
         char regSt1 = 0x02;
         write(m_fileDescriptor, &regSt1, 1);
+
         if (read(m_fileDescriptor, &st1, 1) == 1 && (st1 & 0x01)) {
             char regMag = 0x03;
             char dataM[7];
             write(m_fileDescriptor, &regMag, 1);
+
             if (read(m_fileDescriptor, dataM, 7) == 7) {
                 float mx = ((int16_t)((dataM[1] << 8) | dataM[0]) - m_magBias[0]) * m_magScale[0];
                 float my = ((int16_t)((dataM[3] << 8) | dataM[2]) - m_magBias[1]) * m_magScale[1];
                 float mz = ((int16_t)((dataM[5] << 8) | dataM[4]) - m_magBias[2]) * m_magScale[2];
 
-                // On utilise enfin toutes les variables ici, fini les warnings !
                 madgwickUpdate(ax, ay, az, gx, gy, gz, mx, my, mz, dt);
 
+                // Calcul du Yaw
                 float yaw = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
                 float heading = yaw * (180.0f / M_PI);
 
-                heading += 2.0f; // Déclinaison
+                heading += 2.0f; // Déclinaison magnétique
                 if (heading < 0) heading += 360.0f;
                 if (heading > 360.0f) heading -= 360.0f;
 
+                // --- AJOUT DU LOG ICI ---
+                qDebug() << "🧭 Boussole -> Cap :" << heading << "° | dt :" << dt;
+
                 if (m_data) m_data->setHeading(static_cast<double>(heading));
             }
+        } else {
+            // Si on entre ici, c'est que le magnétomètre n'a pas de donnée prête
+            // On ne log pas à chaque fois pour ne pas spammer, mais on peut vérifier :
+            // qDebug() << "Waiting for Mag data...";
         }
+    } else {
+        qWarning() << "⚠️ Erreur de lecture I2C sur 0x68 (MPU9250 débranché ?)";
     }
 }
 
