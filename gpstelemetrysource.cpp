@@ -92,9 +92,9 @@ void GpsTelemetrySource::onPositionUpdated(const QGeoPositionInfo &info) {
             // car le module ne peut plus déterminer l'avant de l'arrière.
             // On applique un seuil (3 km/h) pour éviter que la carte GPS ne pivote brutalement
             // dans tous les sens lorsque le véhicule est arrêté à un feu rouge.
-            if (speedMs * 3.6 > 3.0) {
+            /*if (speedMs * 3.6 > 3.0) {
                 m_data->setHeading(course);
-            }
+            }*/
         }
     } else {
         // Le GPS est allumé mais cherche encore ses satellites (Cold/Warm start)
