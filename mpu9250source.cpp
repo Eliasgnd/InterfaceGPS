@@ -20,39 +20,43 @@ Mpu9250Source::~Mpu9250Source() {
 void Mpu9250Source::start() {
     qDebug() << "🔍 Tentative d'ouverture du bus I2C-1...";
     m_fileDescriptor = open("/dev/i2c-1", O_RDWR);
+    if (m_fileDescriptor < 0) return;
 
-    if (m_fileDescriptor < 0) {
-        qWarning() << "❌ Erreur : Impossible d'ouvrir /dev/i2c-1. L'I2C est-il activé ?";
-        return;
+    ioctl(m_fileDescriptor, I2C_SLAVE, 0x68);
+    char config[2] = {0x6B, 0x00}; write(m_fileDescriptor, config, 2); // Wake up
+
+    config[0] = 0x1C; config[1] = 0x00; write(m_fileDescriptor, config, 2); // Accel +/- 2g
+    config[0] = 0x1B; config[1] = 0x00; write(m_fileDescriptor, config, 2); // Gyro 250 dps
+
+    // --- AUTO-CALIBRATION DU GYROSCOPE (Kris Winer Method) ---
+    qDebug() << "⏳ Calibration du Gyroscope (NE BOUGEZ PAS LE CAPTEUR)...";
+    float gyroSum[3] = {0, 0, 0};
+    int samples = 200;
+    char reg = 0x43; // Registre de départ du Gyro
+    char dataG[6];
+
+    for (int i = 0; i < samples; i++) {
+        write(m_fileDescriptor, &reg, 1);
+        if (read(m_fileDescriptor, dataG, 6) == 6) {
+            gyroSum[0] += (int16_t)((dataG[0] << 8) | dataG[1]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
+            gyroSum[1] += (int16_t)((dataG[2] << 8) | dataG[3]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
+            gyroSum[2] += (int16_t)((dataG[4] << 8) | dataG[5]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
+        }
+        usleep(5000); // Pause de 5ms (donc 200 lectures = 1 seconde)
     }
+    m_gyroBias[0] = gyroSum[0] / samples;
+    m_gyroBias[1] = gyroSum[1] / samples;
+    m_gyroBias[2] = gyroSum[2] / samples;
+    qDebug() << "✅ Gyroscope calibré. Biais retirés.";
+    // -----------------------------------------------------------
 
-    // 1. Test de communication avec le MPU9250
-    if (ioctl(m_fileDescriptor, I2C_SLAVE, 0x68) < 0) {
-        qWarning() << "❌ Erreur : Impossible de contacter l'adresse 0x68 (MPU9250).";
-        return;
-    }
-
-    char wakeUp[2] = {0x6B, 0x00};
-    if (write(m_fileDescriptor, wakeUp, 2) != 2) {
-        qWarning() << "❌ Erreur : Échec du réveil du MPU9250. Vérifiez SDA/SCL.";
-        return;
-    }
-
-    // 2. Activation du Bypass pour le Magnétomètre
-    char bypass[2] = {0x37, 0x02};
-    write(m_fileDescriptor, bypass, 2);
-
-    // 3. Test de communication avec le AK8963
-    if (ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C) < 0) {
-        qWarning() << "⚠️ Attention : Magnétomètre (0x0C) non détecté.";
-    } else {
-        char magConfig[2] = {0x0A, 0x16};
-        write(m_fileDescriptor, magConfig, 2);
-        qDebug() << "✅ Boussole (AK8963) configurée.";
-    }
+    // Activation Bypass pour Magnétomètre
+    config[0] = 0x37; config[1] = 0x02; write(m_fileDescriptor, config, 2);
+    ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
+    config[0] = 0x0A; config[1] = 0x16; write(m_fileDescriptor, config, 2);
 
     m_elapsedTimer.start();
-    m_timer->start(100); // 10Hz
+    m_timer->start(100);
     qDebug() << "🚀 Mpu9250Source démarré avec succès.";
 }
 
@@ -67,12 +71,15 @@ void Mpu9250Source::readSensor() {
     char dataAG[14];
     if (write(m_fileDescriptor, &reg, 1) == 1 && read(m_fileDescriptor, dataAG, 14) == 14) {
 
+        // Lecture Accel
         float ax = (int16_t)((dataAG[0] << 8) | dataAG[1]) * (2.0f / 32768.0f);
         float ay = (int16_t)((dataAG[2] << 8) | dataAG[3]) * (2.0f / 32768.0f);
         float az = (int16_t)((dataAG[4] << 8) | dataAG[5]) * (2.0f / 32768.0f);
-        float gx = (int16_t)((dataAG[8] << 8) | dataAG[9]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
-        float gy = (int16_t)((dataAG[10] << 8) | dataAG[11]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
-        float gz = (int16_t)((dataAG[12] << 8) | dataAG[13]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
+
+        // Lecture Gyro ET SOUSTRACTION DU BIAIS
+        float gx = ((int16_t)((dataAG[8] << 8) | dataAG[9]) * (250.0f / 32768.0f) * (M_PI / 180.0f)) - m_gyroBias[0];
+        float gy = ((int16_t)((dataAG[10] << 8) | dataAG[11]) * (250.0f / 32768.0f) * (M_PI / 180.0f)) - m_gyroBias[1];
+        float gz = ((int16_t)((dataAG[12] << 8) | dataAG[13]) * (250.0f / 32768.0f) * (M_PI / 180.0f)) - m_gyroBias[2];
 
         // 2. Lecture Magnétomètre
         ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);

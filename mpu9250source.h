@@ -38,6 +38,9 @@ private:
     float m_magBias[3] = {108.0f, 144.0f, -77.0f};
     // Soft Iron (Scaling)
     float m_magScale[3] = {0.991251f, 1.03755f, 0.973368f};
+
+    // --- Biais du Gyroscope ---
+    float m_gyroBias[3] = {0.0f, 0.0f, 0.0f};
 };
 
 #endif // MPU9250SOURCE_H
