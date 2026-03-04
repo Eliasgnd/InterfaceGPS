@@ -19,22 +19,42 @@ Mpu9250Source::~Mpu9250Source() {
 }
 
 void Mpu9250Source::start() {
+    qDebug() << "🔍 Tentative d'ouverture du bus I2C-1...";
     m_fileDescriptor = open("/dev/i2c-1", O_RDWR);
-    if (m_fileDescriptor < 0) return;
 
-    ioctl(m_fileDescriptor, I2C_SLAVE, 0x68);
-    char config[2] = {0x6B, 0x00}; // Wake up
-    write(m_fileDescriptor, config, 2);
+    if (m_fileDescriptor < 0) {
+        qWarning() << "❌ Erreur : Impossible d'ouvrir /dev/i2c-1. L'I2C est-il activé ?";
+        return;
+    }
 
-    config[0] = 0x37; config[1] = 0x02; // Bypass Enable
-    write(m_fileDescriptor, config, 2);
+    // 1. Test de communication avec le MPU9250
+    if (ioctl(m_fileDescriptor, I2C_SLAVE, 0x68) < 0) {
+        qWarning() << "❌ Erreur : Impossible de contacter l'adresse 0x68 (MPU9250).";
+        return;
+    }
 
-    ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
-    config[0] = 0x0A; config[1] = 0x16; // 16-bit, 100Hz
-    write(m_fileDescriptor, config, 2);
+    char wakeUp[2] = {0x6B, 0x00};
+    if (write(m_fileDescriptor, wakeUp, 2) != 2) {
+        qWarning() << "❌ Erreur : Échec du réveil du MPU9250. Vérifiez SDA/SCL.";
+        return;
+    }
+
+    // 2. Activation du Bypass pour le Magnétomètre
+    char bypass[2] = {0x37, 0x02};
+    write(m_fileDescriptor, bypass, 2);
+
+    // 3. Test de communication avec le AK8963
+    if (ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C) < 0) {
+        qWarning() << "⚠️ Attention : Magnétomètre (0x0C) non détecté.";
+    } else {
+        char magConfig[2] = {0x0A, 0x16};
+        write(m_fileDescriptor, magConfig, 2);
+        qDebug() << "✅ Boussole (AK8963) configurée.";
+    }
 
     m_elapsedTimer.start();
-    m_timer->start(20); // 50Hz
+    m_timer->start(100); // On ralentit à 10Hz pour stabiliser le système
+    qDebug() << "🚀 Mpu9250Source démarré avec succès.";
 }
 
 void Mpu9250Source::readSensor() {

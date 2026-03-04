@@ -26,6 +26,8 @@
  */
 int main(int argc, char *argv[]) {
 
+    qputenv("QT_QPA_PLATFORM", "xcb");
+
     // Optimisation pour QWebEngine : Permet le partage de contexte OpenGL entre les différents threads
     // et fenêtres pour un rendu matériel plus fluide. Doit être appelé avant l'instanciation de QApplication.
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
