@@ -44,9 +44,22 @@ void Mpu9250Source::start() {
 void Mpu9250Source::readSensor() {
     if (m_fileDescriptor < 0) return;
 
-    // 1. On se connecte à l'adresse du magnétomètre
+    // Tentative d'accès au magnétomètre
     if (ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C) < 0) {
-        qWarning() << "MPU9250: Erreur d'accès à l'adresse 0x0C";
+        qWarning() << "⚠️ Boussole perdue... Tentative de réinitialisation du Bypass.";
+
+        // Si on perd le magnétomètre, on repasse sur l'adresse du MPU (0x68)
+        // pour réactiver le bypass et le réveil.
+        ioctl(m_fileDescriptor, I2C_SLAVE, 0x68);
+        char wakeUp[2] = {0x6B, 0x00};
+        write(m_fileDescriptor, wakeUp, 2);
+        char bypass[2] = {0x37, 0x02};
+        write(m_fileDescriptor, bypass, 2);
+
+        // On réinitialise aussi le magnétomètre
+        ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
+        char magConfig[2] = {0x0A, 0x16};
+        write(m_fileDescriptor, magConfig, 2);
         return;
     }
 
