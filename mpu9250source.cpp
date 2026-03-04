@@ -98,15 +98,16 @@ void Mpu9250Source::readSensor() {
                 float my = ((int16_t)((dataM[3] << 8) | dataM[2]) - m_magBias[1]) * m_magScale[1];
                 float mz = ((int16_t)((dataM[5] << 8) | dataM[4]) - m_magBias[2]) * m_magScale[2];
 
-                // MODIFICATION 1 : Alignement physique MPU6500 (Accel/Gyro) avec AK8963 (Boussole)
-                // On envoie 'my' puis '-mx'
-                madgwickUpdate(ax, ay, az, gx, gy, gz, my, -mx, mz, dt);
+                // 🔴 MODIFICATION CRITIQUE : L'alignement parfait des 9 axes
+                // On inverse ax, gy, gz, et on croise my/-mx (Méthode exacte de Kris Winer)
+                madgwickUpdate(-ax, ay, az, gx, -gy, -gz, my, -mx, mz, dt);
 
                 // Calcul du Yaw à partir du quaternion
                 float yaw = std::atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
 
-                // MODIFICATION 2 : On inverse le sens pour correspondre à la boussole de la carte
-                float heading = -yaw * (180.0f / M_PI);
+                // 🔴 MODIFICATION 2 : On retire le signe "moins" (-) devant yaw
+                // car le réalignement des axes ci-dessus a déjà corrigé le sens de rotation !
+                float heading = yaw * (180.0f / M_PI);
 
                 heading += 2.0f; // Déclinaison magnétique locale (Ajustez selon région)
                 if (heading < 0) heading += 360.0f;
