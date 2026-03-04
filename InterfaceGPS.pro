@@ -18,6 +18,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     mediapage.cpp \
+    mpu9250source.cpp \
     navigationpage.cpp \
     settingspage.cpp \
     telemetrydata.cpp
@@ -30,6 +31,7 @@ HEADERS += \
     homeassistant.h \
     mainwindow.h \
     mediapage.h \
+    mpu9250source.h \
     navigationpage.h \
     settingspage.h \
     telemetrydata.h

@@ -16,6 +16,7 @@
 #include <QNetworkProxyFactory>
 #include <QDir>
 #include <QCoreApplication>
+#include "mpu9250source.h"
 
 /**
  * @brief Fonction principale (Point d'entrée C++).
@@ -75,7 +76,11 @@ int main(int argc, char *argv[]) {
     GpsTelemetrySource gpsSource(&telemetry);
     gpsSource.start("/dev/serial0");
 
-    // 3. Instanciation et affichage de l'Interface Graphique (lit le Bus)
+    // 3 : Initialisation de la boussole MPU9250
+    Mpu9250Source mpuSource(&telemetry);
+    mpuSource.start();
+
+    // 4. Instanciation et affichage de l'Interface Graphique (lit le Bus)
     MainWindow w(&telemetry);
     w.show();
 
