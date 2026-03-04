@@ -93,21 +93,22 @@ void Mpu9250Source::readSensor() {
             write(m_fileDescriptor, &regMag, 1);
 
             if (read(m_fileDescriptor, dataM, 7) == 7) {
-                // Application de votre calibration personnalisée !
+                // Application de la calibration Hard/Soft Iron
                 float mx = ((int16_t)((dataM[1] << 8) | dataM[0]) - m_magBias[0]) * m_magScale[0];
                 float my = ((int16_t)((dataM[3] << 8) | dataM[2]) - m_magBias[1]) * m_magScale[1];
                 float mz = ((int16_t)((dataM[5] << 8) | dataM[4]) - m_magBias[2]) * m_magScale[2];
 
-                // MODIFICATION 1 : On croise les axes magnétiques en envoyant 'my' puis '-mx'
+                // MODIFICATION 1 : Alignement physique MPU6500 (Accel/Gyro) avec AK8963 (Boussole)
+                // On envoie 'my' puis '-mx'
                 madgwickUpdate(ax, ay, az, gx, gy, gz, my, -mx, mz, dt);
 
-                // Calcul du Yaw
-                float yaw = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
+                // Calcul du Yaw à partir du quaternion
+                float yaw = std::atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
 
-                // MODIFICATION 2 : On ajoute un signe moins (-) devant 'yaw'
+                // MODIFICATION 2 : On inverse le sens pour correspondre à la boussole de la carte
                 float heading = -yaw * (180.0f / M_PI);
 
-                heading += 2.0f; // Déclinaison magnétique (Ajustez si besoin selon votre région)
+                heading += 2.0f; // Déclinaison magnétique locale (Ajustez selon région)
                 if (heading < 0) heading += 360.0f;
                 if (heading > 360.0f) heading -= 360.0f;
 
@@ -121,18 +122,74 @@ void Mpu9250Source::readSensor() {
     }
 }
 
+// --- LE VÉRITABLE FILTRE DE MADGWICK (KRIS WINER) ---
 void Mpu9250Source::madgwickUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz, float dt) {
-    // Intégration basique
-    float qDot1 = 0.5f * (-q[1] * gx - q[2] * gy - q[3] * gz);
-    float qDot2 = 0.5f * (q[0] * gx + q[2] * gz - q[3] * gy);
-    float qDot3 = 0.5f * (q[0] * gy - q[1] * gz + q[3] * gx);
-    float qDot4 = 0.5f * (q[0] * gz + q[1] * gy - q[2] * gx);
+    float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];
+    float norm;
+    float hx, hy, _2bx, _2bz;
+    float s1, s2, s3, s4;
+    float qDot1, qDot2, qDot3, qDot4;
 
-    q[0] += qDot1 * dt; q[1] += qDot2 * dt; q[2] += qDot3 * dt; q[3] += qDot4 * dt;
-    float norm = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]);
-    if (norm > 0) {
-        q[0] /= norm; q[1] /= norm; q[2] /= norm; q[3] /= norm;
-    }
+    // Variables auxiliaires pour éviter les calculs répétitifs
+    float _2q1mx; float _2q1my; float _2q1mz; float _2q2mx;
+    float _4bx; float _4bz;
+    float _2q1 = 2.0f * q1; float _2q2 = 2.0f * q2; float _2q3 = 2.0f * q3; float _2q4 = 2.0f * q4;
+    float _2q1q3 = 2.0f * q1 * q3; float _2q3q4 = 2.0f * q3 * q4;
+    float q1q1 = q1 * q1; float q1q2 = q1 * q2; float q1q3 = q1 * q3; float q1q4 = q1 * q4;
+    float q2q2 = q2 * q2; float q2q3 = q2 * q3; float q2q4 = q2 * q4;
+    float q3q3 = q3 * q3; float q3q4 = q3 * q4; float q4q4 = q4 * q4;
+
+    // Normaliser l'accéléromètre (Gravité)
+    norm = std::sqrt(ax * ax + ay * ay + az * az);
+    if (norm == 0.0f) return; // handle NaN
+    norm = 1.0f/norm;
+    ax *= norm; ay *= norm; az *= norm;
+
+    // Normaliser le magnétomètre (Boussole)
+    norm = std::sqrt(mx * mx + my * my + mz * mz);
+    if (norm == 0.0f) return; // handle NaN
+    norm = 1.0f/norm;
+    mx *= norm; my *= norm; mz *= norm;
+
+    // Direction de référence du champ magnétique
+    _2q1mx = 2.0f * q1 * mx;
+    _2q1my = 2.0f * q1 * my;
+    _2q1mz = 2.0f * q1 * mz;
+    _2q2mx = 2.0f * q2 * mx;
+    hx = mx * q1q1 - _2q1my * q4 + _2q1mz * q3 + mx * q2q2 + _2q2 * my * q3 + _2q2 * mz * q4 - mx * q3q3 - mx * q4q4;
+    hy = _2q1mx * q4 + my * q1q1 - _2q1mz * q2 + _2q2mx * q3 - my * q2q2 + my * q3q3 + _2q3 * mz * q4 - my * q4q4;
+    _2bx = std::sqrt(hx * hx + hy * hy);
+    _2bz = -_2q1mx * q3 + _2q1my * q2 + mz * q1q1 + _2q2mx * q4 - mz * q2q2 + _2q3 * my * q4 - mz * q3q3 + mz * q4q4;
+    _4bx = 2.0f * _2bx;
+    _4bz = 2.0f * _2bz;
+
+    // Descente de gradient : corrige l'orientation du Gyro avec Accel (Gravité) et Mag (Nord)
+    s1 = -_2q3 * (2.0f * q2q4 - _2q1q3 - ax) + _2q2 * (2.0f * q1q2 + _2q3q4 - ay) - _2bz * q3 * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (-_2bx * q4 + _2bz * q2) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + _2bx * q3 * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
+    s2 = _2q4 * (2.0f * q2q4 - _2q1q3 - ax) + _2q1 * (2.0f * q1q2 + _2q3q4 - ay) - 4.0f * q2 * (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - az) + _2bz * q4 * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (_2bx * q3 + _2bz * q1) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + (_2bx * q4 - _4bz * q2) * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
+    s3 = -_2q1 * (2.0f * q2q4 - _2q1q3 - ax) + _2q4 * (2.0f * q1q2 + _2q3q4 - ay) - 4.0f * q3 * (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - az) + (-_4bx * q3 - _2bz * q1) * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (_2bx * q2 + _2bz * q4) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + (_2bx * q1 - _4bz * q3) * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
+    s4 = _2q2 * (2.0f * q2q4 - _2q1q3 - ax) + _2q3 * (2.0f * q1q2 + _2q3q4 - ay) + (-_4bx * q4 + _2bz * q2) * (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (-_2bx * q1 + _2bz * q3) * (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + _2bx * q2 * (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
+    norm = std::sqrt(s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4);    // normalise step magnitude
+    norm = 1.0f/norm;
+    s1 *= norm; s2 *= norm; s3 *= norm; s4 *= norm;
+
+    // Calcul du taux de changement du quaternion
+    qDot1 = 0.5f * (-q2 * gx - q3 * gy - q4 * gz) - beta * s1;
+    qDot2 = 0.5f * (q1 * gx + q3 * gz - q4 * gy) - beta * s2;
+    qDot3 = 0.5f * (q1 * gy - q2 * gz + q4 * gx) - beta * s3;
+    qDot4 = 0.5f * (q1 * gz + q2 * gy - q3 * gx) - beta * s4;
+
+    // Intégration pour produire le quaternion final (la position)
+    q1 += qDot1 * dt;
+    q2 += qDot2 * dt;
+    q3 += qDot3 * dt;
+    q4 += qDot4 * dt;
+    norm = std::sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // normalise quaternion
+    norm = 1.0f/norm;
+
+    q[0] = q1 * norm;
+    q[1] = q2 * norm;
+    q[2] = q3 * norm;
+    q[3] = q4 * norm;
 }
 
 void Mpu9250Source::stop() {
