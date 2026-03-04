@@ -13,128 +13,71 @@ Mpu9250Source::Mpu9250Source(TelemetryData* data, QObject* parent)
     connect(m_timer, &QTimer::timeout, this, &Mpu9250Source::readSensor);
 }
 
-// Correction de l'erreur "undefined reference" : implémentation du destructeur
-Mpu9250Source::~Mpu9250Source() {
-    stop();
-}
+Mpu9250Source::~Mpu9250Source() { stop(); }
 
 void Mpu9250Source::start() {
-    qDebug() << "🔍 Tentative d'ouverture du bus I2C-1...";
     m_fileDescriptor = open("/dev/i2c-1", O_RDWR);
+    if (m_fileDescriptor < 0) return;
 
-    if (m_fileDescriptor < 0) {
-        qWarning() << "❌ Erreur : Impossible d'ouvrir /dev/i2c-1. L'I2C est-il activé ?";
-        return;
-    }
+    ioctl(m_fileDescriptor, I2C_SLAVE, 0x68);
+    char config[2] = {0x6B, 0x00}; write(m_fileDescriptor, config, 2); // Wake up
+    config[0] = 0x37; config[1] = 0x02; write(m_fileDescriptor, config, 2); // Bypass
 
-    // 1. Test de communication avec le MPU9250
-    if (ioctl(m_fileDescriptor, I2C_SLAVE, 0x68) < 0) {
-        qWarning() << "❌ Erreur : Impossible de contacter l'adresse 0x68 (MPU9250).";
-        return;
-    }
-
-    char wakeUp[2] = {0x6B, 0x00};
-    if (write(m_fileDescriptor, wakeUp, 2) != 2) {
-        qWarning() << "❌ Erreur : Échec du réveil du MPU9250. Vérifiez SDA/SCL.";
-        return;
-    }
-
-    // 2. Activation du Bypass pour le Magnétomètre
-    char bypass[2] = {0x37, 0x02};
-    write(m_fileDescriptor, bypass, 2);
-
-    // 3. Test de communication avec le AK8963
-    if (ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C) < 0) {
-        qWarning() << "⚠️ Attention : Magnétomètre (0x0C) non détecté.";
-    } else {
-        char magConfig[2] = {0x0A, 0x16};
-        write(m_fileDescriptor, magConfig, 2);
-        qDebug() << "✅ Boussole (AK8963) configurée.";
-    }
+    ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
+    config[0] = 0x0A; config[1] = 0x16; write(m_fileDescriptor, config, 2); // 16-bit, 100Hz
 
     m_elapsedTimer.start();
-    m_timer->start(100); // On ralentit à 10Hz pour stabiliser le système
-    qDebug() << "🚀 Mpu9250Source démarré avec succès.";
+    m_timer->start(20);
+    qDebug() << "🛰️ MODE CALIBRATION ACTIF : Faites des '8' avec le capteur !";
 }
 
 void Mpu9250Source::readSensor() {
     if (m_fileDescriptor < 0) return;
-
     float dt = m_elapsedTimer.restart() / 1000.0f;
 
-    // 1. Lecture Accel/Gyro
-    ioctl(m_fileDescriptor, I2C_SLAVE, 0x68);
-    char reg = 0x3B;
-    char dataAG[14];
-    if (write(m_fileDescriptor, &reg, 1) == 1 && read(m_fileDescriptor, dataAG, 14) == 14) {
+    // Lecture Mag uniquement pour la calibration
+    ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
+    char regSt1 = 0x02; char st1;
+    write(m_fileDescriptor, &regSt1, 1); read(m_fileDescriptor, &st1, 1);
 
-        float ax = (int16_t)((dataAG[0] << 8) | dataAG[1]) * (2.0f / 32768.0f);
-        float ay = (int16_t)((dataAG[2] << 8) | dataAG[3]) * (2.0f / 32768.0f);
-        float az = (int16_t)((dataAG[4] << 8) | dataAG[5]) * (2.0f / 32768.0f);
-        float gx = (int16_t)((dataAG[8] << 8) | dataAG[9]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
-        float gy = (int16_t)((dataAG[10] << 8) | dataAG[11]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
-        float gz = (int16_t)((dataAG[12] << 8) | dataAG[13]) * (250.0f / 32768.0f) * (M_PI / 180.0f);
+    if (st1 & 0x01) {
+        char regMag = 0x03; char dataM[7];
+        write(m_fileDescriptor, &regMag, 1);
+        if (read(m_fileDescriptor, dataM, 7) == 7) {
+            int16_t mx = (int16_t)((dataM[1] << 8) | dataM[0]);
+            int16_t my = (int16_t)((dataM[3] << 8) | dataM[2]);
+            int16_t mz = (int16_t)((dataM[5] << 8) | dataM[4]);
 
-        // 2. Lecture Magnétomètre
-        ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
-        char st1;
-        char regSt1 = 0x02;
-        write(m_fileDescriptor, &regSt1, 1);
+            // Mise à jour des Min/Max
+            if (mx < m_magMin[0]) m_magMin[0] = mx; if (mx > m_magMax[0]) m_magMax[0] = mx;
+            if (my < m_magMin[1]) m_magMin[1] = my; if (my > m_magMax[1]) m_magMax[1] = my;
+            if (mz < m_magMin[2]) m_magMin[2] = mz; if (mz > m_magMax[2]) m_magMax[2] = mz;
 
-        if (read(m_fileDescriptor, &st1, 1) == 1 && (st1 & 0x01)) {
-            char regMag = 0x03;
-            char dataM[7];
-            write(m_fileDescriptor, &regMag, 1);
+            m_calibrationCounter++;
 
-            if (read(m_fileDescriptor, dataM, 7) == 7) {
-                float mx = ((int16_t)((dataM[1] << 8) | dataM[0]) - m_magBias[0]) * m_magScale[0];
-                float my = ((int16_t)((dataM[3] << 8) | dataM[2]) - m_magBias[1]) * m_magScale[1];
-                float mz = ((int16_t)((dataM[5] << 8) | dataM[4]) - m_magBias[2]) * m_magScale[2];
+            // Toutes les 50 lectures (1 seconde), on affiche les coefficients calculés
+            if (m_calibrationCounter % 50 == 0) {
+                float bX = (float)(m_magMax[0] + m_magMin[0]) / 2.0f;
+                float bY = (float)(m_magMax[1] + m_magMin[1]) / 2.0f;
+                float bZ = (float)(m_magMax[2] + m_magMin[2]) / 2.0f;
 
-                madgwickUpdate(ax, ay, az, gx, gy, gz, mx, my, mz, dt);
+                float cX = (float)(m_magMax[0] - m_magMin[0]) / 2.0f;
+                float cY = (float)(m_magMax[1] - m_magMin[1]) / 2.0f;
+                float cZ = (float)(m_magMax[2] - m_magMin[2]) / 2.0f;
+                float avg = (cX + cY + cZ) / 3.0f;
 
-                // Calcul du Yaw
-                float yaw = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
-                float heading = yaw * (180.0f / M_PI);
-
-                heading += 2.0f; // Déclinaison magnétique
-                if (heading < 0) heading += 360.0f;
-                if (heading > 360.0f) heading -= 360.0f;
-
-                // --- AJOUT DU LOG ICI ---
-                qDebug() << "🧭 Boussole -> Cap :" << heading << "° | dt :" << dt;
-
-                if (m_data) m_data->setHeading(static_cast<double>(heading));
+                qDebug() << "--- COPIEZ CES LIGNES DANS VOTRE CODE FINAL ---";
+                qDebug() << QString("m_magBias[0] = %1f; m_magBias[1] = %2f; m_magBias[2] = %3f;").arg(bX).arg(bY).arg(bZ);
+                qDebug() << QString("m_magScale[0] = %1f; m_magScale[1] = %2f; m_magScale[2] = %3f;").arg(avg/cX).arg(avg/cY).arg(avg/cZ);
+                qDebug() << "-----------------------------------------------";
             }
-        } else {
-            // Si on entre ici, c'est que le magnétomètre n'a pas de donnée prête
-            // On ne log pas à chaque fois pour ne pas spammer, mais on peut vérifier :
-            // qDebug() << "Waiting for Mag data...";
         }
-    } else {
-        qWarning() << "⚠️ Erreur de lecture I2C sur 0x68 (MPU9250 débranché ?)";
-    }
-}
-
-void Mpu9250Source::madgwickUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz, float dt) {
-    // Pour l'instant, intégration basique pour éviter les warnings et avoir un cap
-    // On pourra injecter ici l'algorithme complet de Kris Winer
-    float qDot1 = 0.5f * (-q[1] * gx - q[2] * gy - q[3] * gz);
-    float qDot2 = 0.5f * (q[0] * gx + q[2] * gz - q[3] * gy);
-    float qDot3 = 0.5f * (q[0] * gy - q[1] * gz + q[3] * gx);
-    float qDot4 = 0.5f * (q[0] * gz + q[1] * gy - q[2] * gx);
-
-    q[0] += qDot1 * dt; q[1] += qDot2 * dt; q[2] += qDot3 * dt; q[3] += qDot4 * dt;
-    float norm = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]);
-    if (norm > 0) {
-        q[0] /= norm; q[1] /= norm; q[2] /= norm; q[3] /= norm;
     }
 }
 
 void Mpu9250Source::stop() {
     m_timer->stop();
-    if (m_fileDescriptor >= 0) {
-        close(m_fileDescriptor);
-        m_fileDescriptor = -1;
-    }
+    if (m_fileDescriptor >= 0) { close(m_fileDescriptor); m_fileDescriptor = -1; }
 }
+
+void Mpu9250Source::madgwickUpdate(float, float, float, float, float, float, float, float, float, float) {}
