@@ -28,6 +28,11 @@ void Mpu9250Source::start() {
     config[0] = 0x1C; config[1] = 0x00; write(m_fileDescriptor, config, 2); // Accel +/- 2g
     config[0] = 0x1B; config[1] = 0x00; write(m_fileDescriptor, config, 2); // Gyro 250 dps
 
+    // Activation du filtre passe-bas (DLPF) à 41Hz pour lisser les vibrations du moteur
+    config[0] = 0x1A; config[1] = 0x03; write(m_fileDescriptor, config, 2); // CONFIG -> Gyro DLPF
+    config[0] = 0x1D; config[1] = 0x03; write(m_fileDescriptor, config, 2); // ACCEL_CONFIG2 -> Accel DLPF
+    // --------------------------------------
+
     // --- AUTO-CALIBRATION DU GYROSCOPE (Kris Winer Method) ---
     qDebug() << "⏳ Calibration du Gyroscope (NE BOUGEZ PAS LE CAPTEUR)...";
     float gyroSum[3] = {0, 0, 0};
