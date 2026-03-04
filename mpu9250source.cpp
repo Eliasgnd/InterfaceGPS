@@ -5,11 +5,11 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
+#include <cmath> // Nécessaire pour atan2 et M_PI
 
 Mpu9250Source::Mpu9250Source(TelemetryData* data, QObject* parent)
     : QObject(parent), m_data(data), m_fileDescriptor(-1) {
     m_timer = new QTimer(this);
-    // On lit le capteur toutes les 200 millisecondes
     connect(m_timer, &QTimer::timeout, this, &Mpu9250Source::readSensor);
 }
 
@@ -18,25 +18,59 @@ Mpu9250Source::~Mpu9250Source() {
 }
 
 void Mpu9250Source::start() {
-    // Ouverture du bus I2C 1 de la Raspberry Pi
     m_fileDescriptor = open("/dev/i2c-1", O_RDWR);
-    if (m_fileDescriptor < 0) {
-        qWarning() << "MPU9250: Impossible d'ouvrir le bus I2C.";
-        return;
-    }
+    if (m_fileDescriptor < 0) return;
 
-    // Connexion à l'adresse I2C du MPU9250 (généralement 0x68)
-    if (ioctl(m_fileDescriptor, I2C_SLAVE, 0x68) < 0) {
-        qWarning() << "MPU9250: Impossible de trouver le capteur à l'adresse 0x68.";
-        return;
-    }
-
-    // Réveil du capteur (écrire 0 dans le registre PWR_MGMT_1)
+    // 1. Initialiser le MPU9250 (Réveil)
+    ioctl(m_fileDescriptor, I2C_SLAVE, 0x68);
     char wakeUp[2] = {0x6B, 0x00};
     write(m_fileDescriptor, wakeUp, 2);
 
-    m_timer->start(200);
-    qDebug() << "✅ MPU9250 Démarré !";
+    // 2. Activer le mode "Bypass" pour voir le magnétomètre (AK8963)
+    // On écrit 0x02 dans le registre INT_PIN_CFG (0x37)
+    char bypass[2] = {0x37, 0x02};
+    write(m_fileDescriptor, bypass, 2);
+
+    // 3. Initialiser le Magnétomètre (Adresse 0x0C)
+    if (ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C) >= 0) {
+        // Mode de mesure continue 2 (100Hz) et résolution 16 bits
+        char magConfig[2] = {0x0A, 0x16};
+        write(m_fileDescriptor, magConfig, 2);
+    }
+
+    m_timer->start(100); // Lecture 10 fois par seconde pour une carte fluide
+}
+
+void Mpu9250Source::readSensor() {
+    if (m_fileDescriptor < 0) return;
+
+    // --- LECTURE DU MAGNÉTOMÈTRE ---
+    ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
+
+    char regMag[1] = {0x03}; // Registre de début des données X,Y,Z
+    write(m_fileDescriptor, regMag, 1);
+
+    char magData[7];
+    if (read(m_fileDescriptor, magData, 7) >= 6) {
+        // Note : Le AK8963 est en Little Endian (octet faible en premier)
+        int16_t mx = (magData[1] << 8) | magData[0];
+        int16_t my = (magData[3] << 8) | magData[2];
+        int16_t mz = (magData[5] << 8) | magData[4];
+
+        // Calcul du Cap (Heading) en degrés
+        // On utilise l'axe X et Y si le capteur est à plat
+        float heading = std::atan2(static_cast<float>(my), static_cast<float>(mx)) * (180.0 / M_PI);
+
+        // Normalisation entre 0 et 360°
+        if (heading < 0) heading += 360;
+
+        qDebug() << "Orientation Boussole :" << heading << "degrés";
+
+        // Injection dans la télémétrie pour mettre à jour la carte
+        if (m_data) {
+            m_data->setHeading(static_cast<double>(heading));
+        }
+    }
 }
 
 void Mpu9250Source::stop() {
@@ -44,27 +78,5 @@ void Mpu9250Source::stop() {
     if (m_fileDescriptor >= 0) {
         close(m_fileDescriptor);
         m_fileDescriptor = -1;
-    }
-}
-
-void Mpu9250Source::readSensor() {
-    if (m_fileDescriptor < 0) return;
-
-    // Registre de départ pour lire l'accéléromètre, température, puis gyroscope
-    char reg[1] = {0x3B};
-    write(m_fileDescriptor, reg, 1);
-
-    char data[14];
-    if (read(m_fileDescriptor, data, 14) == 14) {
-        // En premier temps, on affiche juste l'accéléromètre X, Y, Z pour vérifier que ça marche
-        int16_t accelX = (data[0] << 8) | data[1];
-        int16_t accelY = (data[2] << 8) | data[3];
-        int16_t accelZ = (data[4] << 8) | data[5];
-
-        qDebug() << "MPU9250 Brut -> Accel X:" << accelX << " Y:" << accelY << " Z:" << accelZ;
-
-        // Plus tard, vous calculerez le vrai "Cap" (Heading) via le magnétomètre (AK8963)
-        // et vous pourrez l'injecter dans la carte avec :
-        // if (m_data) m_data->setHeading(valeur_en_degres);
     }
 }
