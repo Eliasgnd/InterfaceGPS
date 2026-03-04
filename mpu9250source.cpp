@@ -44,32 +44,52 @@ void Mpu9250Source::start() {
 void Mpu9250Source::readSensor() {
     if (m_fileDescriptor < 0) return;
 
-    // --- LECTURE DU MAGNÉTOMÈTRE ---
-    ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
+    // 1. On se connecte à l'adresse du magnétomètre
+    if (ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C) < 0) {
+        qWarning() << "MPU9250: Erreur d'accès à l'adresse 0x0C";
+        return;
+    }
 
-    char regMag[1] = {0x03}; // Registre de début des données X,Y,Z
-    write(m_fileDescriptor, regMag, 1);
+    // 2. Vérifier si une donnée est prête (Registre ST1 - 0x02)
+    char st1;
+    char regSt1[1] = {0x02};
+    if (write(m_fileDescriptor, regSt1, 1) != 1) return;
+    if (read(m_fileDescriptor, &st1, 1) != 1) return;
+
+    if (!(st1 & 0x01)) {
+        // La donnée n'est pas encore prête, on sort poliment
+        return;
+    }
+
+    // 3. Lire les 7 octets (6 de données + 1 de statut ST2 indispensable !)
+    char regMag[1] = {0x03};
+    if (write(m_fileDescriptor, regMag, 1) != 1) return;
 
     char magData[7];
-    if (read(m_fileDescriptor, magData, 7) >= 6) {
-        // Note : Le AK8963 est en Little Endian (octet faible en premier)
-        int16_t mx = (magData[1] << 8) | magData[0];
-        int16_t my = (magData[3] << 8) | magData[2];
-        int16_t mz = (magData[5] << 8) | magData[4];
+    int bytesRead = read(m_fileDescriptor, magData, 7);
 
-        // Calcul du Cap (Heading) en degrés
-        // On utilise l'axe X et Y si le capteur est à plat
-        float heading = std::atan2(static_cast<float>(my), static_cast<float>(mx)) * (180.0 / M_PI);
+    if (bytesRead >= 7) {
+        // Vérification du débordement magnétique dans ST2 (bit 3)
+        if (!(magData[6] & 0x08)) {
+            int16_t mx = (magData[1] << 8) | magData[0];
+            int16_t my = (magData[3] << 8) | magData[2];
 
-        // Normalisation entre 0 et 360°
-        if (heading < 0) heading += 360;
+            // Calcul du cap
+            float heading = std::atan2(static_cast<float>(my), static_cast<float>(mx)) * (180.0 / M_PI);
+            if (heading < 0) heading += 360;
 
-        qDebug() << "Orientation Boussole :" << heading << "degrés";
+            // Filtre de lissage pour éviter que la carte ne tremble
+            static double filteredHeading = 0;
+            filteredHeading = (filteredHeading * 0.7) + (heading * 0.3);
 
-        // Injection dans la télémétrie pour mettre à jour la carte
-        if (m_data) {
-            m_data->setHeading(static_cast<double>(heading));
+            qDebug() << "Boussole stable :" << filteredHeading << "°";
+
+            if (m_data) {
+                m_data->setHeading(filteredHeading);
+            }
         }
+    } else {
+        qWarning() << "MPU9250: Erreur de lecture I2C (reçu" << bytesRead << "octets)";
     }
 }
 
