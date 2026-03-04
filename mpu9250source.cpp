@@ -98,11 +98,14 @@ void Mpu9250Source::readSensor() {
                 float my = ((int16_t)((dataM[3] << 8) | dataM[2]) - m_magBias[1]) * m_magScale[1];
                 float mz = ((int16_t)((dataM[5] << 8) | dataM[4]) - m_magBias[2]) * m_magScale[2];
 
-                madgwickUpdate(ax, ay, az, gx, gy, gz, mx, my, mz, dt);
+                // MODIFICATION 1 : On croise les axes magnétiques en envoyant 'my' puis '-mx'
+                madgwickUpdate(ax, ay, az, gx, gy, gz, my, -mx, mz, dt);
 
                 // Calcul du Yaw
                 float yaw = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
-                float heading = yaw * (180.0f / M_PI);
+
+                // MODIFICATION 2 : On ajoute un signe moins (-) devant 'yaw'
+                float heading = -yaw * (180.0f / M_PI);
 
                 heading += 2.0f; // Déclinaison magnétique (Ajustez si besoin selon votre région)
                 if (heading < 0) heading += 360.0f;
