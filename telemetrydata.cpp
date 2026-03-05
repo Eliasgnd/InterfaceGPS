@@ -52,17 +52,3 @@ void TelemetryData::setHeading(double v) {
     m_heading = v;
     emit headingChanged();
 }
-
-void TelemetryData::setAlertText(const QString& v) {
-    if (m_alertText == v) return;
-
-    m_alertText = v;
-    emit alertTextChanged();
-}
-
-void TelemetryData::setAlertLevel(int v) {
-    if (m_alertLevel == v) return;
-
-    m_alertLevel = v;
-    emit alertLevelChanged();
-}
