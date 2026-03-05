@@ -31,7 +31,7 @@ private:
 
     // État du filtre (Quaternions)
     float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
-    const float beta = 0.1f;
+    const float beta = 0.4f;
 
     // --- PARAMÈTRES DE CALIBRATION (VOS VALEURS) ---
     // Hard Iron (Offsets)
