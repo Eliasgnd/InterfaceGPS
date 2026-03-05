@@ -135,7 +135,7 @@ void Mpu9250Source::readSensor() {
         // L'échelle est de 250 dps (degrés par seconde) maximum, donc on multiplie par (250 / 32768).
         // IMPORTANT : Les mathématiques (Madgwick) fonctionnent en Radians, pas en Degrés !
         // On multiplie donc par (Pi / 180) pour faire la conversion en Radians/seconde.
-        // Enfin, on soustrait l'erreur (le biais) qu'on a mesurée au démarrage.
+        // Enfin, on soustrait l'erreur (le biais) qu'on a mesurée automatiquement au démarrage.
         float gx = ((int16_t)((dataAG[8]  << 8) | dataAG[9]))  * (250.0f / 32768.0f) * (M_PI / 180.0f) - m_gyroBias[0];
         float gy = ((int16_t)((dataAG[10] << 8) | dataAG[11])) * (250.0f / 32768.0f) * (M_PI / 180.0f) - m_gyroBias[1];
         float gz = ((int16_t)((dataAG[12] << 8) | dataAG[13])) * (250.0f / 32768.0f) * (M_PI / 180.0f) - m_gyroBias[2];
@@ -178,31 +178,65 @@ void Mpu9250Source::readSensor() {
                 // Les axes physiques de la puce magnétomètre ne sont pas alignés dans le même
                 // sens que ceux du gyroscope/accéléromètre sur la carte électronique.
                 // On doit les réaligner pour utiliser le standard NED (Nord-Est-Bas).
-                // C'est pour ça qu'on croise des axes (my à la place de mx) et qu'on inverse des signes (-ax).
+                // C'est pour ça qu'on croise des axes (my à la place de mx) et qu'on inverse des signes.
                 madgwickUpdate(-ax, ay, az, gx, -gy, -gz, my, -mx, mz, dt);
 
                 // ------------------------------------------------------------------------
-                // 4. CALCUL DE L'ANGLE FINAL (LE CAP)
+                // 4. CALCUL DU CAP COMPENSÉ EN INCLINAISON (TILT-COMPENSATED YAW)
                 // ------------------------------------------------------------------------
 
-                // Le filtre de Madgwick nous a donné l'orientation sous forme de Quaternions (q[0] à q[3]).
-                // C'est un outil mathématique en 4D génial car il ne se bloque jamais, peu importe
-                // comment on tourne la carte (évite le blocage de cardan / Gimbal Lock).
-                // Mais pour un humain ou une carte, il faut un angle en degrés.
-                // Cette formule mathématique standard extrait l'angle de Lacet (Yaw) du Quaternion.
-                float yaw = std::atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
+                // Extraction du Roulis (Roll) et Tangage (Pitch) depuis le Quaternion.
+                // Cela nous dit comment la voiture est penchée par rapport à la gravité terrestre.
+                float roll = std::atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), 1.0f - 2.0f * (q[1] * q[1] + q[2] * q[2]));
+                float pitch = std::asin(2.0f * (q[0] * q[2] - q[3] * q[1]));
 
-                // On passe des Radians aux Degrés (0 à 360).
-                float heading = yaw * (180.0f / M_PI);
+                // On projette les vecteurs magnétiques 'my' et '-mx' sur le plan horizontal (sol)
+                // en utilisant le roulis et le tangage. Cela garantit que la boussole pointe
+                // toujours le Vrai Nord, même si la voiture monte une pente raide.
+                float mag_x_horiz = my * std::cos(pitch) + (-mx) * std::sin(roll) * std::sin(pitch) - mz * std::cos(roll) * std::sin(pitch);
+                float mag_y_horiz = (-mx) * std::cos(roll) + mz * std::sin(roll);
 
-                // On s'assure que l'angle reste un cercle parfait (si on a -5°, ça devient 355°).
+                // On calcule l'angle par rapport au Nord Magnétique à partir de cette projection
+                float yaw = std::atan2(mag_y_horiz, mag_x_horiz);
+
+                // Conversion des Radians vers les Degrés.
+                // On ajoute un signe MOINS (-) car les maths tournent en sens anti-horaire,
+                // mais la carte Qt tourne dans le sens horaire (comme une vraie boussole).
+                float heading = -yaw * (180.0f / M_PI);
+
+                // Ajout de la Déclinaison Magnétique pour pointer vers le Nord Géographique (Vrai Nord).
+                // (2.0° correspond environ à la France actuelle, ajustez si besoin).
+                heading += 2.0f;
+
+                // On s'assure que l'angle reste un cercle parfait de 0 à 360°.
                 if (heading < 0) heading += 360.0f;
-                if (heading > 360.0f) heading -= 360.0f;
+                if (heading >= 360.0f) heading -= 360.0f;
 
-                qDebug() << "Cap calculé :" << heading << "° (dt:" << dt << "s)";
+                // ------------------------------------------------------------------------
+                // 5. FILTRE DE LISSAGE (PASSE-BAS VISUEL)
+                // ------------------------------------------------------------------------
+
+                // On mélange 90% de l'ancien cap avec 10% du nouveau.
+                // Cela empêche la carte de faire des micro-tremblements à l'écran à cause des vibrations.
+                static float smoothedHeading = heading;
+
+                // Gestion du passage difficile entre 359° et 0° pour éviter que la carte ne fasse
+                // un tour complet sur elle-même lors du passage du Nord.
+                float diff = heading - smoothedHeading;
+                if (diff > 180.0f) smoothedHeading += 360.0f;
+                else if (diff < -180.0f) smoothedHeading -= 360.0f;
+
+                smoothedHeading = (smoothedHeading * 0.90f) + (heading * 0.10f);
+
+                // On remet la valeur lissée proprement entre 0 et 360°.
+                if (smoothedHeading >= 360.0f) smoothedHeading -= 360.0f;
+                else if (smoothedHeading < 0.0f) smoothedHeading += 360.0f;
+
+                // Affichage console pour diagnostiquer
+                qDebug() << "🧭 Vrai Nord -> Cap :" << smoothedHeading << "° | dt:" << dt;
 
                 // On envoie cet angle tout propre à l'interface graphique (QML) pour faire tourner la carte !
-                if (m_data) m_data->setHeading(static_cast<double>(heading));
+                if (m_data) m_data->setHeading(static_cast<double>(smoothedHeading));
             }
         }
     } else {
