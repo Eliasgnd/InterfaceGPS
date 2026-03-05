@@ -16,10 +16,6 @@ import QtQuick.Effects
 Item {
     id: root
 
-    // Vue purement déclarative: l'état fonctionnel provient de BluetoothManager exposé depuis C++.
-    width: 800
-    height: 480
-
     /** @brief Couleur d'accentuation globale du lecteur (Bleu néon). */
     readonly property color accentColor: "#2a75ff"
 
@@ -81,13 +77,13 @@ Item {
     // --- INTERFACE VISUELLE ---
 
     // Fond dégradé sombre
-    Rectangle {
+    /*Rectangle {
         anchors.fill: parent
         gradient: Gradient {
             GradientStop { position: 0.0; color: "#0f1115" }
             GradientStop { position: 1.0; color: "#16181d" }
         }
-    }
+    }*/
 
     RowLayout {
         anchors.fill: parent
