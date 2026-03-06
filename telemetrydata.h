@@ -27,8 +27,6 @@ class TelemetryData : public QObject {
     Q_PROPERTY(double lat READ lat WRITE setLat NOTIFY latChanged)
     Q_PROPERTY(double lon READ lon WRITE setLon NOTIFY lonChanged)
     Q_PROPERTY(double heading READ heading WRITE setHeading NOTIFY headingChanged)
-    Q_PROPERTY(QString alertText READ alertText WRITE setAlertText NOTIFY alertTextChanged)
-    Q_PROPERTY(int alertLevel READ alertLevel WRITE setAlertLevel NOTIFY alertLevelChanged)
 
 public:
     /**

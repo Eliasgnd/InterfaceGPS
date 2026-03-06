@@ -88,10 +88,6 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     ui->bottomNavLayout->insertWidget(0, m_btnSplit);
     connect(m_btnSplit, &QPushButton::clicked, this, &MainWindow::toggleSplitAndHome);
 
-    // Connexion des alertes de télémétrie à l'interface globale
-    connect(m_t, &TelemetryData::alertLevelChanged, this, &MainWindow::updateTopBarAndAlert);
-    connect(m_t, &TelemetryData::alertTextChanged, this, &MainWindow::updateTopBarAndAlert);
-
     // Démarrage de l'application directement dans l'état mémorisé (Split ou Plein écran)
     goSplit();
 }
@@ -194,21 +190,4 @@ void MainWindow::goHomeAssistant() {
     m_cam->stopStream();
     displayPages(m_ha);
     m_ha->setFocus();
-}
-
-void MainWindow::updateTopBarAndAlert() {
-    // La top bar matérialise la criticité sécurité. Elle reste invisible en niveau 0 (tout va bien).
-    if(m_t->alertLevel() == 0){
-        ui->alertFrame->setVisible(false);
-    } else {
-        ui->alertFrame->setVisible(true);
-        ui->lblAlertTitle->setText(m_t->alertLevel() == 2 ? "CRITIQUE" : "ALERTE");
-        ui->lblAlertText->setText(m_t->alertText());
-
-        // Code couleur de l'alerte : Rouge vif pour critique (2), Orange foncé pour simple alerte (1)
-        ui->alertFrame->setStyleSheet(m_t->alertLevel() == 2
-                                          ? "QFrame{background:#8B1E1E;border-radius:10px;} QLabel{color:white;}"
-                                          : "QFrame{background:#6B4B16;border-radius:10px;} QLabel{color:white;}"
-                                      );
-    }
 }

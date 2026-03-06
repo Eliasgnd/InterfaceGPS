@@ -77,13 +77,13 @@ Item {
     // --- INTERFACE VISUELLE ---
 
     // Fond dégradé sombre
-    /*Rectangle {
+    Rectangle {
         anchors.fill: parent
         gradient: Gradient {
             GradientStop { position: 0.0; color: "#0f1115" }
             GradientStop { position: 1.0; color: "#16181d" }
         }
-    }*/
+    }
 
     RowLayout {
         anchors.fill: parent

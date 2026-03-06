@@ -60,12 +60,6 @@ private slots:
     // --- SLOTS UTILITAIRES ---
 
     /**
-     * @brief Met à jour le bandeau d'alerte global (Top Bar).
-     * S'active automatiquement via les signaux de TelemetryData.
-     */
-    void updateTopBarAndAlert();
-
-    /**
      * @brief Alterne entre le mode plein écran de l'application courante et le mode Split-Screen.
      */
     void toggleSplitAndHome();
