@@ -40,7 +40,7 @@ NavigationPage::NavigationPage(QWidget* parent)
     // Cela évite d'épuiser le quota de requêtes API Mapbox/Here quand on tape vite.
     m_suggestionDebounceTimer = new QTimer(this);
     m_suggestionDebounceTimer->setSingleShot(true);
-    m_suggestionDebounceTimer->setInterval(300);
+    m_suggestionDebounceTimer->setInterval(800);
 
     // Connexions pour l'autocomplétion
     connect(m_searchCompleter, static_cast<void (QCompleter::*)(const QString &)>(&QCompleter::activated),
