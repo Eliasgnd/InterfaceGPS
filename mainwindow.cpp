@@ -124,9 +124,9 @@ void MainWindow::toggleSplitAndHome() {
 }
 
 void MainWindow::goSplit() {
-    // OPTIMISATION CRITIQUE : Le flux caméra est systématiquement arrêté hors de sa page
-    // pour réduire drastiquement la charge CPU et le trafic réseau.
+    //Le flux caméra est systématiquement arrêté hors de sa page
     m_cam->stopStream();
+    displayPages(m_nav,m_media);
 }
 
 void MainWindow::goNav() {

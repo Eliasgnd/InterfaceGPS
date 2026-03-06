@@ -240,7 +240,7 @@ void Mpu9250Source::readSensor() {
             }
         }
     } else {
-        QDebug() << "Erreur de lecture I2C sur l'adresse 0x68 (Capteur débranché ou indisponible).";
+        qDebug() << "Erreur de lecture I2C sur l'adresse 0x68 (Capteur débranché ou indisponible).";
     }
 }
 
