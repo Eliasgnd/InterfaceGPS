@@ -1,10 +1,11 @@
 /**
  * @file main.cpp
- * @brief Rôle architectural : Point d'entrée de l'application embarquée InterfaceGPS.
- * @details Responsabilités : Initialiser le framework Qt, configurer le runtime
- * (moteur WebEngine, cache cartographique, logs réseau) et assembler les briques
- * principales de l'application (Télémétrie, Matériel, Interface utilisateur).
- * Dépendances principales : QApplication, QQuickStyle, QWebEngineCore et MainWindow.
+ * @brief Point d'entrée de l'application (Bootstrapper).
+ * @details Ce fichier agit comme le chef d'orchestre du démarrage. Ses responsabilités sont :
+ * 1. Configurer l'environnement bas niveau de l'OS (Variables d'environnement Linux/Raspberry).
+ * 2. Initialiser les moteurs de rendu lourd (OpenGL et Chromium/WebEngine).
+ * 3. Appliquer le motif d'architecture "Injection de Dépendances" en instanciant le Modèle
+ * central et en le distribuant aux différents Contrôleurs et Capteurs matériels.
  */
 
 #include <QApplication>
@@ -18,24 +19,23 @@
 #include <QCoreApplication>
 #include "mpu9250source.h"
 
-/**
- * @brief Fonction principale (Point d'entrée C++).
- * @param argc Nombre d'arguments passés en ligne de commande.
- * @param argv Tableau des arguments de la ligne de commande.
- * @return Code de sortie de l'application (0 si succès).
- */
 int main(int argc, char *argv[]) {
 
+    // --- 1. CONFIGURATION SYSTÈME ET GRAPHIQUE ---
+
+    // Force Qt à utiliser le serveur d'affichage X11 (via le plugin xcb).
     qputenv("QT_QPA_PLATFORM", "xcb");
 
-    // Optimisation pour QWebEngine : Permet le partage de contexte OpenGL entre les différents threads
-    // et fenêtres pour un rendu matériel plus fluide. Doit être appelé avant l'instanciation de QApplication.
+    // Activation du partage de contexte OpenGL entre les threads.
+    // Prérequis obligatoire pour que le moteur Chromium (QWebEngine) puisse utiliser
+    // l'accélération matérielle (GPU) du Raspberry Pi sans bloquer l'interface graphique.
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 
-    // --- CONFIGURATION CHROMIUM (WEBENGINE) ---
-    // Ces flags assouplissent drastiquement les règles de sécurité du navigateur intégré.
-    // Indispensable dans un contexte embarqué pour afficher une interface Home Assistant locale
-    // qui n'a pas de certificat HTTPS valide, ou pour forcer la lecture automatique de médias.
+    // --- 2. SÉCURITÉ ET MOTEUR WEB (HOME ASSISTANT) ---
+    // En environnement embarqué, l'écran interagit avec des serveurs locaux (ex: Home Assistant sur le même réseau).
+    // Ces serveurs n'ont souvent pas de certificats HTTPS officiels.
+    // On désactive intentionnellement certaines sécurités strictes de Chromium (CORS, Sandbox, Certificats)
+    // pour garantir une communication fluide et autoriser l'autoplay des médias sans interaction tactile préalable.
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
             "--disable-web-security "
             "--allow-running-insecure-content "
@@ -44,10 +44,12 @@ int main(int argc, char *argv[]) {
             "--no-sandbox "
             "--disable-features=IsolateOrigins,site-per-process");
 
-    // Choix du style graphique de base pour les éléments QML/Widgets
+    // Standardisation du design des composants Qt Quick Controls 2
     QQuickStyle::setStyle("Fusion");
 
-    // Configuration des logs de débogage pour surveiller les requêtes cartographiques et SSL
+    // --- 3. DÉBOGAGE ET RÉSEAU ---
+    // Filtres de logs activés pour surveiller spécifiquement le trafic de l'API cartographique (Mapbox/OSM)
+    // et diagnostiquer les potentielles pertes de paquets en connexion mobile (4G partagée).
     QLoggingCategory::setFilterRules(
         "qt.network.ssl.warning=true\n"
         "qt.location.mapping.osm.debug=true\n"
@@ -55,37 +57,40 @@ int main(int argc, char *argv[]) {
         "qt.network.access.debug=true"
         );
 
-    // Initialisation de la boucle d'événements principale Qt
+    // Démarrage du moteur événementiel (Event Loop) de Qt
     QApplication a(argc, argv);
 
-    // --- CONFIGURATION DU CACHE CARTOGRAPHIQUE ---
-    // On force la création d'un dossier local pour mettre en cache les tuiles (images) de la carte.
-    // Cela permet d'économiser de la data 4G/Wifi et d'accélérer l'affichage des zones déjà visitées.
+    // --- 4. OPTIMISATION BANDE PASSANTE (CACHE CARTOGRAPHIQUE) ---
+    // Pour éviter de retélécharger les mêmes tuiles Mapbox/OSM à chaque trajet,
+    // on force la création d'un cache local persistant sur la carte SD du Raspberry Pi.
+    // Cela réduit la latence d'affichage et économise la data réseau.
     QString cachePath = QCoreApplication::applicationDirPath() + "/qtlocation_cache";
     QDir().mkpath(cachePath);
     qputenv("QTLOCATION_OSM_CACHE_DIR", cachePath.toUtf8());
 
-    // Utilisation automatique du proxy réseau du système d'exploitation si configuré
     QNetworkProxyFactory::setUseSystemConfiguration(true);
 
-    // --- ASSEMBLAGE DES COMPOSANTS (Dependency Injection) ---
+    // --- 5. ARCHITECTURE ET INJECTION DE DÉPENDANCES ---
 
-    // 1. Instanciation du modèle de données central (Le Bus de l'application)
+    // A. Le "Single Source of Truth" (Modèle de données central)
+    // Cet objet stocke l'état complet du véhicule en mémoire vive.
     TelemetryData telemetry;
 
-    // 2. Initialisation et démarrage du capteur GPS matériel (écrit sur le Bus)
-    // "/dev/serial0" est le port série matériel par défaut sur un Raspberry Pi
+    // B. Initialisation du GPS (Port Série / UART)
+    // On injecte le pointeur '&telemetry' pour que le GPS puisse y écrire ses trames NMEA.
     GpsTelemetrySource gpsSource(&telemetry);
     gpsSource.start("/dev/serial0");
 
-    // 3 : Initialisation de la boussole MPU9250
+    // C. Initialisation de la Centrale Inertielle (Bus I2C)
+    // Gère le gyroscope, l'accéléromètre et la boussole via le filtre de Madgwick.
     Mpu9250Source mpuSource(&telemetry);
     mpuSource.start();
 
-    // 4. Instanciation et affichage de l'Interface Graphique (lit le Bus)
+    // D. Démarrage de l'Interface Homme-Machine (IHM)
+    // La fenêtre principale reçoit la télémétrie en lecture seule pour l'afficher à l'écran.
     MainWindow w(&telemetry);
     w.show();
 
-    // Démarrage de l'application (boucle infinie attendant les événements clavier/souris/réseau)
+    // 6. Lancement de la boucle infinie (bloquante).
     return a.exec();
 }
