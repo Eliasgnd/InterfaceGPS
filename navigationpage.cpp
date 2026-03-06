@@ -194,6 +194,7 @@ void NavigationPage::bindTelemetry(TelemetryData* t) {
     connect(m_t, &TelemetryData::headingChanged, this, refresh);
     connect(m_t, &TelemetryData::speedKmhChanged, this, refresh);
 
+
     refresh(); // Premier appel pour initialiser la carte avec les valeurs actuelles
 }
 

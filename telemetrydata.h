@@ -22,11 +22,11 @@ class TelemetryData : public QObject {
     Q_OBJECT
 
     // --- PROPRIÉTÉS EXPOSÉES À L'INTERFACE (QML) ---
-    Q_PROPERTY(double speedKmh READ speedKmh WRITE setSpeedKmh NOTIFY speedKmhChanged)
+    /*Q_PROPERTY(double speedKmh READ speedKmh WRITE setSpeedKmh NOTIFY speedKmhChanged)
     Q_PROPERTY(bool gpsOk READ gpsOk WRITE setGpsOk NOTIFY gpsOkChanged)
     Q_PROPERTY(double lat READ lat WRITE setLat NOTIFY latChanged)
     Q_PROPERTY(double lon READ lon WRITE setLon NOTIFY lonChanged)
-    Q_PROPERTY(double heading READ heading WRITE setHeading NOTIFY headingChanged)
+    Q_PROPERTY(double heading READ heading WRITE setHeading NOTIFY headingChanged)*/
 
 public:
     /**
