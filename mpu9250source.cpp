@@ -78,7 +78,7 @@ void Mpu9250Source::start() {
     config[0] = 0x37; config[1] = 0x02; write(m_fileDescriptor, config, 2);
     ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
 
-    // Configuration du magnétomètre : 16 bits de résolution, mode continu (100Hz)
+    // Configuration du magnétomè tre : 16 bits de résolution, mode continu (100Hz)
     config[0] = 0x0A; config[1] = 0x16; write(m_fileDescriptor, config, 2);
 
     m_elapsedTimer.start();
@@ -233,14 +233,14 @@ void Mpu9250Source::readSensor() {
                 else if (smoothedHeading < 0.0f) smoothedHeading += 360.0f;
 
                 // Affichage console pour diagnostiquer
-                qDebug() << "🧭 Vrai Nord -> Cap :" << smoothedHeading << "° | dt:" << dt;
+                qDebug() << " Cap :" << smoothedHeading << "° | dt:" << dt;
 
                 // On envoie cet angle tout propre à l'interface graphique (QML) pour faire tourner la carte !
                 if (m_data) m_data->setHeading(static_cast<double>(smoothedHeading));
             }
         }
     } else {
-        qWarning() << "Erreur de lecture I2C sur l'adresse 0x68 (Capteur débranché ou indisponible).";
+        QDebug() << "Erreur de lecture I2C sur l'adresse 0x68 (Capteur débranché ou indisponible).";
     }
 }
 

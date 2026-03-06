@@ -45,14 +45,6 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     m_media = new MediaPage(this);
     m_ha = new HomeAssistant(this);
 
-    // Restauration du dernier état de l'écran partagé (persistance utilisateur)
-    QSettings settings("EliasCorp", "GPSApp");
-    QString leftAppStr = settings.value("Split/Left", "Nav").toString();
-    QString rightAppStr = settings.value("Split/Right", "Media").toString();
-
-    m_lastLeftApp = stringToWidget(leftAppStr);
-    m_lastRightApp = stringToWidget(rightAppStr);
-
     // TelemetryData sert de bus applicatif partagé.
     m_nav->bindTelemetry(m_t);
 
@@ -96,29 +88,6 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
-QString MainWindow::widgetToString(QWidget* w) {
-    if (w == m_nav) return "Nav";
-    if (w == m_media) return "Media";
-    if (w == m_cam) return "Cam";
-    if (w == m_settings) return "Settings";
-    if (w == m_ha) return "HA";
-    return "Nav"; // Valeur par défaut
-}
-
-QWidget* MainWindow::stringToWidget(const QString& name) {
-    if (name == "Media") return m_media;
-    if (name == "Cam") return m_cam;
-    if (name == "Settings") return m_settings;
-    if (name == "HA") return m_ha;
-    return m_nav; // Valeur par défaut
-}
-
-void MainWindow::saveSplitState() {
-    QSettings settings("EliasCorp", "GPSApp");
-    settings.setValue("Split/Left", widgetToString(m_lastLeftApp));
-    settings.setValue("Split/Right", widgetToString(m_lastRightApp));
-}
-
 void MainWindow::displayPages(QWidget* p1, QWidget* p2)
 {
     // p1 est la page principale; si p2 n'est pas nul, on active le mode split.
@@ -158,20 +127,15 @@ void MainWindow::goSplit() {
     // OPTIMISATION CRITIQUE : Le flux caméra est systématiquement arrêté hors de sa page
     // pour réduire drastiquement la charge CPU et le trafic réseau.
     m_cam->stopStream();
-    displayPages(m_lastLeftApp, m_lastRightApp);
 }
 
 void MainWindow::goNav() {
     m_cam->stopStream();
-    m_lastLeftApp = m_nav; // La navigation se place toujours à gauche en mode split
-    saveSplitState();
     displayPages(m_nav);
 }
 
 void MainWindow::goMedia() {
     m_cam->stopStream();
-    m_lastRightApp = m_media; // Le média se place toujours à droite en mode split
-    saveSplitState();
     displayPages(m_media);
 }
 

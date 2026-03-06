@@ -10,7 +10,6 @@
 #include <QMainWindow>
 #include <QHBoxLayout>
 #include <QPushButton>
-#include <QSettings>
 
 class TelemetryData;
 class NavigationPage;
@@ -80,10 +79,6 @@ private:
     QPushButton* m_btnSplit = nullptr;   ///< Bouton dynamique permettant d'activer le mode Split-Screen.
     bool m_isSplitMode = false;          ///< Indique si l'interface est actuellement en écran divisé.
 
-    // --- PERSISTANCE D'ÉTAT ---
-    QWidget* m_lastLeftApp = nullptr;    ///< Pointeur vers la dernière vue affichée à gauche.
-    QWidget* m_lastRightApp = nullptr;   ///< Pointeur vers la dernière vue affichée à droite.
-
     /**
      * @brief Gère l'affichage, le masquage et les proportions des pages dans le layout principal.
      * @param page1 La page principale à afficher.
@@ -91,18 +86,4 @@ private:
      */
     void displayPages(QWidget* page1, QWidget* page2 = nullptr);
 
-    /**
-     * @brief Sauvegarde la configuration actuelle de l'écran partagé sur le disque (via QSettings).
-     */
-    void saveSplitState();
-
-    /**
-     * @brief Convertit un pointeur de widget en chaîne de caractères (pour la sauvegarde dans QSettings).
-     */
-    QString widgetToString(QWidget* w);
-
-    /**
-     * @brief Retrouve le pointeur du widget correspondant à une chaîne de caractères sauvegardée.
-     */
-    QWidget* stringToWidget(const QString& name);
 };
