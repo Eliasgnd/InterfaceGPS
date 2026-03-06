@@ -43,8 +43,6 @@ public:
     double lat() const { return m_lat; }             ///< Retourne la latitude actuelle en degrés.
     double lon() const { return m_lon; }             ///< Retourne la longitude actuelle en degrés.
     double heading() const { return m_heading; }     ///< Retourne le cap actuel du véhicule en degrés (0 = Nord).
-    QString alertText() const { return m_alertText; }///< Retourne le texte de l'alerte en cours.
-    int alertLevel() const { return m_alertLevel; }  ///< Retourne le niveau de criticité de l'alerte (0 = aucune, 1 = avertissement, 2 = critique).
 
 public slots:
     // --- SETTERS (Modificateurs) ---
@@ -55,8 +53,6 @@ public slots:
     void setLat(double v);
     void setLon(double v);
     void setHeading(double v);
-    void setAlertText(const QString& v);
-    void setAlertLevel(int v);
 
 signals:
     // --- SIGNAUX DE NOTIFICATION ---
@@ -67,8 +63,6 @@ signals:
     void latChanged();
     void lonChanged();
     void headingChanged();
-    void alertTextChanged();
-    void alertLevelChanged();
 
 private:
     // --- VARIABLES INTERNES ---
@@ -77,6 +71,4 @@ private:
     double m_lat = 48.8566;            ///< Latitude (Par défaut: Paris)
     double m_lon = 2.3522;             ///< Longitude (Par défaut: Paris)
     double m_heading = 0.0;            ///< Cap en degrés (0 à 360)
-    QString m_alertText;               ///< Message d'alerte courant
-    int m_alertLevel = 0;              ///< Niveau d'alerte (0, 1 ou 2)
 };

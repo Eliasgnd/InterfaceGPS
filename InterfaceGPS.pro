@@ -49,6 +49,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     MediaPlayer.qml \
+    diagramme_classe.qmodel \
     map.qml
 
 RESOURCES += \
