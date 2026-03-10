@@ -1,7 +1,7 @@
 /**
  * @file mpu9250source.cpp
  * @brief Implémentation du contrôleur I2C pour la centrale inertielle MPU9250.
- * * @details Gère les appels système bas niveau (ioctl) sous Linux pour communiquer
+ * @details Gère les appels système bas niveau (ioctl) sous Linux pour communiquer
  * avec les registres du capteur. Contient la logique d'acquisition, l'application
  * des paramètres de calibration (Hard/Soft iron, biais) et l'algorithme de fusion
  * de capteurs (Filtre de Madgwick) nécessaire au calcul précis de l'orientation (Cap).
@@ -10,11 +10,15 @@
 #include "mpu9250source.h"
 #include "telemetrydata.h"
 #include <QDebug>
+#include <cmath>
+
+// Les bibliothèques système Linux sont isolées pour que Windows ne plante pas à la compilation
+#ifdef Q_OS_LINUX
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
-#include <cmath>
+#endif
 
 Mpu9250Source::Mpu9250Source(TelemetryData* data, QObject* parent)
     : QObject(parent), m_data(data), m_fileDescriptor(-1) {
@@ -27,6 +31,7 @@ Mpu9250Source::~Mpu9250Source() {
 }
 
 void Mpu9250Source::start() {
+#ifdef Q_OS_LINUX
     qDebug() << "Tentative d'ouverture du bus I2C-1...";
     m_fileDescriptor = open("/dev/i2c-1", O_RDWR);
     if (m_fileDescriptor < 0) {
@@ -78,12 +83,16 @@ void Mpu9250Source::start() {
     config[0] = 0x37; config[1] = 0x02; write(m_fileDescriptor, config, 2);
     ioctl(m_fileDescriptor, I2C_SLAVE, 0x0C);
 
-    // Configuration du magnétomè tre : 16 bits de résolution, mode continu (100Hz)
+    // Configuration du magnétomètre : 16 bits de résolution, mode continu (100Hz)
     config[0] = 0x0A; config[1] = 0x16; write(m_fileDescriptor, config, 2);
+    qDebug() << "Acquisition MPU9250 démarrée avec succès.";
+
+#else
+    qWarning() << "[MODE SIMULATION] - Code compilé sous Windows/Autre. Le matériel I2C est bypassé.";
+#endif
 
     m_elapsedTimer.start();
     m_timer->start(100); // Boucle de lecture à 10Hz
-    qDebug() << "Acquisition MPU9250 démarrée avec succès.";
 }
 
 void Mpu9250Source::readSensor() {
@@ -91,14 +100,15 @@ void Mpu9250Source::readSensor() {
     // 0. VÉRIFICATION ET TEMPS ÉCOULÉ
     // ------------------------------------------------------------------------
 
-    // Si le capteur n'est pas bien connecté ou initialisé, on annule tout.
-    if (m_fileDescriptor < 0) return;
-
     // Le filtre de Madgwick a besoin de savoir exactement combien de temps s'est
     // écoulé depuis le dernier calcul pour déduire de combien on a tourné
     // (Vitesse angulaire * temps = Angle).
     // On prend le temps en millisecondes et on divise par 1000 pour l'avoir en secondes (dt).
     float dt = m_elapsedTimer.restart() / 1000.0f;
+
+#ifdef Q_OS_LINUX
+    // Si le capteur n'est pas bien connecté ou initialisé, on annule tout.
+    if (m_fileDescriptor < 0) return;
 
     // ------------------------------------------------------------------------
     // 1. LECTURE DE L'ACCÉLÉROMÈTRE ET DU GYROSCOPE
@@ -242,11 +252,15 @@ void Mpu9250Source::readSensor() {
     } else {
         qDebug() << "Erreur de lecture I2C sur l'adresse 0x68 (Capteur débranché ou indisponible).";
     }
+#else
+    // Empêche le compilateur Windows d'afficher un avertissement pour la variable non utilisée
+    Q_UNUSED(dt);
+#endif
 }
 
 /**
  * @brief Filtre de fusion de capteurs de Madgwick (Implémentation optimisée).
- * * @details Cet algorithme estime l'orientation 3D (quaternions) en fusionnant les données :
+ * @details Cet algorithme estime l'orientation 3D (quaternions) en fusionnant les données :
  * - Le Gyroscope calcule les rotations rapides (mais dérive dans le temps).
  * - L'Accéléromètre trouve la gravité (vecteur Bas) pour corriger le tangage/roulis.
  * - Le Magnétomètre trouve le Nord magnétique pour corriger le lacet (Cap).
@@ -325,8 +339,10 @@ void Mpu9250Source::madgwickUpdate(float ax, float ay, float az, float gx, float
 
 void Mpu9250Source::stop() {
     m_timer->stop();
+#ifdef Q_OS_LINUX
     if (m_fileDescriptor >= 0) {
         close(m_fileDescriptor);
         m_fileDescriptor = -1;
     }
+#endif
 }
