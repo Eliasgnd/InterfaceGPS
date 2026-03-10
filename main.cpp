@@ -23,8 +23,11 @@ int main(int argc, char *argv[]) {
 
     // --- 1. CONFIGURATION SYSTÈME ET GRAPHIQUE ---
 
-    // Force Qt à utiliser le serveur d'affichage X11 (via le plugin xcb).
+    // Force Qt à utiliser le serveur d'affichage X11 (via le plugin xcb) UNIQUEMENT sous Linux.
+    // Sous Windows, on laisse Qt choisir son plugin natif ('windows') pour éviter un crash instantané.
+#ifdef Q_OS_LINUX
     qputenv("QT_QPA_PLATFORM", "xcb");
+#endif
 
     // Activation du partage de contexte OpenGL entre les threads.
     // Prérequis obligatoire pour que le moteur Chromium (QWebEngine) puisse utiliser
@@ -62,7 +65,7 @@ int main(int argc, char *argv[]) {
 
     // --- 4. OPTIMISATION BANDE PASSANTE (CACHE CARTOGRAPHIQUE) ---
     // Pour éviter de retélécharger les mêmes tuiles Mapbox/OSM à chaque trajet,
-    // on force la création d'un cache local persistant sur la carte SD du Raspberry Pi.
+    // on force la création d'un cache local persistant.
     // Cela réduit la latence d'affichage et économise la data réseau.
     QString cachePath = QCoreApplication::applicationDirPath() + "/qtlocation_cache";
     QDir().mkpath(cachePath);
@@ -79,7 +82,11 @@ int main(int argc, char *argv[]) {
     // B. Initialisation du GPS (Port Série / UART)
     // On injecte le pointeur '&telemetry' pour que le GPS puisse y écrire ses trames NMEA.
     GpsTelemetrySource gpsSource(&telemetry);
-    gpsSource.start("/dev/serial0");
+#ifdef Q_OS_LINUX
+    gpsSource.start("/dev/serial0"); // Chemin Linux/Raspberry
+#else
+    gpsSource.start("COM1"); // Port factice ou de test pour Windows
+#endif
 
     // C. Initialisation de la Centrale Inertielle (Bus I2C)
     // Gère le gyroscope, l'accéléromètre et la boussole via le filtre de Madgwick.
