@@ -20,6 +20,16 @@
 #include "mpu9250source.h"
 
 int main(int argc, char *argv[]) {
+    qputenv("QT_QPA_PLATFORMTHEME", ""); // D�sactive le moteur de th�me externe
+
+    QLoggingCategory::setFilterRules(
+        "*.debug=false\n"
+        "qt.qpa.*=false\n"
+        "qt.text.font.*=false\n"
+        "qt.network.ssl.warning=true\n"
+        "qt.location.mapping.osm.debug=false\n" // Mis � false pour nettoyer
+        "qt.network.access.debug=false"          // Mis � false pour nettoyer
+        );
 
     // --- 1. CONFIGURATION SYSTÈME ET GRAPHIQUE ---
 
@@ -42,19 +52,14 @@ int main(int argc, char *argv[]) {
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
             "--disable-web-security "
             "--no-sandbox "
-            "--ignore-certificate-errors");
+            "--ignore-certificate-errors "
+            "--log-level=3 "
+            "--disable-logging "
+            "--enable-logging=none");
 
     QQuickStyle::setStyle("Fusion");
 
     // --- 3. DÉBOGAGE ET RÉSEAU ---
-    // Filtres de logs activés pour surveiller spécifiquement le trafic de l'API cartographique (Mapbox/OSM)
-    // et diagnostiquer les potentielles pertes de paquets en connexion mobile (4G partagée).
-    QLoggingCategory::setFilterRules(
-        "qt.network.ssl.warning=true\n"
-        "qt.location.mapping.osm.debug=true\n"
-        "qt.location.mapping.network.debug=true\n"
-        "qt.network.access.debug=true"
-        );
 
     // Démarrage du moteur événementiel (Event Loop) de Qt
     QApplication a(argc, argv);
