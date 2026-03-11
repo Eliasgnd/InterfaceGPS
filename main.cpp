@@ -27,9 +27,9 @@ int main(int argc, char *argv[]) {
     QCoreApplication::addLibraryPath("/usr/lib/aarch64-linux-gnu/qt6/plugins");
 
 #ifdef Q_OS_LINUX
-    qputenv("QT_QPA_PLATFORM", "xcb");
 
     // CORRECTIF GPU : Désactive l'intégration GL de XCB qui cause les erreurs gbm_wrapper
+    qputenv("QT_QUICK_BACKEND", "software");
     qputenv("QT_XCB_GL_INTEGRATION", "none");
 #endif
 
