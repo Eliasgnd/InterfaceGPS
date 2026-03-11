@@ -23,31 +23,32 @@ int main(int argc, char *argv[]) {
 
     // --- 1. CONFIGURATION SYSTÈME ET GRAPHIQUE ---
 
-    // Force Qt à utiliser le serveur d'affichage X11 (via le plugin xcb) UNIQUEMENT sous Linux.
-    // Sous Windows, on laisse Qt choisir son plugin natif ('windows') pour éviter un crash instantané.
+    // CORRECTIF SVG : On aide Qt à trouver le plugin de décodage SVG
+    QCoreApplication::addLibraryPath("/usr/lib/aarch64-linux-gnu/qt6/plugins");
+
 #ifdef Q_OS_LINUX
     qputenv("QT_QPA_PLATFORM", "xcb");
+
+    // CORRECTIF GPU : Désactive l'intégration GL de XCB qui cause les erreurs gbm_wrapper
+    qputenv("QT_XCB_GL_INTEGRATION", "none");
 #endif
 
-    // Activation du partage de contexte OpenGL entre les threads.
-    // Prérequis obligatoire pour que le moteur Chromium (QWebEngine) puisse utiliser
-    // l'accélération matérielle (GPU) du Raspberry Pi sans bloquer l'interface graphique.
+    // CORRECTIF WEBENGINE : Désactivation du bac à sable pour éviter les crashs sur Pi
+    qputenv("QTWEBENGINE_DISABLE_SANDBOX", "1");
+
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 
-    // --- 2. SÉCURITÉ ET MOTEUR WEB (HOME ASSISTANT) ---
-    // En environnement embarqué, l'écran interagit avec des serveurs locaux (ex: Home Assistant sur le même réseau).
-    // Ces serveurs n'ont souvent pas de certificats HTTPS officiels.
-    // On désactive intentionnellement certaines sécurités strictes de Chromium (CORS, Sandbox, Certificats)
-    // pour garantir une communication fluide et autoriser l'autoplay des médias sans interaction tactile préalable.
+    // Modification des flags Chromium pour inclure le mode software si le GPU échoue
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
             "--disable-web-security "
             "--allow-running-insecure-content "
             "--autoplay-policy=no-user-gesture-required "
             "--ignore-certificate-errors "
             "--no-sandbox "
+            "--disable-gpu " // Ajouté pour éviter les erreurs GBM
+            "--disable-software-rasterizer "
             "--disable-features=IsolateOrigins,site-per-process");
 
-    // Standardisation du design des composants Qt Quick Controls 2
     QQuickStyle::setStyle("Fusion");
 
     // --- 3. DÉBOGAGE ET RÉSEAU ---

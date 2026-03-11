@@ -1,4 +1,4 @@
-QT += core gui widgets positioning location quickwidgets qml quick serialport virtualkeyboard multimedia quickcontrols2 network dbus bluetooth webenginewidgets testlib
+QT += core gui widgets positioning location quickwidgets qml quick serialport virtualkeyboard multimedia quickcontrols2 network dbus bluetooth webenginewidgets testlib svg
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
