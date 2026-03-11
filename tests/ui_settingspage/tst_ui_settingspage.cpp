@@ -22,6 +22,11 @@ private slots:
 
 void SettingsPageUiTest::constructor_initialState_forgetButtonDisabled()
 {
+    // Objectif: valider l'état initial de sécurité de l'écran Bluetooth.
+    // Pourquoi: sans sélection d'appareil, l'action "Forget" doit rester impossible.
+    // Procédure détaillée:
+    //   1) Instancier SettingsPage.
+    //   2) Vérifier que btnForget est désactivé à froid.
     SettingsPage page;
 
     QVERIFY(!page.ui->btnForget->isEnabled());
@@ -29,6 +34,12 @@ void SettingsPageUiTest::constructor_initialState_forgetButtonDisabled()
 
 void SettingsPageUiTest::setDiscoverable_true_updatesButtonAndTimer()
 {
+    // Objectif: vérifier la transition vers l'état discoverable.
+    // Pourquoi: l'utilisateur doit voir clairement que l'appairage est ouvert temporairement.
+    // Procédure détaillée:
+    //   1) Appeler setDiscoverable(true).
+    //   2) Vérifier bouton coché + texte "Visible (120s max)...".
+    //   3) Vérifier que le timer de découverte est actif.
     SettingsPage page;
 
     page.setDiscoverable(true);
@@ -40,6 +51,12 @@ void SettingsPageUiTest::setDiscoverable_true_updatesButtonAndTimer()
 
 void SettingsPageUiTest::setDiscoverable_false_updatesButtonAndTimer()
 {
+    // Objectif: vérifier la sortie propre du mode discoverable.
+    // Pourquoi: l'arrêt doit remettre un état UI cohérent et arrêter le timer associé.
+    // Procédure détaillée:
+    //   1) Activer discoverable puis le désactiver.
+    //   2) Vérifier bouton non coché + texte par défaut.
+    //   3) Vérifier arrêt du timer.
     SettingsPage page;
     page.setDiscoverable(true);
 
@@ -52,6 +69,12 @@ void SettingsPageUiTest::setDiscoverable_false_updatesButtonAndTimer()
 
 void SettingsPageUiTest::stopDiscovery_alwaysResetsVisibleState()
 {
+    // Objectif: valider l'action explicite stopDiscovery indépendamment de l'état courant.
+    // Pourquoi: cette action est utilisée comme garde-fou pour forcer la fermeture de visibilité.
+    // Procédure détaillée:
+    //   1) Mettre la page en discoverable.
+    //   2) Appeler stopDiscovery().
+    //   3) Vérifier le retour complet à l'état non visible (toggle + libellé).
     SettingsPage page;
     page.setDiscoverable(true);
     QVERIFY(page.ui->btnVisible->isChecked());
@@ -64,6 +87,12 @@ void SettingsPageUiTest::stopDiscovery_alwaysResetsVisibleState()
 
 void SettingsPageUiTest::refreshPairedList_withNoSelection_keepsForgetDisabled()
 {
+    // Objectif: vérifier le comportement de refresh sans appareil sélectionné.
+    // Pourquoi: l'écran doit rester sûr (pas de suppression accidentelle) tout en affichant des entrées.
+    // Procédure détaillée:
+    //   1) Appeler refreshPairedList().
+    //   2) Vérifier que btnForget reste désactivé.
+    //   3) Vérifier que la liste contient au moins une ligne (placeholder ou device).
     SettingsPage page;
 
     page.refreshPairedList();

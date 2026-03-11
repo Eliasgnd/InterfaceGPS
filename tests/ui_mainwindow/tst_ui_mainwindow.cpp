@@ -29,6 +29,12 @@ private slots:
 
 void MainWindowUiTest::startup_appliesSplitMode_andShowsNavAndMedia()
 {
+    // Objectif: valider l'état initial global de la fenêtre principale.
+    // Pourquoi: cet état conditionne la première impression utilisateur et le parcours par défaut.
+    // Procédure détaillée:
+    //   1) Construire MainWindow avec TelemetryData.
+    //   2) Vérifier m_isSplitMode=true.
+    //   3) Vérifier Navigation/Media visibles et les autres pages masquées.
     TelemetryData t;
     MainWindow w(&t);
 
@@ -42,6 +48,12 @@ void MainWindowUiTest::startup_appliesSplitMode_andShowsNavAndMedia()
 
 void MainWindowUiTest::navButtons_switchVisiblePages()
 {
+    // Objectif: valider le routage UI piloté par la barre de boutons.
+    // Pourquoi: chaque bouton doit activer exactement une page pour éviter les recouvrements d'écran.
+    // Procédure détaillée:
+    //   1) Récupérer les boutons via objectName.
+    //   2) Simuler un clic utilisateur sur chaque bouton dans l'ordre.
+    //   3) Après chaque clic, vérifier la matrice de visibilité (1 visible, autres cachées).
     TelemetryData t;
     MainWindow w(&t);
     w.show();
@@ -92,6 +104,12 @@ void MainWindowUiTest::navButtons_switchVisiblePages()
 
 void MainWindowUiTest::splitButton_togglesIconBetweenSplitAndFullscreen()
 {
+    // Objectif: vérifier le feedback visuel du bouton split/fullscreen.
+    // Pourquoi: l'icône doit refléter l'action possible pour ne pas tromper l'utilisateur.
+    // Procédure détaillée:
+    //   1) Contrôler l'icône initiale en mode split.
+    //   2) Basculer en mode navigation (plein écran).
+    //   3) Vérifier le changement d'icône, puis retour split et validation inverse.
     TelemetryData t;
     MainWindow w(&t);
 
@@ -106,6 +124,12 @@ void MainWindowUiTest::splitButton_togglesIconBetweenSplitAndFullscreen()
 
 void MainWindowUiTest::splitMode_setsExpectedStretchFactors()
 {
+    // Objectif: garantir la répartition visuelle prévue entre Navigation et Media.
+    // Pourquoi: une régression de stretch casse l'ergonomie de lecture carte/média.
+    // Procédure détaillée:
+    //   1) Forcer goSplit().
+    //   2) Lire les stretch factors dans le layout principal.
+    //   3) Vérifier le ratio attendu (6 pour nav, 4 pour media).
     TelemetryData t;
     MainWindow w(&t);
 
@@ -117,6 +141,12 @@ void MainWindowUiTest::splitMode_setsExpectedStretchFactors()
 
 void MainWindowUiTest::cameraOpen_thenLeaveToOtherTabs_putsCameraInPauseState()
 {
+    // Objectif: vérifier la politique d'arrêt caméra hors onglet Camera.
+    // Pourquoi: économiser ressources et éviter un flux actif non visible.
+    // Procédure détaillée:
+    //   1) Entrer dans Camera puis naviguer successivement vers Nav/Media/Settings/HA.
+    //   2) Après chaque sortie, vérifier que le label caméra indique "Caméra en pause".
+    //   3) Répéter l'ouverture intermédiaire pour tester la stabilité du comportement.
     TelemetryData t;
     MainWindow w(&t);
 
@@ -141,6 +171,12 @@ void MainWindowUiTest::cameraOpen_thenLeaveToOtherTabs_putsCameraInPauseState()
 
 void MainWindowUiTest::openingCamera_attemptsStreamAndShowsStatusMessage()
 {
+    // Objectif: valider le scénario d'ouverture caméra depuis MainWindow.
+    // Pourquoi: ce test couvre l'intégration entre orchestration UI et composant CameraPage.
+    // Procédure détaillée:
+    //   1) Tenter de binder 4444 en amont: si impossible, ignorer le test proprement (QSKIP).
+    //   2) Ouvrir l'onglet caméra via goCam().
+    //   3) Vérifier socket bound + message "Connexion en cours...".
     QUdpSocket probe;
     if (!probe.bind(QHostAddress::Any, 4444)) {
         QSKIP("Port 4444 occupé dans cet environnement, test de succès de bind ignoré.");
@@ -159,6 +195,12 @@ void MainWindowUiTest::openingCamera_attemptsStreamAndShowsStatusMessage()
 
 void MainWindowUiTest::rapidDoubleClicks_onNavigationKeepCoherentState()
 {
+    // Objectif: tester la robustesse aux interactions rapides (double-clic).
+    // Pourquoi: les utilisateurs peuvent cliquer vite; l'état final doit rester déterministe.
+    // Procédure détaillée:
+    //   1) Simuler un double-clic sur Camera puis Settings.
+    //   2) Vérifier que Settings est l'écran final visible.
+    //   3) Vérifier que toutes les autres pages sont masquées.
     TelemetryData t;
     MainWindow w(&t);
     w.show();
@@ -179,6 +221,13 @@ void MainWindowUiTest::rapidDoubleClicks_onNavigationKeepCoherentState()
 
 void MainWindowUiTest::realisticSequence_splitCameraSettingsSplit_isCoherent()
 {
+    // Objectif: valider une séquence complète proche d'un usage réel.
+    // Pourquoi: les bugs d'intégration apparaissent souvent dans les transitions en chaîne.
+    // Procédure détaillée:
+    //   1) Passer en split et vérifier nav+media.
+    //   2) Ouvrir caméra et accepter les états possibles selon disponibilité du port.
+    //   3) Aller dans Settings, vérifier pause caméra.
+    //   4) Revenir en split et vérifier cohérence finale des visibilités.
     TelemetryData t;
     MainWindow w(&t);
 
