@@ -12,6 +12,8 @@
 #include "../../homeassistant.h"
 #undef private
 
+// Suite de tests d'intégration de la fenêtre principale.
+// Le but est de vérifier les parcours utilisateur complets (navigation entre pages, split/fullscreen, caméra).
 class MainWindowUiTest : public QObject
 {
     Q_OBJECT
@@ -48,6 +50,8 @@ void MainWindowUiTest::startup_appliesSplitMode_andShowsNavAndMedia()
 
 void MainWindowUiTest::navButtons_switchVisiblePages()
 {
+    // Résultat attendu en clair: à tout instant, un seul écran principal doit être visible
+    // lorsqu'on clique sur un bouton de la barre de navigation.
     // Objectif: valider le routage UI piloté par la barre de boutons.
     // Pourquoi: chaque bouton doit activer exactement une page pour éviter les recouvrements d'écran.
     // Procédure détaillée:
@@ -221,6 +225,8 @@ void MainWindowUiTest::rapidDoubleClicks_onNavigationKeepCoherentState()
 
 void MainWindowUiTest::realisticSequence_splitCameraSettingsSplit_isCoherent()
 {
+    // Résultat attendu en clair: même après une séquence longue de transitions,
+    // l'application revient dans un état UI stable et prédictible.
     // Objectif: valider une séquence complète proche d'un usage réel.
     // Pourquoi: les bugs d'intégration apparaissent souvent dans les transitions en chaîne.
     // Procédure détaillée:

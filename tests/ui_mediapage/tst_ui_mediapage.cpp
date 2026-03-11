@@ -6,6 +6,8 @@
 #include "../../mediapage.h"
 #undef private
 
+// Suite de tests de la page média: contrôle du chargement QML et de la synchronisation
+// des propriétés exposées depuis C++ vers l'interface QML.
 class MediaPageUiTest : public QObject
 {
     Q_OBJECT
@@ -31,6 +33,8 @@ void MediaPageUiTest::constructor_createsQmlPlayerView()
 
 void MediaPageUiTest::setCompactMode_updatesQmlRootProperty()
 {
+    // Résultat attendu en clair: l'appel C++ setCompactMode(...) modifie immédiatement
+    // la propriété QML isCompactMode utilisée pour adapter l'affichage du lecteur.
     // Objectif: valider le pont C++ -> QML pour la propriété d'affichage compact.
     // Pourquoi: ce flag pilote l'adaptation du layout lecteur selon le contexte écran.
     // Procédure détaillée:

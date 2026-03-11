@@ -23,6 +23,8 @@ public:
     }
 };
 
+// Suite de tests UI Home Assistant: chaque test explique le comportement attendu
+// en termes simples pour faciliter la relecture par des personnes non expertes Qt/WebEngine.
 class HomeAssistantUiTest : public QObject
 {
     Q_OBJECT
@@ -36,6 +38,8 @@ private slots:
 
 void HomeAssistantUiTest::haPage_consoleShowKeyboard_emitsSignal()
 {
+    // Résultat attendu en clair: le message console "SHOW_KEYBOARD" agit comme un bouton virtuel
+    // qui demande explicitement l'ouverture du clavier côté interface Qt.
     // Objectif: vérifier l'intégration JS->Qt pour l'ouverture clavier.
     // Pourquoi: Home Assistant déclenche le clavier via un message console dédié.
     // Procédure détaillée:
@@ -86,6 +90,8 @@ void HomeAssistantUiTest::homeAssistant_constructor_configuresViewAndPage()
 
 void HomeAssistantUiTest::homeAssistant_constructor_appliesRequiredWebEngineSettings()
 {
+    // Résultat attendu en clair: la page est configurée en "mode compatible HA"
+    // (contenu mixte, stockage local, rendu accéléré, lecture média sans geste utilisateur).
     // Objectif: vérifier la configuration WebEngine nécessaire au bon fonctionnement HA.
     // Pourquoi: certains widgets/contenus nécessitent accès local/remote, WebGL et playback sans geste.
     // Procédure détaillée:

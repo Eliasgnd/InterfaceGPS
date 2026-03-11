@@ -119,6 +119,12 @@ void SettingsPageUiTest::cleanupTestCase()
 
 void SettingsPageUiTest::constructor_initialState_forgetButtonDisabled()
 {
+    // Objectif: vérifier l'état initial sécurisé du bouton "Oublier".
+    // Pourquoi: sans appareil sélectionné, ce bouton doit rester inactif.
+    // Procédure détaillée:
+    //   1) Simuler un environnement bluetooth sans device (BT_MODE=none).
+    //   2) Construire SettingsPage.
+    //   3) Vérifier que btnForget est désactivé.
     qputenv("BT_MODE", "none");
     SettingsPage page;
 
@@ -127,6 +133,12 @@ void SettingsPageUiTest::constructor_initialState_forgetButtonDisabled()
 
 void SettingsPageUiTest::setDiscoverable_true_updatesButtonAndTimer()
 {
+    // Objectif: contrôler l'activation du mode appairage visible.
+    // Pourquoi: l'utilisateur doit voir un état UI cohérent + un timeout de sécurité.
+    // Procédure détaillée:
+    //   1) Appeler setDiscoverable(true).
+    //   2) Vérifier bouton coché, libellé "Visible (120s max)..." et timer actif.
+    //   3) Vérifier dans le log la commande "discoverable on" envoyée au système.
     qputenv("BT_MODE", "none");
     SettingsPage page;
 
@@ -142,6 +154,12 @@ void SettingsPageUiTest::setDiscoverable_true_updatesButtonAndTimer()
 
 void SettingsPageUiTest::setDiscoverable_false_updatesButtonAndTimer()
 {
+    // Objectif: contrôler le retour au mode non visible.
+    // Pourquoi: sortir de l'appairage doit stopper le timer et refléter l'état en UI.
+    // Procédure détaillée:
+    //   1) Activer puis désactiver discoverable.
+    //   2) Vérifier bouton décoché, texte par défaut et timer arrêté.
+    //   3) Vérifier la commande "discoverable off" dans le log fake bluetoothctl.
     qputenv("BT_MODE", "none");
     SettingsPage page;
     page.setDiscoverable(true);
@@ -158,6 +176,12 @@ void SettingsPageUiTest::setDiscoverable_false_updatesButtonAndTimer()
 
 void SettingsPageUiTest::stopDiscovery_alwaysResetsVisibleState()
 {
+    // Objectif: valider l'action d'arrêt forcé de la découverte.
+    // Pourquoi: appelée par timer ou navigation, elle doit toujours remettre un état propre.
+    // Procédure détaillée:
+    //   1) Partir d'un état discoverable actif.
+    //   2) Appeler stopDiscovery().
+    //   3) Vérifier bouton non coché + texte standard d'appairage.
     qputenv("BT_MODE", "none");
     SettingsPage page;
     page.setDiscoverable(true);
@@ -171,6 +195,12 @@ void SettingsPageUiTest::stopDiscovery_alwaysResetsVisibleState()
 
 void SettingsPageUiTest::refreshPairedList_withNoSelection_keepsForgetDisabled()
 {
+    // Objectif: vérifier le rafraîchissement de liste sans sélection courante.
+    // Pourquoi: éviter toute action destructive tant qu'aucun appareil n'est explicitement choisi.
+    // Procédure détaillée:
+    //   1) Rafraîchir la liste en mode sans appareils connectés.
+    //   2) Vérifier que le bouton "Oublier" reste désactivé.
+    //   3) Vérifier qu'au moins une entrée informative est affichée dans la liste.
     qputenv("BT_MODE", "none");
     SettingsPage page;
 
@@ -182,6 +212,12 @@ void SettingsPageUiTest::refreshPairedList_withNoSelection_keepsForgetDisabled()
 
 void SettingsPageUiTest::listSelection_withValidMac_enablesForgetButton()
 {
+    // Objectif: confirmer qu'une sélection valide active l'action "Oublier".
+    // Pourquoi: l'action ne doit être possible que quand une MAC exploitable est connue.
+    // Procédure détaillée:
+    //   1) Ajouter manuellement un item avec adresse MAC en UserRole.
+    //   2) Le sélectionner dans la liste.
+    //   3) Vérifier l'activation de btnForget.
     qputenv("BT_MODE", "none");
     SettingsPage page;
 
@@ -194,6 +230,12 @@ void SettingsPageUiTest::listSelection_withValidMac_enablesForgetButton()
 
 void SettingsPageUiTest::refreshPairedList_restoresSelection()
 {
+    // Objectif: tester la conservation de la sélection après rafraîchissement.
+    // Pourquoi: l'utilisateur ne doit pas perdre son contexte à chaque update de liste.
+    // Procédure détaillée:
+    //   1) Simuler un device unique connecté.
+    //   2) Sélectionner cet item puis relancer refreshPairedList().
+    //   3) Vérifier que la même MAC reste sélectionnée ensuite.
     qputenv("BT_MODE", "single");
     SettingsPage page;
 
@@ -212,6 +254,12 @@ void SettingsPageUiTest::refreshPairedList_restoresSelection()
 
 void SettingsPageUiTest::refreshPairedList_multipleConnected_keepsOnlyNewcomer()
 {
+    // Objectif: valider la logique de déconnexion lorsqu'il existe plusieurs connexions actives.
+    // Pourquoi: l'application veut conserver un seul appareil "nouveau" et libérer l'autre.
+    // Procédure détaillée:
+    //   1) Simuler deux appareils connectés (BT_MODE=multi).
+    //   2) Rafraîchir la liste.
+    //   3) Vérifier qu'une commande "disconnect <MAC>" est émise dans le log.
     qputenv("BT_MODE", "multi");
     QFile::remove(m_tempDir.path() + "/bt.log");
 
