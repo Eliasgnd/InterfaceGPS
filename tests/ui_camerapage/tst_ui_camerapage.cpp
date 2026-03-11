@@ -1,6 +1,8 @@
 #include <QtTest>
 #include <QUdpSocket>
 #include <QLabel>
+#include <QBuffer>
+#include <QImage>
 
 #define private public
 #include "../../camerapage.h"
@@ -14,16 +16,12 @@ private slots:
     void startStream_whenPortAvailable_setsConnectingMessage();
     void startStream_whenPortOccupied_setsErrorMessage();
     void stopStream_afterStart_closesSocketAndSetsPausedMessage();
+    void processPendingDatagrams_invalidJpeg_keepsTextMessage();
+    void processPendingDatagrams_validJpeg_setsPixmap();
 };
 
 void CameraPageUiTest::startStream_whenPortAvailable_setsConnectingMessage()
 {
-    // Objectif: valider le scénario nominal d'ouverture du flux caméra.
-    // Pourquoi: au premier affichage caméra, l'application doit binder le port vidéo local.
-    // Procédure détaillée:
-    //   1) Créer CameraPage.
-    //   2) Appeler startStream().
-    //   3) Vérifier que le socket est en BoundState et que le message utilisateur est "Connexion en cours...".
     CameraPage page;
 
     page.startStream();
@@ -36,12 +34,6 @@ void CameraPageUiTest::startStream_whenPortAvailable_setsConnectingMessage()
 
 void CameraPageUiTest::startStream_whenPortOccupied_setsErrorMessage()
 {
-    // Objectif: tester la gestion de conflit de port (4444 déjà occupé).
-    // Pourquoi: ce cas est fréquent si un autre process consomme le flux UDP.
-    // Procédure détaillée:
-    //   1) Ouvrir un socket blocker qui bind explicitement le port 4444.
-    //   2) Lancer startStream() sur CameraPage.
-    //   3) Vérifier l'échec de bind côté page + message d'erreur explicite à l'utilisateur.
     QUdpSocket blocker;
     QVERIFY(blocker.bind(QHostAddress::Any, 4444));
 
@@ -54,12 +46,6 @@ void CameraPageUiTest::startStream_whenPortOccupied_setsErrorMessage()
 
 void CameraPageUiTest::stopStream_afterStart_closesSocketAndSetsPausedMessage()
 {
-    // Objectif: valider le nettoyage lors de l'arrêt du stream.
-    // Pourquoi: lors d'un changement d'onglet, la caméra doit libérer les ressources réseau.
-    // Procédure détaillée:
-    //   1) Démarrer le stream et vérifier l'état bound.
-    //   2) Appeler stopStream().
-    //   3) Vérifier fermeture du socket et affichage "Caméra en pause".
     CameraPage page;
     page.startStream();
     QCOMPARE(page.udpSocket->state(), QAbstractSocket::BoundState);
@@ -68,6 +54,45 @@ void CameraPageUiTest::stopStream_afterStart_closesSocketAndSetsPausedMessage()
 
     QVERIFY(!page.udpSocket->isOpen());
     QCOMPARE(page.videoLabel->text(), QString("Caméra en pause"));
+}
+
+void CameraPageUiTest::processPendingDatagrams_invalidJpeg_keepsTextMessage()
+{
+    CameraPage page;
+    page.startStream();
+    QVERIFY(page.udpSocket->state() == QAbstractSocket::BoundState);
+
+    QUdpSocket sender;
+    sender.writeDatagram("not-a-jpeg", QHostAddress::LocalHost, 4444);
+    QTest::qWait(50);
+
+    QVERIFY(page.videoLabel->pixmap() == nullptr || page.videoLabel->pixmap()->isNull());
+    QCOMPARE(page.videoLabel->text(), QString("Connexion en cours..."));
+
+    page.stopStream();
+}
+
+void CameraPageUiTest::processPendingDatagrams_validJpeg_setsPixmap()
+{
+    CameraPage page;
+    page.startStream();
+    QVERIFY(page.udpSocket->state() == QAbstractSocket::BoundState);
+
+    QImage img(8, 8, QImage::Format_RGB32);
+    img.fill(Qt::red);
+    QByteArray bytes;
+    QBuffer buffer(&bytes);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(img.save(&buffer, "JPG"));
+
+    QUdpSocket sender;
+    sender.writeDatagram(bytes, QHostAddress::LocalHost, 4444);
+    QTest::qWait(50);
+
+    QVERIFY(page.videoLabel->pixmap() != nullptr);
+    QVERIFY(!page.videoLabel->pixmap()->isNull());
+
+    page.stopStream();
 }
 
 QTEST_MAIN(CameraPageUiTest)

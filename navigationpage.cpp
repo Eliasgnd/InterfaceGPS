@@ -180,6 +180,7 @@ void NavigationPage::bindTelemetry(TelemetryData* t) {
 
     // Fonction lambda pour synchroniser les données GPS C++ vers les propriétés de la carte QML
     auto refresh = [this](){
+        emit telemetryRefreshRequested(m_t->lat(), m_t->lon(), m_t->heading(), m_t->speedKmh());
         if(m_mapView && m_mapView->rootObject()){
             m_mapView->rootObject()->setProperty("carLat", m_t->lat());
             m_mapView->rootObject()->setProperty("carLon", m_t->lon());
@@ -199,11 +200,15 @@ void NavigationPage::bindTelemetry(TelemetryData* t) {
 }
 
 void NavigationPage::requestRouteForText(const QString& destination) {
-    if (destination.trimmed().isEmpty() || !m_mapView || !m_mapView->rootObject()) return;
+    QString trimmed = destination.trimmed();
+    if (trimmed.isEmpty()) return;
+
+    emit routeSearchRequested(trimmed);
+    if (!m_mapView || !m_mapView->rootObject()) return;
 
     // Appel d'une fonction Javascript/QML directement depuis le C++
     QMetaObject::invokeMethod(m_mapView->rootObject(), "searchDestination",
-                              Q_ARG(QVariant, destination.trimmed()));
+                              Q_ARG(QVariant, trimmed));
 }
 
 void NavigationPage::onSuggestionChosen(const QString& suggestion) {
@@ -221,6 +226,8 @@ void NavigationPage::triggerSuggestionsSearch() {
 
     // Inutile de chercher pour moins de 3 caractères
     if (query.size() < 3) return;
+
+    emit suggestionsSearchRequested(query);
 
     if (m_mapView && m_mapView->rootObject()) {
         // Envoie la requête au script QML pour interrogation de l'API cartographique

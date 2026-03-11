@@ -61,6 +61,11 @@ public:
      */
     bool eventFilter(QObject *obj, QEvent *event) override;
 
+signals:
+    void routeSearchRequested(const QString& destination);
+    void suggestionsSearchRequested(const QString& query);
+    void telemetryRefreshRequested(double lat, double lon, double heading, double speedKmh);
+
 private slots:
     // --- SLOTS DE RÉCEPTION QML -> C++ ---
 
