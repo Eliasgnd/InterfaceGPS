@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/qmltests">
-        <file>tst_mediaplayer.qml</file>
-        <file>MediaPlayerUnderTest.qml</file>
-    </qresource>
-</RCC>
