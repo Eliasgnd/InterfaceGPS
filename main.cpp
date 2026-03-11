@@ -23,31 +23,26 @@ int main(int argc, char *argv[]) {
 
     // --- 1. CONFIGURATION SYSTÈME ET GRAPHIQUE ---
 
-    // CORRECTIF SVG : On aide Qt à trouver le plugin de décodage SVG
+    // Gardez le chemin des plugins pour les icônes SVG
     QCoreApplication::addLibraryPath("/usr/lib/aarch64-linux-gnu/qt6/plugins");
 
 #ifdef Q_OS_LINUX
+    // SUPPRIMEZ OU COMMENTEZ CETTE LIGNE :
+    // qputenv("QT_QPA_PLATFORM", "xcb");
 
-    // CORRECTIF GPU : Désactive l'intégration GL de XCB qui cause les erreurs gbm_wrapper
-    qputenv("QT_QUICK_BACKEND", "software");
-    qputenv("QT_XCB_GL_INTEGRATION", "none");
+    // Sous Wayland, Qt choisira automatiquement 'wayland' ou 'eglfs'.
+    // Si l'app ne se lance pas, vous pouvez tester de forcer :
+    // qputenv("QT_QPA_PLATFORM", "wayland");
 #endif
 
-    // CORRECTIF WEBENGINE : Désactivation du bac à sable pour éviter les crashs sur Pi
-    qputenv("QTWEBENGINE_DISABLE_SANDBOX", "1");
-
+    // Indispensable pour que WebEngine (Chromium) fonctionne avec le GPU sous Wayland
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 
-    // Modification des flags Chromium pour inclure le mode software si le GPU échoue
+    // Vous pouvez essayer de réactiver l'accélération GPU pour Chromium
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
             "--disable-web-security "
-            "--allow-running-insecure-content "
-            "--autoplay-policy=no-user-gesture-required "
-            "--ignore-certificate-errors "
             "--no-sandbox "
-            "--disable-gpu " // Ajouté pour éviter les erreurs GBM
-            "--disable-software-rasterizer "
-            "--disable-features=IsolateOrigins,site-per-process");
+            "--ignore-certificate-errors");
 
     QQuickStyle::setStyle("Fusion");
 
