@@ -23,6 +23,12 @@ private slots:
 
 void NavigationPageUiTest::constructor_wiresMainWidgetsAndDefaults()
 {
+    // Objectif: valider l'initialisation structurelle de NavigationPage.
+    // Pourquoi: ce test attrape rapidement les régressions de wiring UI (noms d'objets, composants manquants).
+    // Procédure détaillée:
+    //   1) Instancier la page.
+    //   2) Vérifier la présence des contrôles principaux (search, centre, zoom).
+    //   3) Vérifier map.qml, le completer, le modèle de suggestions et l'intervalle du timer.
     NavigationPage page;
 
     QVERIFY(page.findChild<QLineEdit*>("editSearch") != nullptr);
@@ -40,6 +46,12 @@ void NavigationPageUiTest::constructor_wiresMainWidgetsAndDefaults()
 
 void NavigationPageUiTest::onRouteInfoReceived_updatesInfoLabels()
 {
+    // Objectif: vérifier le rendu des informations distance/temps issues du calcul d'itinéraire.
+    // Pourquoi: l'utilisateur doit voir immédiatement une synthèse lisible du trajet.
+    // Procédure détaillée:
+    //   1) Appeler onRouteInfoReceived("12.4 km", "18 min").
+    //   2) Récupérer les labels de synthèse.
+    //   3) Vérifier le format final affiché côté UI.
     NavigationPage page;
 
     page.onRouteInfoReceived("12.4 km", "18 min");
@@ -54,6 +66,12 @@ void NavigationPageUiTest::onRouteInfoReceived_updatesInfoLabels()
 
 void NavigationPageUiTest::onSuggestionsReceived_updatesCompleterModel()
 {
+    // Objectif: valider le parsing et l'injection des suggestions d'adresses.
+    // Pourquoi: un modèle de completer incorrect dégrade fortement l'expérience de recherche.
+    // Procédure détaillée:
+    //   1) Fournir une chaîne JSON de suggestions.
+    //   2) Déclencher onSuggestionsReceived.
+    //   3) Vérifier le contenu exact du QStringListModel branché au completer.
     NavigationPage page;
 
     page.onSuggestionsReceived(QStringLiteral("[\"Paris\",\"Lyon\"]"));
@@ -65,6 +83,12 @@ void NavigationPageUiTest::onSuggestionsReceived_updatesCompleterModel()
 
 void NavigationPageUiTest::onSuggestionChosen_updatesSearchField()
 {
+    // Objectif: valider la sélection d'une suggestion dans le champ de recherche.
+    // Pourquoi: la sélection ne doit pas laisser le composant dans un état interne incohérent.
+    // Procédure détaillée:
+    //   1) Appeler onSuggestionChosen("Marseille").
+    //   2) Vérifier la valeur écrite dans editSearch.
+    //   3) Vérifier que m_ignoreTextUpdate est revenu à false.
     NavigationPage page;
     auto* editSearch = page.findChild<QLineEdit*>("editSearch");
     QVERIFY(editSearch != nullptr);
@@ -77,6 +101,12 @@ void NavigationPageUiTest::onSuggestionChosen_updatesSearchField()
 
 void NavigationPageUiTest::triggerSuggestionsSearch_shortQuery_doesNothingAndKeepsState()
 {
+    // Objectif: confirmer la règle de garde sur la longueur minimale de requête.
+    // Pourquoi: éviter des appels réseau inutiles et du bruit de suggestions trop tôt.
+    // Procédure détaillée:
+    //   1) Pré-remplir le modèle avec une valeur initiale connue.
+    //   2) Saisir une requête de 2 caractères.
+    //   3) Appeler triggerSuggestionsSearch puis vérifier que le modèle reste inchangé.
     NavigationPage page;
     auto* editSearch = page.findChild<QLineEdit*>("editSearch");
     QVERIFY(editSearch != nullptr);

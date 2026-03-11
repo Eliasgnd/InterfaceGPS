@@ -36,6 +36,12 @@ private slots:
 
 void HomeAssistantUiTest::haPage_consoleShowKeyboard_emitsSignal()
 {
+    // Objectif: vérifier l'intégration JS->Qt pour l'ouverture clavier.
+    // Pourquoi: Home Assistant déclenche le clavier via un message console dédié.
+    // Procédure détaillée:
+    //   1) Créer une HAPage testable et brancher QSignalSpy sur showKeyboardRequested.
+    //   2) Simuler un message console SHOW_KEYBOARD.
+    //   3) Vérifier qu'un unique signal est émis.
     QWebEngineProfile profile;
     TestableHAPage page(&profile);
     QSignalSpy spy(&page, &HAPage::showKeyboardRequested);
@@ -47,6 +53,12 @@ void HomeAssistantUiTest::haPage_consoleShowKeyboard_emitsSignal()
 
 void HomeAssistantUiTest::haPage_otherConsoleMessages_doNotEmitSignal()
 {
+    // Objectif: garantir qu'aucun faux déclenchement clavier ne survient.
+    // Pourquoi: un filtrage permissif créerait des ouvertures clavier inattendues.
+    // Procédure détaillée:
+    //   1) Garder le même setup avec QSignalSpy.
+    //   2) Simuler un message console sans mot-clé.
+    //   3) Vérifier zéro émission de showKeyboardRequested.
     QWebEngineProfile profile;
     TestableHAPage page(&profile);
     QSignalSpy spy(&page, &HAPage::showKeyboardRequested);
@@ -58,6 +70,12 @@ void HomeAssistantUiTest::haPage_otherConsoleMessages_doNotEmitSignal()
 
 void HomeAssistantUiTest::homeAssistant_constructor_configuresViewAndPage()
 {
+    // Objectif: valider l'assemblage de base du composant HomeAssistant.
+    // Pourquoi: une page non câblée ou une mauvaise URL rend l'écran inutilisable.
+    // Procédure détaillée:
+    //   1) Instancier HomeAssistant.
+    //   2) Vérifier la création de m_view et de sa page interne.
+    //   3) Vérifier le type HAPage et l'URL de destination configurée.
     HomeAssistant page;
 
     QVERIFY(page.m_view != nullptr);
@@ -68,6 +86,12 @@ void HomeAssistantUiTest::homeAssistant_constructor_configuresViewAndPage()
 
 void HomeAssistantUiTest::homeAssistant_constructor_appliesRequiredWebEngineSettings()
 {
+    // Objectif: vérifier la configuration WebEngine nécessaire au bon fonctionnement HA.
+    // Pourquoi: certains widgets/contenus nécessitent accès local/remote, WebGL et playback sans geste.
+    // Procédure détaillée:
+    //   1) Récupérer QWebEngineSettings depuis la vue.
+    //   2) Lire chaque attribut critique.
+    //   3) Vérifier qu'ils correspondent au profil d'exécution attendu.
     HomeAssistant page;
     QWebEngineSettings* s = page.m_view->settings();
 
