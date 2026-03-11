@@ -66,11 +66,11 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     ui->stackedPages->hide();
 
     // Connexion des boutons de la barre de navigation vers leurs slots respectifs
-    connect(ui->btnNav, &QPushButton::clicked, this, &MainWindow::goNav);
-    connect(ui->btnCam, &QPushButton::clicked, this, &MainWindow::goCam);
-    connect(ui->btnSettings, &QPushButton::clicked, this, &MainWindow::goSettings);
-    connect(ui->btnHA, &QPushButton::clicked, this, &MainWindow::goHomeAssistant);
-    connect(ui->btnMedia, &QPushButton::clicked, this, &MainWindow::goMedia);
+    connect(ui->btnNav, &QPushButton::pressed, this, &MainWindow::goNav);
+    connect(ui->btnCam, &QPushButton::pressed, this, &MainWindow::goCam);
+    connect(ui->btnSettings, &QPushButton::pressed, this, &MainWindow::goSettings);
+    connect(ui->btnHA, &QPushButton::pressed, this, &MainWindow::goHomeAssistant);
+    connect(ui->btnMedia, &QPushButton::pressed, this, &MainWindow::goMedia);
 
     // Création dynamique du bouton pour activer le mode Split-Screen
     m_btnSplit = new QPushButton(this);
@@ -78,7 +78,7 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     m_btnSplit->setCursor(Qt::PointingHandCursor);
 
     ui->bottomNavLayout->insertWidget(0, m_btnSplit);
-    connect(m_btnSplit, &QPushButton::clicked, this, &MainWindow::toggleSplitAndHome);
+    connect(m_btnSplit, &QPushButton::pressed, this, &MainWindow::toggleSplitAndHome);
 
     // Démarrage de l'application directement dans l'état mémorisé (Split ou Plein écran)
     goSplit();

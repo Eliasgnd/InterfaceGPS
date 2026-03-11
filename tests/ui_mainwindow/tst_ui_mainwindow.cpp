@@ -6,6 +6,10 @@
 #include "../../mainwindow.h"
 #include "../../camerapage.h"
 #include "../../telemetrydata.h"
+#include "../../navigationpage.h"
+#include "../../mediapage.h"
+#include "../../settingspage.h"
+#include "../../homeassistant.h"
 #undef private
 
 class MainWindowUiTest : public QObject

@@ -2,6 +2,8 @@
 #include <QPushButton>
 #include <QListWidget>
 
+#include "ui_settingspage.h"
+
 #define private public
 #include "../../settingspage.h"
 #undef private

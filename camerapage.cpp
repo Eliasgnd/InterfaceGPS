@@ -65,10 +65,11 @@ void CameraPage::stopStream()
     if (udpSocket->isOpen()) {
         udpSocket->close();
         qDebug() << "CAMERA: Arrêt du flux";
-        videoLabel->clear(); // Vide l'image courante
-        videoLabel->setText("Caméra en pause");
     }
+    videoLabel->clear(); // Vide l'image courante
+    videoLabel->setText("Caméra en pause");
 }
+
 
 void CameraPage::processPendingDatagrams()
 {
