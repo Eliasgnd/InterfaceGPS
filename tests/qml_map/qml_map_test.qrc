@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/qmltests">
+        <file>tst_map.qml</file>
+    </qresource>
+</RCC>
