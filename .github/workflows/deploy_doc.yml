@@ -8,7 +8,7 @@ on:
 permissions:
   contents: write
 
-# Correction de la dépréciation Node.js pour l'environnement 2026
+# Force l'utilisation d'un environnement compatible avec les futures mises à jour GitHub
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -27,19 +27,23 @@ jobs:
 
       - name: Générer le diagramme UML automatique
         run: |
-          # 1. Lister les headers en excluant les dossiers inutiles pour éviter les erreurs de parsing
-          find . -name "*.h" -not -path "./tests/*" -not -path "./build/*" -not -path "./moc_*" > headers_list.txt
+          # 1. Lister les headers principaux (on évite les fichiers complexes pour le parsing)
+          find . -maxdepth 1 -name "*.h" > headers_list.txt
           
-          # 2. Générer le .puml. On utilise || true pour ne pas bloquer si un fichier est mal parsé
+          # 2. Générer le fichier .puml
           if [ -s headers_list.txt ]; then
-            hpp2plantuml -i headers_list.txt -o architecture_auto.puml || echo "Erreur partielle de parsing"
+            hpp2plantuml -i headers_list.txt -o architecture_auto.puml || echo "Erreur de parsing"
           fi
           
-          # 3. Convertir en SVG seulement si le fichier source existe et n'est pas vide
-          if [ -s architecture_auto.puml ]; then
-            plantuml -tsvg architecture_auto.puml
+          # 3. NETTOYAGE CRITIQUE : Supprimer les erreurs de syntaxe générées par hpp2plantuml
+          # On supprime tout ce qui se trouve avant la balise @startuml
+          if [ -f architecture_auto.puml ]; then
+            sed -i -n '/@startuml/,$p' architecture_auto.puml
+            
+            # 4. Conversion en SVG (PlantUML ne plantera plus avec l'exit code 200)
+            plantuml -tsvg architecture_auto.puml || echo "Échec de la conversion PlantUML"
           else
-            echo "Avertissement : architecture_auto.puml vide ou absent."
+            echo "Fichier puml non généré."
           fi
 
       - name: Générer la documentation Doxygen
@@ -47,15 +51,15 @@ jobs:
 
       - name: Préparer les fichiers pour le déploiement
         run: |
-          # S'assurer que le dossier de destination existe
+          # S'assurer que le dossier de destination existe dans l'output Doxygen
           mkdir -p ./doc_output/html/images
-          # Copier le diagramme s'il existe
+          # Copier le diagramme s'il a été généré avec succès
           if [ -f architecture_auto.svg ]; then
             cp architecture_auto.svg ./doc_output/html/images/
           fi
 
       - name: Déployer sur GitHub Pages
-        # On ne déploie que sur la branche principale (main ou documentation selon votre dépôt)
+        # Remplacez 'main' par 'documentation' si c'est le nom de votre branche principale
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
