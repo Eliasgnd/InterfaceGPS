@@ -15,7 +15,7 @@ class TelemetryData;
 /**
  * @class Mpu9250Source
  * @brief Contrôleur matériel d'acquisition pour la centrale inertielle MPU9250.
- * * @details Communique via le bus I2C physique (ex: broches du Raspberry Pi) pour
+ * @details Communique via le bus I2C physique (ex: broches du Raspberry Pi) pour
  * récupérer les données brutes de l'accéléromètre, du gyroscope et du magnétomètre.
  * Utilise ensuite l'algorithme de fusion de capteurs de Madgwick pour calculer
  * l'orientation 3D (quaternions) et en déduire le cap (Heading) du véhicule.
@@ -58,9 +58,15 @@ private slots:
 private:
     /**
      * @brief Implémentation du filtre de fusion de capteurs de Madgwick (Méthode Kris Winer).
-     * @param ax, ay, az Accélérations sur les axes X, Y, Z (en g).
-     * @param gx, gy, gz Vitesses angulaires sur les axes X, Y, Z (en rad/s).
-     * @param mx, my, mz Champ magnétique sur les axes X, Y, Z (normalisé).
+     * @param ax Accélération sur l'axe X (en g).
+     * @param ay Accélération sur l'axe Y (en g).
+     * @param az Accélération sur l'axe Z (en g).
+     * @param gx Vitesse angulaire sur l'axe X (en rad/s).
+     * @param gy Vitesse angulaire sur l'axe Y (en rad/s).
+     * @param gz Vitesse angulaire sur l'axe Z (en rad/s).
+     * @param mx Champ magnétique sur l'axe X (normalisé).
+     * @param my Champ magnétique sur l'axe Y (normalisé).
+     * @param mz Champ magnétique sur l'axe Z (normalisé).
      * @param dt Delta de temps écoulé depuis la dernière mise à jour (en secondes).
      */
     void madgwickUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz, float dt);

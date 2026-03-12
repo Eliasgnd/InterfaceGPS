@@ -15,9 +15,9 @@
 /**
  * @class BluetoothManager
  * @brief Gestionnaire de communication avec les lecteurs multimédias du système d'exploitation.
- * * Cette classe écoute le bus de session DBus pour détecter la présence de lecteurs
+ * Cette classe écoute le bus de session DBus pour détecter la présence de lecteurs
  * compatibles MPRIS (ex: Spotify, lecteur Bluetooth du téléphone connecté, VLC).
- * * Elle expose ensuite ces données sous forme de propriétés Qt (Q_PROPERTY) pour
+ * Elle expose ensuite ces données sous forme de propriétés Qt (Q_PROPERTY) pour
  * permettre une intégration avec l'interface graphique (QML/C++).
  */
 class BluetoothManager : public QObject {

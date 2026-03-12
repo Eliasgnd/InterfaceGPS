@@ -18,9 +18,9 @@ class TelemetryData;
 /**
  * @class SettingsPage
  * @brief Interface graphique de gestion des paramètres et des connexions sans fil.
- * * Permet de rendre le véhicule visible pour l'appairage de nouveaux téléphones.
- * * Affiche la liste des appareils connus et leur état de connexion en temps réel.
- * * Permet "d'oublier" (supprimer) un appareil existant.
+ * Permet de rendre le véhicule visible pour l'appairage de nouveaux téléphones.
+ * Affiche la liste des appareils connus et leur état de connexion en temps réel.
+ * Permet "d'oublier" (supprimer) un appareil existant.
  */
 class SettingsPage : public QWidget {
     Q_OBJECT

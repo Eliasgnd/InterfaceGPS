@@ -25,7 +25,7 @@ QT_END_NAMESPACE
 /**
  * @class MainWindow
  * @brief Fenêtre principale agissant comme conteneur parent de toutes les vues de l'application.
- * * Cette classe instancie toutes les sous-pages au démarrage et les garde en mémoire.
+ * Cette classe instancie toutes les sous-pages au démarrage et les garde en mémoire.
  * Au lieu de détruire/recréer les pages lors de la navigation, elle se contente de
  * masquer ou d'afficher les widgets concernés, ce qui garantit une interface réactive.
  */
