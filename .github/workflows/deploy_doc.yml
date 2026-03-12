@@ -8,7 +8,6 @@ on:
 permissions:
   contents: write
 
-# Force l'utilisation d'un environnement compatible avec les futures mises à jour GitHub
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -19,7 +18,7 @@ jobs:
       - name: Récupérer le code
         uses: actions/checkout@v4
 
-      - name: Installer les outils (Doxygen, Graphviz, PlantUML)
+      - name: Installer les outils
         run: |
           sudo apt-get update
           sudo apt-get install -y doxygen graphviz plantuml python3-pip
@@ -27,23 +26,24 @@ jobs:
 
       - name: Générer le diagramme UML automatique
         run: |
-          # 1. Lister les headers principaux (on évite les fichiers complexes pour le parsing)
-          find . -maxdepth 1 -name "*.h" > headers_list.txt
+          # 1. Lister uniquement les fichiers headers sources, sans les fichiers générés par Qt
+          find . -maxdepth 1 -name "*.h" -not -name "moc_*" > headers_list.txt
           
-          # 2. Générer le fichier .puml
-          if [ -s headers_list.txt ]; then
-            hpp2plantuml -i headers_list.txt -o architecture_auto.puml || echo "Erreur de parsing"
-          fi
+          # 2. Générer le fichier PUML (on ignore les erreurs de parsing individuelles)
+          hpp2plantuml -i headers_list.txt -o architecture_auto.puml || true
           
-          # 3. NETTOYAGE CRITIQUE : Supprimer les erreurs de syntaxe générées par hpp2plantuml
-          # On supprime tout ce qui se trouve avant la balise @startuml
+          # 3. NETTOYAGE DE FORCE : On recrée un fichier propre si hpp2plantuml a pollué la sortie
           if [ -f architecture_auto.puml ]; then
-            sed -i -n '/@startuml/,$p' architecture_auto.puml
+            # On extrait uniquement ce qui est entre @startuml et @enduml
+            sed -n '/@startuml/,/@enduml/p' architecture_auto.puml > clean_arch.puml
+            mv clean_arch.puml architecture_auto.puml
             
-            # 4. Conversion en SVG (PlantUML ne plantera plus avec l'exit code 200)
-            plantuml -tsvg architecture_auto.puml || echo "Échec de la conversion PlantUML"
-          else
-            echo "Fichier puml non généré."
+            # On vérifie que le fichier n'est pas vide avant conversion
+            if grep -q "@startuml" architecture_auto.puml; then
+              plantuml -tsvg architecture_auto.puml
+            else
+              echo "Erreur: Le fichier PUML ne contient pas de diagramme valide."
+            fi
           fi
 
       - name: Générer la documentation Doxygen
@@ -51,15 +51,10 @@ jobs:
 
       - name: Préparer les fichiers pour le déploiement
         run: |
-          # S'assurer que le dossier de destination existe dans l'output Doxygen
           mkdir -p ./doc_output/html/images
-          # Copier le diagramme s'il a été généré avec succès
-          if [ -f architecture_auto.svg ]; then
-            cp architecture_auto.svg ./doc_output/html/images/
-          fi
+          [ -f architecture_auto.svg ] && cp architecture_auto.svg ./doc_output/html/images/
 
       - name: Déployer sur GitHub Pages
-        # Remplacez 'main' par 'documentation' si c'est le nom de votre branche principale
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
