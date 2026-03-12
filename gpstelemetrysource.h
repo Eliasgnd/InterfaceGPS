@@ -17,9 +17,9 @@ class TelemetryData;
 /**
  * @class GpsTelemetrySource
  * @brief Contrôleur matériel d'acquisition GPS.
- * * Écoute un port série physique (ex: GPIO du Raspberry Pi ou USB).
- * * Utilise le moteur Qt Positioning pour parser les trames NMEA standard (GPGGA, GPRMC, etc.).
- * * Filtre et transmet les données propres au modèle de télémétrie global de l'application.
+ * Écoute un port série physique (ex: GPIO du Raspberry Pi ou USB).
+ * Utilise le moteur Qt Positioning pour parser les trames NMEA standard (GPGGA, GPRMC, etc.).
+ * Filtre et transmet les données propres au modèle de télémétrie global de l'application.
  */
 class GpsTelemetrySource : public QObject {
     Q_OBJECT

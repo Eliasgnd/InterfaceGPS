@@ -21,8 +21,8 @@
 /**
  * @class Clavier
  * @brief Interface de saisie tactile sur mesure pour l'application embarquée.
- * * S'ouvre sous forme de boîte de dialogue modale (QDialog) bloquant le reste de l'UI.
- * * Implémente des mécaniques avancées : Majuscule automatique, verrouillage Maj (Caps Lock),
+ * S'ouvre sous forme de boîte de dialogue modale (QDialog) bloquant le reste de l'UI.
+ * Implémente des mécaniques avancées : Majuscule automatique, verrouillage Maj (Caps Lock),
  * popups dynamiques pour les accents (appui long), et suppression rapide (maintien de la touche effacer).
  */
 class Clavier : public QDialog

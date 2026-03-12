@@ -15,7 +15,7 @@ namespace Ui { class MediaPage; }
 /**
  * @class MediaPage
  * @brief Page graphique dédiée à la gestion des médias (musique, Bluetooth).
- * * Cette classe agit comme un pont (Wrapper) : elle hérite de QWidget pour s'insérer
+ * Cette classe agit comme un pont (Wrapper) : elle hérite de QWidget pour s'insérer
  * dans le layout classique du MainWindow, mais son contenu réel est propulsé par le moteur QML
  * pour offrir des animations et une UI plus moderne.
  */

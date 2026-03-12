@@ -26,9 +26,9 @@ class Clavier;
 /**
  * @class NavigationPage
  * @brief Contrôleur de la page de navigation GPS.
- * * Héberge la carte (codée en QML) au sein de l'interface C++.
- * * Gère la saisie utilisateur via une barre de recherche interceptée par un clavier virtuel maison.
- * * Transfère les données de télémétrie du véhicule vers la carte visuelle.
+ * Héberge la carte (codée en QML) au sein de l'interface C++.
+ * Gère la saisie utilisateur via une barre de recherche interceptée par un clavier virtuel maison.
+ * Transfère les données de télémétrie du véhicule vers la carte visuelle.
  */
 class NavigationPage : public QWidget {
     Q_OBJECT
@@ -62,8 +62,25 @@ public:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
 signals:
+    /**
+     * @brief Demande le calcul d'un itinéraire vers une destination textuelle.
+     * @param destination Adresse ou point d'intérêt saisi/validé par l'utilisateur.
+     */
     void routeSearchRequested(const QString& destination);
+
+    /**
+     * @brief Demande une liste de suggestions d'adresses pour l'autocomplétion.
+     * @param query Texte partiel actuellement saisi dans le champ de recherche.
+     */
     void suggestionsSearchRequested(const QString& query);
+
+    /**
+     * @brief Transporte un snapshot télémétrique vers la couche cartographique.
+     * @param lat Latitude courante du véhicule.
+     * @param lon Longitude courante du véhicule.
+     * @param heading Cap courant du véhicule en degrés.
+     * @param speedKmh Vitesse courante en km/h.
+     */
     void telemetryRefreshRequested(double lat, double lon, double heading, double speedKmh);
 
 private slots:

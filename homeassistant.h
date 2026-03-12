@@ -16,7 +16,7 @@
 /**
  * @class HAPage
  * @brief Surcharge de la page web pour intercepter les événements de la console.
- * * Cette classe permet d'écouter les "console.log" émis par le code JavaScript
+ * Cette classe permet d'écouter les "console.log" émis par le code JavaScript
  * injecté dans la page Home Assistant, créant ainsi un canal de communication
  * du Web vers le C++.
  */
@@ -48,8 +48,8 @@ signals:
 /**
  * @class HomeAssistant
  * @brief Page principale affichant le dashboard domotique.
- * * Gère l'initialisation du moteur de rendu Chromium (WebEngine).
- * * Assure l'apparition du clavier tactile maison par-dessus la vue web.
+ * Gère l'initialisation du moteur de rendu Chromium (WebEngine).
+ * Assure l'apparition du clavier tactile maison par-dessus la vue web.
  */
 class HomeAssistant : public QWidget {
     Q_OBJECT

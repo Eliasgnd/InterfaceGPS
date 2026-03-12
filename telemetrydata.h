@@ -2,8 +2,8 @@
  * @file telemetrydata.h
  * @brief Rôle architectural : Modèle central de télémétrie partagé entre les modules C++ et l'interface QML.
  * @details Responsabilités : Stocker les mesures courantes du véhicule (vitesse, position, alertes)
- * et notifier l'interface graphique de tout changement via le système de propriétés de Qt.
- * Dépendances principales : QObject, système de Q_PROPERTY de Qt.
+ * et notifier l'interface graphique de tout changement via des signaux Qt dédiés.
+ * Dépendances principales : QObject et mécanisme signals/slots.
  */
 
 #pragma once
@@ -13,20 +13,17 @@
 /**
  * @class TelemetryData
  * @brief Classe représentant les données en temps réel du véhicule.
- * * Cette classe hérite de QObject pour permettre une intégration fluide avec QML.
- * Chaque donnée (vitesse, position, etc.) est exposée sous forme de Q_PROPERTY,
- * ce qui permet à l'interface graphique de se mettre à jour automatiquement
- * dès qu'une valeur change (grâce aux signaux NOTIFY).
+ * Cette classe hérite de QObject et centralise les mesures runtime du véhicule.
+ * Les modules producteurs (GPS, IMU, etc.) écrivent via les setters,
+ * tandis que les consommateurs UI réagissent aux signaux de changement associés.
  */
 class TelemetryData : public QObject {
     Q_OBJECT
 
-    // --- PROPRIÉTÉS EXPOSÉES À L'INTERFACE (QML) ---
-    /*Q_PROPERTY(double speedKmh READ speedKmh WRITE setSpeedKmh NOTIFY speedKmhChanged)
-    Q_PROPERTY(bool gpsOk READ gpsOk WRITE setGpsOk NOTIFY gpsOkChanged)
-    Q_PROPERTY(double lat READ lat WRITE setLat NOTIFY latChanged)
-    Q_PROPERTY(double lon READ lon WRITE setLon NOTIFY lonChanged)
-    Q_PROPERTY(double heading READ heading WRITE setHeading NOTIFY headingChanged)*/
+    // --- ÉTAT MÉTIER EXPOSÉ VIA API C++/SIGNALS ---
+    // Note: les propriétés Q_PROPERTY sont volontairement désactivées pour l'instant.
+    // L'interface actuelle consomme ces données via liaisons C++ directes
+    // (QObject + signaux), ce qui évite de dépendre d'un binding QML global.
 
 public:
     /**
@@ -54,12 +51,21 @@ public slots:
 
 signals:
     // --- SIGNAUX DE NOTIFICATION ---
-    // Émis automatiquement lorsque la valeur d'une propriété correspondante est modifiée.
+    // Émis uniquement en cas de changement effectif de valeur.
 
+    /** @brief Notifie une mise à jour de la vitesse véhicule (km/h). */
     void speedKmhChanged();
+
+    /** @brief Notifie un changement d'état de validité GPS (fix disponible ou non). */
     void gpsOkChanged();
+
+    /** @brief Notifie une mise à jour de latitude. */
     void latChanged();
+
+    /** @brief Notifie une mise à jour de longitude. */
     void lonChanged();
+
+    /** @brief Notifie une mise à jour de cap/heading. */
     void headingChanged();
 
 private:

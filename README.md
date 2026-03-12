@@ -231,4 +231,3 @@ Pour améliorer encore l'expérience utilisateur :
 - stocker les ports GPS/caméra dans les paramètres,
 - ajouter un script `run.sh` qui exporte automatiquement les variables d'environnement,
 - ajouter un package `.deb` pour installation en une commande.
-

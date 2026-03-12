@@ -20,9 +20,9 @@ class CameraPage;
 /**
  * @class CameraPage
  * @brief Contrôleur de la vue caméra.
- * * Cette classe écoute sur un port UDP spécifique (4444) pour recevoir des flux vidéo
+ * Cette classe écoute sur un port UDP spécifique (4444) pour recevoir des flux vidéo
  * sous forme de trames JPEG successives (Motion JPEG sur UDP).
- * * L'écoute réseau est dynamiquement activée ou désactivée par le MainWindow
+ * L'écoute réseau est dynamiquement activée ou désactivée par le MainWindow
  * selon que la page est visible ou non, afin de préserver les ressources CPU/Réseau.
  */
 class CameraPage : public QWidget
