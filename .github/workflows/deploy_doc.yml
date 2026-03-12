@@ -14,6 +14,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v4
@@ -25,25 +26,68 @@ jobs:
           pip install hpp2plantuml
 
       - name: Générer le diagramme UML automatique
+        shell: bash
         run: |
-          # 1. Lister uniquement les fichiers headers sources, sans les fichiers générés par Qt
-          find . -maxdepth 1 -name "*.h" -not -name "moc_*" > headers_list.txt
-          
-          # 2. Générer le fichier PUML (on ignore les erreurs de parsing individuelles)
-          hpp2plantuml -i headers_list.txt -o architecture_auto.puml || true
-          
-          # 3. NETTOYAGE DE FORCE : On recrée un fichier propre si hpp2plantuml a pollué la sortie
-          if [ -f architecture_auto.puml ]; then
-            # On extrait uniquement ce qui est entre @startuml et @enduml
-            sed -n '/@startuml/,/@enduml/p' architecture_auto.puml > clean_arch.puml
-            mv clean_arch.puml architecture_auto.puml
-            
-            # On vérifie que le fichier n'est pas vide avant conversion
-            if grep -q "@startuml" architecture_auto.puml; then
-              plantuml -tsvg architecture_auto.puml
-            else
-              echo "Erreur: Le fichier PUML ne contient pas de diagramme valide."
-            fi
+          set +e
+
+          # On récupère uniquement les vrais headers source
+          mapfile -t headers < <(
+            find . -maxdepth 1 -type f -name "*.h" \
+              ! -name "moc_*" \
+              ! -name "ui_*" \
+              ! -name "qrc_*" \
+              | sort
+          )
+
+          echo "Headers trouvés :"
+          printf ' - %s\n' "${headers[@]}"
+
+          if [ ${#headers[@]} -eq 0 ]; then
+            echo "Aucun header trouvé."
+            exit 0
+          fi
+
+          # Construction des arguments -i fichier1 -i fichier2 ...
+          args=()
+          for f in "${headers[@]}"; do
+            args+=(-i "$f")
+          done
+
+          # Génération du .puml
+          hpp2plantuml "${args[@]}" -o architecture_auto.puml
+          HPP_EXIT=$?
+
+          if [ ! -f architecture_auto.puml ]; then
+            echo "Erreur: architecture_auto.puml n'a pas été généré."
+            exit 1
+          fi
+
+          # Nettoyage éventuel
+          sed -n '/@startuml/,/@enduml/p' architecture_auto.puml > clean_arch.puml
+          mv clean_arch.puml architecture_auto.puml
+
+          echo "Contenu de architecture_auto.puml :"
+          cat architecture_auto.puml
+
+          if ! grep -q "@startuml" architecture_auto.puml; then
+            echo "Erreur: le fichier PUML ne contient pas de diagramme valide."
+            exit 1
+          fi
+
+          # Conversion SVG
+          plantuml -tsvg architecture_auto.puml
+          PLANT_EXIT=$?
+
+          if [ $PLANT_EXIT -ne 0 ]; then
+            echo "PlantUML a échoué. Vérifie la syntaxe générée ci-dessus."
+            exit 1
+          fi
+
+          # Si hpp2plantuml a signalé des erreurs de parsing mais a quand même généré un diagramme,
+          # on ne casse pas forcément le job avant la conversion.
+          if [ $HPP_EXIT -ne 0 ]; then
+            echo "hpp2plantuml a retourné un code non nul, probablement à cause d'un header mal parsé."
+            echo "Le diagramme a quand même été tenté."
           fi
 
       - name: Générer la documentation Doxygen
