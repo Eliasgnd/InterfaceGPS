@@ -16,7 +16,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     setWindowTitle("Clavier GPS");
 
     // Dimensions fixes adaptées à l'écran embarqué
-    setFixedSize(780, 420);
+    this->setWindowState(Qt::WindowFullScreen);
     currentLayout = AZERTY;
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
