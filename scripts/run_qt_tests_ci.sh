@@ -6,6 +6,8 @@ RESULTS_DIR="${1:-$ROOT_DIR/test-results}"
 BUILD_ROOT="${2:-$ROOT_DIR/build-tests}"
 
 mkdir -p "$RESULTS_DIR" "$BUILD_ROOT"
+RESULTS_DIR="$(cd "$RESULTS_DIR" && pwd)"
+BUILD_ROOT="$(cd "$BUILD_ROOT" && pwd)"
 
 mapfile -t test_pro_files < <(find "$ROOT_DIR/tests" -mindepth 2 -maxdepth 2 -name '*_test.pro' | sort)
 
