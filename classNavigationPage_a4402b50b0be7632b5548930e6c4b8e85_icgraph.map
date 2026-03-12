@@ -1,0 +1,7 @@
+<map id="NavigationPage::telemetryRefreshRequested" name="NavigationPage::telemetryRefreshRequested">
+<area shape="rect" id="Node000001" title="Transporte un snapshot télémétrique vers la couche cartographique." alt="" coords="524,5,720,45"/>
+<area shape="rect" id="Node000002" href="$classNavigationPage.html#a959c60e708ac321726fa21149bee7bba" title="Connecte le bus de télémétrie à la carte." alt="" coords="251,13,476,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="510,28,476,28,476,23,510,23"/>
+<area shape="rect" id="Node000003" href="$classMainWindow.html#a18406426982c96861c5ef91fb8dd9c42" title="Constructeur de la fenêtre principale." alt="" coords="5,13,203,38"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="237,28,203,28,203,23,237,23"/>
+</map>

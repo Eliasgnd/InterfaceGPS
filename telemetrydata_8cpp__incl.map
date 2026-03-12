@@ -1,0 +1,13 @@
+<map id="telemetrydata.cpp" name="telemetrydata.cpp">
+<area shape="rect" id="Node000001" title="Implémentation du modèle de données télémétriques." alt="" coords="154,5,297,31"/>
+<area shape="rect" id="Node000002" href="$telemetrydata_8h.html" title="Rôle architectural : Modèle central de télémétrie partagé entre les modules C++ et l&#39;interface QML." alt="" coords="35,79,162,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="206,33,133,74,130,69,204,28"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="186,79,265,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="228,31,228,65,223,65,223,31"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="289,79,359,104"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="243,29,298,68,295,73,240,33"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,152,80,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="92,106,62,143,58,140,87,103"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="104,152,205,177"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="110,103,139,140,135,143,106,106"/>
+</map>

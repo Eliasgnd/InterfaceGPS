@@ -1,0 +1,23 @@
+<map id="MainWindow::MainWindow" name="MainWindow::MainWindow">
+<area shape="rect" id="Node000001" title="Constructeur de la fenêtre principale." alt="" coords="5,203,203,228"/>
+<area shape="rect" id="Node000002" href="$classNavigationPage.html#a959c60e708ac321726fa21149bee7bba" title="Connecte le bus de télémétrie à la carte." alt="" coords="251,203,476,228"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="203,213,237,213,237,218,203,218"/>
+<area shape="rect" id="Node000003" href="$classTelemetryData.html#a2d82d875cbcac64baf592d08566dadd2" title="Retourne le cap actuel du véhicule en degrés (0 = Nord)." alt="" coords="561,5,739,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="370,201,392,168,426,123,471,78,523,40,546,29,548,34,525,44,474,82,430,127,397,171,375,204"/>
+<area shape="rect" id="Node000004" href="$classTelemetryData.html#a742222898a2d637ad003208507b36842" title="Notifie une mise à jour de cap/heading." alt="" coords="533,55,767,80"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="375,200,435,146,477,115,523,89,542,81,544,86,525,94,480,119,438,150,379,204"/>
+<area shape="rect" id="Node000005" href="$classTelemetryData.html#a2386a3780200f00bfb91123456a01260" title="Retourne la latitude actuelle en degrés." alt="" coords="579,104,721,129"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="386,200,447,169,523,138,565,127,566,132,525,143,449,174,388,205"/>
+<area shape="rect" id="Node000006" href="$classTelemetryData.html#a01f9ed7b6c28c96fa92d35806e584f92" title="Notifie une mise à jour de latitude." alt="" coords="550,153,750,179"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="437,200,562,178,563,184,438,205"/>
+<area shape="rect" id="Node000007" href="$classTelemetryData.html#a630887f880805b57cfc3ea39cd172eb4" title="Retourne la longitude actuelle en degrés." alt="" coords="577,203,723,228"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="476,213,563,213,563,218,476,218"/>
+<area shape="rect" id="Node000008" href="$classTelemetryData.html#a03f0436b9f58c201a0ba34f595d92f36" title="Notifie une mise à jour de longitude." alt="" coords="549,252,751,277"/>
+<area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="438,225,563,247,562,252,437,231"/>
+<area shape="rect" id="Node000009" href="$classTelemetryData.html#af61951703deee34f91b3afd0dfffe96d" title="Retourne la vitesse actuelle en km/h." alt="" coords="553,301,747,327"/>
+<area shape="poly" id="edge8_Node000002_Node000009" title=" " alt="" coords="389,226,449,256,525,286,559,296,558,301,523,291,447,261,387,230"/>
+<area shape="rect" id="Node000010" href="$classTelemetryData.html#a7b4044ad67f171665ce9f1032de96e4b" title="Notifie une mise à jour de la vitesse véhicule (km/h)." alt="" coords="524,351,776,376"/>
+<area shape="poly" id="edge9_Node000002_Node000010" title=" " alt="" coords="379,226,438,280,480,310,525,336,548,344,546,349,523,340,477,315,435,284,375,230"/>
+<area shape="rect" id="Node000011" href="$classNavigationPage.html#a4402b50b0be7632b5548930e6c4b8e85" title="Transporte un snapshot télémétrique vers la couche cartographique." alt="" coords="552,401,748,441"/>
+<area shape="poly" id="edge10_Node000002_Node000011" title=" " alt="" coords="375,227,398,259,432,302,475,347,525,385,540,393,538,398,523,390,472,351,428,306,393,262,371,230"/>
+</map>

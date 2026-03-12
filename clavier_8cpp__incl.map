@@ -1,0 +1,27 @@
+<map id="clavier.cpp" name="clavier.cpp">
+<area shape="rect" id="Node000001" title="Implémentation du clavier virtuel transverse à l&#39;application." alt="" coords="602,5,694,31"/>
+<area shape="rect" id="Node000002" href="$clavier_8h.html" title="Rôle architectural : Clavier virtuel propriétaire utilisé par les écrans de saisie." alt="" coords="424,79,501,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="619,33,506,76,505,71,617,28"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="526,79,637,104"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="639,33,603,70,600,67,635,29"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="661,79,771,104"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="661,29,697,67,693,70,657,33"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="795,79,949,104"/>
+<area shape="poly" id="edge12_Node000001_Node000013" title=" " alt="" coords="685,28,824,72,822,77,683,33"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,152,80,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="424,101,282,122,94,154,93,149,282,117,423,95"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="104,152,211,177"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="425,104,221,151,220,146,423,99"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="235,152,338,177"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="435,106,329,149,327,144,433,102"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="362,152,446,177"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="455,106,424,143,420,140,451,103"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="471,152,572,177"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="474,103,505,140,501,143,470,106"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="596,152,681,177"/>
+<area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="492,102,598,144,596,149,490,106"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="706,152,777,177"/>
+<area shape="poly" id="edge8_Node000002_Node000009" title=" " alt="" coords="502,100,694,148,692,154,501,105"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="801,152,861,177"/>
+<area shape="poly" id="edge9_Node000002_Node000010" title=" " alt="" coords="502,99,515,101,650,124,788,149,787,154,649,129,514,107,501,104"/>
+</map>

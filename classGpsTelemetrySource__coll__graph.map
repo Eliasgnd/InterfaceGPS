@@ -1,0 +1,5 @@
+<map id="GpsTelemetrySource" name="GpsTelemetrySource">
+<area shape="rect" id="Node000001" title="Contrôleur matériel d&#39;acquisition GPS. Écoute un port série physique (ex: GPIO du Raspberry Pi ou USB..." alt="" coords="5,119,189,244"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="64,5,131,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,85,100,119,95,119,95,85"/>
+</map>

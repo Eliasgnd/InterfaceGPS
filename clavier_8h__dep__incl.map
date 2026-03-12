@@ -1,0 +1,9 @@
+<map id="clavier.h" name="clavier.h">
+<area shape="rect" id="Node000001" title="Rôle architectural : Clavier virtuel propriétaire utilisé par les écrans de saisie." alt="" coords="155,5,233,31"/>
+<area shape="rect" id="Node000002" href="$clavier_8cpp.html" title="Implémentation du clavier virtuel transverse à l&#39;application." alt="" coords="5,79,97,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="160,39,76,81,73,76,158,34"/>
+<area shape="rect" id="Node000003" href="$homeassistant_8cpp.html" title="Implémentation du module Home Assistant dans le tableau de bord." alt="" coords="121,79,267,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="197,44,197,79,191,79,191,44"/>
+<area shape="rect" id="Node000004" href="$navigationpage_8cpp.html" title="Implémentation de la page de navigation GPS." alt="" coords="291,79,441,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="235,33,339,76,337,81,233,38"/>
+</map>

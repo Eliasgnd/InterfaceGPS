@@ -1,0 +1,5 @@
+<map id="Clavier::Clavier" name="Clavier::Clavier">
+<area shape="rect" id="Node000001" title="Constructeur du clavier virtuel." alt="" coords="5,5,128,31"/>
+<area shape="rect" id="Node000002" href="$classClavier.html#aa625b23327390736b07ef8e88aa45f4a" title="Émis à chaque fois qu&#39;une touche modifie le texte. Permet à l&#39;application en arrière&#45;plan (ex: Naviga..." alt="" coords="176,5,401,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="129,15,162,15,162,21,129,21"/>
+</map>

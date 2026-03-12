@@ -1,0 +1,28 @@
+<map id="settingspage.cpp" name="settingspage.cpp">
+<area shape="rect" id="Node000001" title="Implémentation de la gestion des réglages et du Bluetooth local." alt="" coords="617,5,750,31"/>
+<area shape="rect" id="Node000002" href="$settingspage_8h.html" title="Rôle architectural : Page de configuration système et Bluetooth utilisateur." alt="" coords="264,79,383,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="626,33,396,79,395,73,625,28"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="385,152,456,177"/>
+<area shape="poly" id="edge13_Node000001_Node000005" title=" " alt="" coords="617,31,518,51,475,65,448,81,438,93,431,108,424,139,419,138,426,106,433,90,444,77,473,60,517,46,616,26"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="459,79,596,104"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="659,33,566,75,564,70,657,28"/>
+<area shape="rect" id="Node000008" href="$telemetrydata_8h.html" title="Rôle architectural : Modèle central de télémétrie partagé entre les modules C++ et l&#39;interface QML." alt="" coords="620,79,747,104"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="686,31,686,65,681,65,681,31"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="771,79,886,104"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="708,28,794,70,792,75,706,33"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="910,79,985,104"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="726,28,897,74,896,79,725,33"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="1009,79,1091,104"/>
+<area shape="poly" id="edge12_Node000001_Node000013" title=" " alt="" coords="746,28,995,76,994,81,745,33"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,152,84,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="279,107,98,153,97,147,278,101"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="108,152,283,177"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="304,106,230,147,227,143,301,102"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="341,102,395,141,392,146,337,106"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="307,152,361,177"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="328,104,333,138,328,139,322,105"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="590,152,665,177"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="676,106,647,143,643,140,672,103"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="689,152,790,177"/>
+<area shape="poly" id="edge9_Node000008_Node000010" title=" " alt="" coords="695,103,724,140,720,143,690,106"/>
+</map>

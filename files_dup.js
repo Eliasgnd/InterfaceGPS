@@ -1,0 +1,26 @@
+var files_dup =
+[
+    [ "bluetoothmanager.cpp", "bluetoothmanager_8cpp.html", null ],
+    [ "bluetoothmanager.h", "bluetoothmanager_8h.html", "bluetoothmanager_8h" ],
+    [ "camerapage.cpp", "camerapage_8cpp.html", null ],
+    [ "camerapage.h", "camerapage_8h.html", "camerapage_8h" ],
+    [ "clavier.cpp", "clavier_8cpp.html", null ],
+    [ "clavier.h", "clavier_8h.html", "clavier_8h" ],
+    [ "gpstelemetrysource.cpp", "gpstelemetrysource_8cpp.html", null ],
+    [ "gpstelemetrysource.h", "gpstelemetrysource_8h.html", "gpstelemetrysource_8h" ],
+    [ "homeassistant.cpp", "homeassistant_8cpp.html", null ],
+    [ "homeassistant.h", "homeassistant_8h.html", "homeassistant_8h" ],
+    [ "main.cpp", "main_8cpp.html", null ],
+    [ "mainwindow.cpp", "mainwindow_8cpp.html", null ],
+    [ "mainwindow.h", "mainwindow_8h.html", "mainwindow_8h" ],
+    [ "mediapage.cpp", "mediapage_8cpp.html", null ],
+    [ "mediapage.h", "mediapage_8h.html", "mediapage_8h" ],
+    [ "mpu9250source.cpp", "mpu9250source_8cpp.html", null ],
+    [ "mpu9250source.h", "mpu9250source_8h.html", "mpu9250source_8h" ],
+    [ "navigationpage.cpp", "navigationpage_8cpp.html", null ],
+    [ "navigationpage.h", "navigationpage_8h.html", "navigationpage_8h" ],
+    [ "settingspage.cpp", "settingspage_8cpp.html", null ],
+    [ "settingspage.h", "settingspage_8h.html", "settingspage_8h" ],
+    [ "telemetrydata.cpp", "telemetrydata_8cpp.html", null ],
+    [ "telemetrydata.h", "telemetrydata_8h.html", "telemetrydata_8h" ]
+];

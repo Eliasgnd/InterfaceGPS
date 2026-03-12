@@ -1,0 +1,9 @@
+<map id="camerapage.h" name="camerapage.h">
+<area shape="rect" id="Node000001" title="Rôle architectural : Page UI dédiée à l&#39;affichage du flux caméra embarqué (ex: vue recul ou Bird&#45;eye)..." alt="" coords="102,5,217,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,84,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="142,33,76,74,74,69,140,28"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="109,79,210,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="162,31,162,65,157,65,157,31"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="234,79,301,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="178,28,240,69,237,73,175,33"/>
+</map>

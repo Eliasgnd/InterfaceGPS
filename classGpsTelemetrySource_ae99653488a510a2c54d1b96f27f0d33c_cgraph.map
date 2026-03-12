@@ -1,0 +1,5 @@
+<map id="GpsTelemetrySource::start" name="GpsTelemetrySource::start">
+<area shape="rect" id="Node000001" title="Démarre l&#39;acquisition des données GPS. Configure le port série (baudrate) et lance le parsing NMEA en..." alt="" coords="5,5,161,45"/>
+<area shape="rect" id="Node000002" href="$classGpsTelemetrySource.html#a661d339fbfcb8278e26b3a14523923dd" title="Arrête l&#39;acquisition GPS et libère le port matériel." alt="" coords="209,5,365,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="161,23,196,23,196,28,161,28"/>
+</map>

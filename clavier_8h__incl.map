@@ -1,0 +1,19 @@
+<map id="clavier.h" name="clavier.h">
+<area shape="rect" id="Node000001" title="Rôle architectural : Clavier virtuel propriétaire utilisé par les écrans de saisie." alt="" coords="424,5,501,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,80,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="424,27,282,48,94,81,93,76,282,43,423,22"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="104,79,211,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="425,31,221,78,220,73,423,26"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="235,79,338,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="435,33,329,76,327,71,433,28"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="362,79,446,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="455,33,424,70,420,67,451,29"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="471,79,572,104"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="474,29,505,67,501,70,470,33"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="596,79,681,104"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="492,28,598,71,596,76,490,33"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="706,79,777,104"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="502,27,694,75,692,80,501,32"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="801,79,861,104"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="502,23,626,43,788,76,787,81,625,49,501,28"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="SettingsPage" name="SettingsPage">
+<area shape="rect" id="Node000001" title="Interface graphique de gestion des paramètres et des connexions sans fil. Permet de rendre le véhicul..." alt="" coords="5,119,139,204"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="37,5,107,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="75,85,75,119,69,119,69,85"/>
+</map>

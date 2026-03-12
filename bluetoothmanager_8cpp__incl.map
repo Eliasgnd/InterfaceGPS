@@ -1,0 +1,21 @@
+<map id="bluetoothmanager.cpp" name="bluetoothmanager.cpp">
+<area shape="rect" id="Node000001" title="Implémentation DBus du gestionnaire multimédia Bluetooth." alt="" coords="511,5,679,31"/>
+<area shape="rect" id="Node000002" href="$bluetoothmanager_8h.html" title="Rôle architectural : Interface de contrôle média Bluetooth via MPRIS/DBus." alt="" coords="27,79,181,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="516,33,195,80,194,74,515,28"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="205,79,280,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="535,33,294,81,293,81,292,76,293,76,534,28"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="305,79,471,104"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="562,33,435,77,434,72,561,28"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="496,79,693,104"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="597,31,597,65,592,65,592,31"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="718,79,847,104"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="626,28,740,71,738,76,624,33"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="872,79,1003,104"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="650,28,869,73,868,78,649,33"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="1027,79,1098,104"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="679,26,831,46,1014,76,1013,81,830,52,678,32"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,152,80,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="96,106,64,143,60,140,92,103"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="105,152,229,177"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="116,103,149,140,145,143,112,106"/>
+</map>

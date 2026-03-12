@@ -1,0 +1,45 @@
+<map id="main.cpp" name="main.cpp">
+<area shape="rect" id="Node000001" title="Point d&#39;entr�e de l&#39;application (Bootstrapper)." alt="" coords="745,5,827,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="53,79,159,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="745,25,506,44,172,81,172,76,505,39,744,20"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="183,79,325,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="745,27,339,81,339,76,744,22"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="349,79,452,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="745,30,466,81,465,75,744,24"/>
+<area shape="rect" id="Node000005" href="$mainwindow_8h.html" title="Rôle architectural : Orchestrateur principal des pages du tableau de bord." alt="" coords="476,79,592,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="746,33,589,77,587,72,745,28"/>
+<area shape="rect" id="Node000009" href="$telemetrydata_8h.html" title="Rôle architectural : Modèle central de télémétrie partagé entre les modules C++ et l&#39;interface QML." alt="" coords="968,79,1095,104"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="826,28,979,72,978,77,825,33"/>
+<area shape="rect" id="Node000012" href="$gpstelemetrysource_8h.html" title="Rôle architectural : Source de télémétrie GPS branchée sur un flux NMEA série." alt="" coords="616,79,780,104"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="774,33,725,72,721,68,770,29"/>
+<area shape="rect" id="Node000016" title=" " alt="" coords="1119,79,1290,104"/>
+<area shape="poly" id="edge16_Node000001_Node000016" title=" " alt="" coords="828,24,1125,74,1124,79,827,29"/>
+<area shape="rect" id="Node000017" title=" " alt="" coords="1314,79,1365,104"/>
+<area shape="poly" id="edge17_Node000001_Node000017" title=" " alt="" coords="828,19,1028,36,1162,52,1301,76,1300,82,1161,58,1028,41,827,24"/>
+<area shape="rect" id="Node000018" title=" " alt="" coords="1389,79,1524,104"/>
+<area shape="poly" id="edge18_Node000001_Node000018" title=" " alt="" coords="828,20,1057,42,1376,76,1375,81,1056,47,827,26"/>
+<area shape="rect" id="Node000019" href="$mpu9250source_8h.html" title="Rôle architectural : Source de données inertielles et boussole matérielle (I2C)." alt="" coords="805,79,943,104"/>
+<area shape="poly" id="edge19_Node000001_Node000019" title=" " alt="" coords="802,29,851,68,847,72,798,33"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="5,152,121,177"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="476,105,464,107,136,154,135,149,463,101,475,99"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="145,152,256,177"/>
+<area shape="poly" id="edge6_Node000005_Node000007" title=" " alt="" coords="481,107,268,152,267,146,480,101"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="281,152,387,177"/>
+<area shape="poly" id="edge7_Node000005_Node000008" title=" " alt="" coords="503,107,381,150,379,145,501,102"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="907,152,982,177"/>
+<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="1019,106,971,145,968,141,1016,102"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="1247,152,1349,177"/>
+<area shape="poly" id="edge10_Node000009_Node000011" title=" " alt="" coords="1075,101,1242,146,1241,151,1073,107"/>
+<area shape="poly" id="edge12_Node000012_Node000010" title=" " alt="" coords="738,101,895,146,893,151,737,107"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="412,152,507,177"/>
+<area shape="poly" id="edge13_Node000012_Node000013" title=" " alt="" coords="660,107,512,151,510,145,659,101"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="531,152,723,177"/>
+<area shape="poly" id="edge14_Node000012_Node000014" title=" " alt="" coords="688,106,650,144,646,140,684,102"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="748,152,883,177"/>
+<area shape="poly" id="edge15_Node000012_Node000015" title=" " alt="" coords="718,102,786,142,783,147,715,106"/>
+<area shape="poly" id="edge20_Node000019_Node000010" title=" " alt="" coords="888,102,926,140,922,144,884,106"/>
+<area shape="rect" id="Node000020" title=" " alt="" coords="1007,152,1077,177"/>
+<area shape="poly" id="edge21_Node000019_Node000020" title=" " alt="" coords="902,102,1003,144,1001,149,900,106"/>
+<area shape="rect" id="Node000021" title=" " alt="" coords="1101,152,1223,177"/>
+<area shape="poly" id="edge22_Node000019_Node000021" title=" " alt="" coords="921,101,1103,146,1102,151,920,107"/>
+</map>

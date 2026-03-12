@@ -1,0 +1,11 @@
+<map id="settingspage.h" name="settingspage.h">
+<area shape="rect" id="Node000001" title="Rôle architectural : Page de configuration système et Bluetooth utilisateur." alt="" coords="209,5,328,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,84,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="233,33,95,77,93,72,232,28"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="108,79,283,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="258,33,219,71,215,67,255,29"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="307,79,377,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="283,29,322,67,318,71,279,33"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="402,79,455,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="295,28,391,71,389,75,293,33"/>
+</map>

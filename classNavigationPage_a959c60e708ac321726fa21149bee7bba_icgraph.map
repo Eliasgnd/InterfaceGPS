@@ -1,0 +1,5 @@
+<map id="NavigationPage::bindTelemetry" name="NavigationPage::bindTelemetry">
+<area shape="rect" id="Node000001" title="Connecte le bus de télémétrie à la carte." alt="" coords="251,5,476,31"/>
+<area shape="rect" id="Node000002" href="$classMainWindow.html#a18406426982c96861c5ef91fb8dd9c42" title="Constructeur de la fenêtre principale." alt="" coords="5,5,203,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="237,21,203,21,203,15,237,15"/>
+</map>

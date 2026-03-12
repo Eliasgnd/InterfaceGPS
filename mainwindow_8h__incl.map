@@ -1,0 +1,9 @@
+<map id="mainwindow.h" name="mainwindow.h">
+<area shape="rect" id="Node000001" title="Rôle architectural : Orchestrateur principal des pages du tableau de bord." alt="" coords="143,5,259,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,121,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="180,33,99,75,97,70,177,28"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="145,79,256,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="203,31,203,65,198,65,198,31"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="281,79,387,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="223,28,301,70,299,74,221,33"/>
+</map>

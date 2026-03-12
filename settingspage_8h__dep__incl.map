@@ -1,0 +1,7 @@
+<map id="settingspage.h" name="settingspage.h">
+<area shape="rect" id="Node000001" title="Rôle architectural : Page de configuration système et Bluetooth utilisateur." alt="" coords="89,5,207,31"/>
+<area shape="rect" id="Node000002" href="$mainwindow_8cpp.html" title="Implémentation de la fenêtre principale de l&#39;application." alt="" coords="5,79,136,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="127,42,85,80,82,76,124,38"/>
+<area shape="rect" id="Node000003" href="$settingspage_8cpp.html" title="Implémentation de la gestion des réglages et du Bluetooth local." alt="" coords="160,79,293,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="173,38,216,76,212,80,169,42"/>
+</map>

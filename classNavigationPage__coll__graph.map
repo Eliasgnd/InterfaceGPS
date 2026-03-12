@@ -1,0 +1,5 @@
+<map id="NavigationPage" name="NavigationPage">
+<area shape="rect" id="Node000001" title="Contrôleur de la page de navigation GPS. Héberge la carte (codée en QML) au sein de l&#39;interface C++...." alt="" coords="5,119,157,244"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="46,5,117,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="84,85,84,119,79,119,79,85"/>
+</map>

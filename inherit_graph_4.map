@@ -1,0 +1,13 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,104,84,129"/>
+<area shape="rect" id="Node000001" href="$classCameraPage.html" title="Contrôleur de la vue caméra. Cette classe écoute sur un port UDP spécifique (4444) pour recevoir des ..." alt="" coords="142,5,246,31"/>
+<area shape="poly" id="edge9_Node000000_Node000001" title=" " alt="" coords="66,92,96,65,131,40,153,28,156,33,133,44,99,69,70,96"/>
+<area shape="rect" id="Node000002" href="$classHomeAssistant.html" title="Page principale affichant le dashboard domotique. Gère l&#39;initialisation du moteur de rendu Chromium (..." alt="" coords="133,55,255,80"/>
+<area shape="poly" id="edge10_Node000000_Node000002" title=" " alt="" coords="96,97,154,78,155,83,97,102"/>
+<area shape="rect" id="Node000003" href="$classMediaPage.html" title="Page graphique dédiée à la gestion des médias (musique, Bluetooth). Cette classe agit comme un pont (..." alt="" coords="147,104,241,129"/>
+<area shape="poly" id="edge11_Node000000_Node000003" title=" " alt="" coords="98,114,147,114,147,119,98,119"/>
+<area shape="rect" id="Node000004" href="$classNavigationPage.html" title="Contrôleur de la page de navigation GPS. Héberge la carte (codée en QML) au sein de l&#39;interface C++...." alt="" coords="132,153,256,179"/>
+<area shape="poly" id="edge12_Node000000_Node000004" title=" " alt="" coords="97,131,155,151,154,156,96,136"/>
+<area shape="rect" id="Node000005" href="$classSettingsPage.html" title="Interface graphique de gestion des paramètres et des connexions sans fil. Permet de rendre le véhicul..." alt="" coords="141,203,247,228"/>
+<area shape="poly" id="edge13_Node000000_Node000005" title=" " alt="" coords="70,137,99,163,133,188,158,200,156,205,131,192,96,167,66,141"/>
+</map>

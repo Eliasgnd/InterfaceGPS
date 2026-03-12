@@ -1,0 +1,9 @@
+<map id="BluetoothManager::BluetoothManager" name="BluetoothManager::BluetoothManager">
+<area shape="rect" id="Node000001" title="Constructeur du gestionnaire Bluetooth/Média." alt="" coords="5,69,219,109"/>
+<area shape="rect" id="Node000002" href="$classBluetoothManager.html#aaebe24a4ac3916836f7bedf8126c92e3" title="Émis lorsque la chanson, l&#39;artiste ou l&#39;album change." alt="" coords="267,5,480,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="194,67,277,46,279,51,195,72"/>
+<area shape="rect" id="Node000003" href="$classBluetoothManager.html#a03492ad479508b5b02c469c76a9063ea" title="Émis lorsque la position de lecture avance." alt="" coords="272,69,475,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="219,87,258,87,258,92,219,92"/>
+<area shape="rect" id="Node000004" href="$classBluetoothManager.html#aa3884328e7d77e936c03b43607f8a66a" title="Émis lorsque l&#39;état de lecture change (Play &#45;&gt; Pause)." alt="" coords="278,133,469,173"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="195,107,279,127,277,133,194,112"/>
+</map>

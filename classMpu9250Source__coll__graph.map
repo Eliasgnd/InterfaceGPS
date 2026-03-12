@@ -1,0 +1,5 @@
+<map id="Mpu9250Source" name="Mpu9250Source">
+<area shape="rect" id="Node000001" title="Contrôleur matériel d&#39;acquisition pour la centrale inertielle MPU9250." alt="" coords="5,119,159,244"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="49,5,115,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="85,85,85,119,79,119,79,85"/>
+</map>
