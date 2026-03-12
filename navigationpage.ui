@@ -57,6 +57,12 @@ QPushButton:pressed{background:#2d3245;}
         </property>
         <item>
          <widget class="QLineEdit" name="editSearch">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
           <property name="placeholderText">
            <string>Où voulez-vous aller ?</string>
           </property>
@@ -64,6 +70,12 @@ QPushButton:pressed{background:#2d3245;}
         </item>
         <item>
          <widget class="QPushButton" name="btnSearch">
+          <property name="maximumSize">
+           <size>
+            <width>100</width>
+            <height>30</height>
+           </size>
+          </property>
           <property name="text">
            <string>Aller</string>
           </property>
@@ -73,6 +85,12 @@ QPushButton:pressed{background:#2d3245;}
       </item>
       <item>
        <widget class="QFrame" name="mapPlaceholder">
+        <property name="minimumSize">
+         <size>
+          <width>500</width>
+          <height>400</height>
+         </size>
+        </property>
         <property name="styleSheet">
          <string notr="true">QFrame{background:#0f1115;border-radius:14px;border:1px solid #2a2f3a;}</string>
         </property>
@@ -98,26 +116,6 @@ QPushButton:pressed{background:#2d3245;}
          <number>10</number>
         </property>
         <item>
-         <widget class="QLabel" name="lblLat">
-          <property name="styleSheet">
-           <string notr="true">QLabel{font-size:16px;}</string>
-          </property>
-          <property name="text">
-           <string>lat: --</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="lblLon">
-          <property name="styleSheet">
-           <string notr="true">QLabel{font-size:16px;}</string>
-          </property>
-          <property name="text">
-           <string>lon: --</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <spacer name="sp">
           <property name="orientation">
            <enum>Qt::Orientation::Horizontal</enum>
@@ -132,6 +130,12 @@ QPushButton:pressed{background:#2d3245;}
         </item>
         <item>
          <widget class="QPushButton" name="btnCenter">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>40</height>
+           </size>
+          </property>
           <property name="text">
            <string>Centrer</string>
           </property>
@@ -139,6 +143,12 @@ QPushButton:pressed{background:#2d3245;}
         </item>
         <item>
          <widget class="QPushButton" name="btnZoomIn">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>40</height>
+           </size>
+          </property>
           <property name="text">
            <string>Zoom +</string>
           </property>
@@ -146,6 +156,12 @@ QPushButton:pressed{background:#2d3245;}
         </item>
         <item>
          <widget class="QPushButton" name="btnZoomOut">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>40</height>
+           </size>
+          </property>
           <property name="text">
            <string>Zoom -</string>
           </property>

@@ -2,51 +2,89 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>783</width>
+    <height>478</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>InterfaceGPS</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayoutRoot">
-    <property name="spacing"><number>10</number></property>
-    <property name="leftMargin"><number>12</number></property>
-    <property name="topMargin"><number>12</number></property>
-    <property name="rightMargin"><number>12</number></property>
-    <property name="bottomMargin"><number>12</number></property>
-
+    <property name="spacing">
+     <number>10</number>
+    </property>
+    <property name="leftMargin">
+     <number>12</number>
+    </property>
+    <property name="topMargin">
+     <number>12</number>
+    </property>
+    <property name="rightMargin">
+     <number>12</number>
+    </property>
+    <property name="bottomMargin">
+     <number>12</number>
+    </property>
     <item>
      <widget class="QFrame" name="alertFrame">
-      <property name="visible"><bool>false</bool></property>
+      <property name="visible">
+       <bool>false</bool>
+      </property>
       <property name="styleSheet">
        <string notr="true">QFrame{background:#6B4B16;border-radius:10px;} QLabel{color:white;}</string>
       </property>
       <layout class="QHBoxLayout" name="alertLayout">
-       <property name="leftMargin"><number>10</number></property>
-       <property name="topMargin"><number>8</number></property>
-       <property name="rightMargin"><number>10</number></property>
-       <property name="bottomMargin"><number>8</number></property>
-       <property name="spacing"><number>10</number></property>
-
+       <property name="spacing">
+        <number>10</number>
+       </property>
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <property name="topMargin">
+        <number>8</number>
+       </property>
+       <property name="rightMargin">
+        <number>10</number>
+       </property>
+       <property name="bottomMargin">
+        <number>8</number>
+       </property>
        <item>
         <widget class="QLabel" name="lblAlertTitle">
-         <property name="text"><string>ALERTE</string></property>
-         <property name="styleSheet"><string notr="true">QLabel{font-weight:800;}</string></property>
+         <property name="styleSheet">
+          <string notr="true">QLabel{font-weight:800;}</string>
+         </property>
+         <property name="text">
+          <string>ALERTE</string>
+         </property>
         </widget>
        </item>
        <item>
         <widget class="QLabel" name="lblAlertText">
-         <property name="text"><string>...</string></property>
+         <property name="text">
+          <string>...</string>
+         </property>
         </widget>
        </item>
       </layout>
      </widget>
     </item>
-
     <item>
      <widget class="QStackedWidget" name="stackedPages"/>
     </item>
-
     <item>
      <widget class="QFrame" name="bottomNavFrame">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>50</height>
+       </size>
+      </property>
       <property name="styleSheet">
        <string notr="true">
 QFrame{background:#171a21;border-radius:16px;}
@@ -55,21 +93,59 @@ QPushButton:pressed{background:#2d3245;}
        </string>
       </property>
       <layout class="QHBoxLayout" name="bottomNavLayout">
-       <property name="leftMargin"><number>10</number></property>
-       <property name="topMargin"><number>10</number></property>
-       <property name="rightMargin"><number>10</number></property>
-       <property name="bottomMargin"><number>10</number></property>
-       <property name="spacing"><number>10</number></property>
-
-       <item><widget class="QPushButton" name="btnNav"><property name="text"><string>Nav</string></property></widget></item>
-       <item><widget class="QPushButton" name="btnCam"><property name="text"><string>Cam</string></property></widget></item>
-       <item><widget class="QPushButton" name="btnMedia"><property name="text"><string>Musique</string></property></widget></item>
-       <item><widget class="QPushButton" name="btnHA"><property name="text"><string>Maison</string></property></widget></item>
-       <item><widget class="QPushButton" name="btnSettings"><property name="text"><string>Settings</string></property></widget></item>
+       <property name="spacing">
+        <number>10</number>
+       </property>
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <property name="topMargin">
+        <number>10</number>
+       </property>
+       <property name="rightMargin">
+        <number>10</number>
+       </property>
+       <property name="bottomMargin">
+        <number>10</number>
+       </property>
+       <item>
+        <widget class="QPushButton" name="btnNav">
+         <property name="text">
+          <string>Nav</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnCam">
+         <property name="text">
+          <string>Cam</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnMedia">
+         <property name="text">
+          <string>Musique</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnHA">
+         <property name="text">
+          <string>Maison</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnSettings">
+         <property name="text">
+          <string>Settings</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
-
    </layout>
   </widget>
  </widget>
