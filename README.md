@@ -44,7 +44,7 @@ Pour une intégration progressive et claire:
 2. **GPS**: connecter le module (UART/USB), puis vérifier que les données remontent.
 3. **Bluetooth**: activer le service Bluetooth, tester l'appairage et le contrôle média.
 4. **Caméra**: vérifier la réception du flux UDP/JPEG.
-5. **IMU **: brancher le capteur I2C (MPU9250) et valider les mesures.
+5. **IMU**: brancher le capteur I2C (MPU9250) et valider les mesures.
 
 ---
 
@@ -115,10 +115,3 @@ bash scripts/run_doxygen.sh
 Sortie locale: `doc_output/html/index.html`
 
 ---
-
-## Contribution et licence
-
-- Contribution: `CONTRIBUTING.md`
-- Sécurité: `SECURITY.md`
-- Code de conduite: `CODE_OF_CONDUCT.md`
-- Licence: `LICENSE` (MIT)
