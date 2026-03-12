@@ -44,9 +44,7 @@ Pour une intégration progressive et claire:
 2. **GPS**: connecter le module (UART/USB), puis vérifier que les données remontent.
 3. **Bluetooth**: activer le service Bluetooth, tester l'appairage et le contrôle média.
 4. **Caméra**: vérifier la réception du flux UDP/JPEG.
-5. **IMU (optionnel)**: brancher le capteur I2C (MPU9250) et valider les mesures.
-
-> Conseil: valider chaque bloc un par un. Si une brique matérielle manque, le reste de l'interface reste exploitable.
+5. **IMU **: brancher le capteur I2C (MPU9250) et valider les mesures.
 
 ---
 
