@@ -74,7 +74,7 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
 
     // Création dynamique du bouton pour activer le mode Split-Screen
     m_btnSplit = new QPushButton(this);
-    m_btnSplit->setFixedSize(70, 70);
+    m_btnSplit->setFixedSize(45, 45);
     m_btnSplit->setCursor(Qt::PointingHandCursor);
 
     ui->bottomNavLayout->insertWidget(0, m_btnSplit);
