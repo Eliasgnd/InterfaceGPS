@@ -28,8 +28,8 @@ MainWindow::MainWindow(TelemetryData* telemetry, QWidget* parent)
     this->setFixedSize(1280, 800);
 
     // Configuration de la barre de navigation inférieure
-    ui->bottomNavFrame->setFixedHeight(75);
-    ui->bottomNavLayout->setContentsMargins(10, 2, 10, 5);
+    ui->bottomNavFrame->setFixedHeight(40);
+    ui->bottomNavLayout->setContentsMargins(10, 2, 10, 2);
     ui->bottomNavLayout->setSpacing(15);
 
     // Priorité d'étirement : la zone de contenu prend tout l'espace disponible

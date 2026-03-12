@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>621</width>
-    <height>448</height>
+    <height>562</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -87,8 +87,8 @@ QPushButton:pressed{background:#2d3245;}
        <widget class="QFrame" name="mapPlaceholder">
         <property name="minimumSize">
          <size>
-          <width>500</width>
-          <height>430</height>
+          <width>100</width>
+          <height>100</height>
          </size>
         </property>
         <property name="styleSheet">
@@ -149,11 +149,11 @@ QPushButton:pressed{background:#2d3245;}
             <height>30</height>
            </size>
           </property>
-          <property name="text">
-           <string>✕</string>
-          </property>
           <property name="toolTip">
            <string>Arrêter le guidage</string>
+          </property>
+          <property name="text">
+           <string>✕</string>
           </property>
          </widget>
         </item>
