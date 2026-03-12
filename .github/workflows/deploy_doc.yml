@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Récupérer le code
         uses: actions/checkout@v4
 
@@ -31,11 +30,12 @@ jobs:
           echo "===== Recherche headers ====="
 
           mapfile -t headers < <(
-            find . -type f -name "*.h" \
+            find . -type f \( -name "*.h" -o -name "*.hpp" \) \
               ! -name "moc_*" \
               ! -name "ui_*" \
               ! -name "qrc_*" \
               ! -path "*/build/*" \
+              ! -path "*/doc_output/*" \
               | sort
           )
 
@@ -46,6 +46,7 @@ jobs:
             exit 0
           fi
 
+          rm -rf uml_tmp
           mkdir -p uml_tmp
 
           echo "===== Nettoyage macros Qt ====="
@@ -54,53 +55,145 @@ jobs:
             out="uml_tmp/$(basename "$f")"
 
             sed -E '
-              s/Q_OBJECT//g;
-              s/Q_GADGET//g;
-              s/Q_PROPERTY\s*\([^)]*\)//g;
-              s/Q_SIGNAL//g;
-              s/Q_SIGNALS/signals/g;
-              s/Q_SLOT//g;
-              s/Q_SLOTS/slots/g;
-              s/Q_INVOKABLE//g;
-              s/Q_ENUMS?\([^)]*\)//g;
-              s/Q_FLAGS\([^)]*\)//g;
-              s/Q_DECLARE_FLAGS\([^)]*\)//g;
-              s/Q_DECLARE_OPERATORS_FOR_FLAGS\([^)]*\)//g;
-              s/Q_EMIT//g;
-              s/emit//g;
-              s/signals:/public:/g;
-              s/public slots:/public:/g;
-              s/private slots:/private:/g;
-              s/protected slots:/protected:/g;
-              s/slots://g;
+              s/\bQ_OBJECT\b//g;
+              s/\bQ_GADGET\b//g;
+              s/\bQ_NAMESPACE\b//g;
+              s/\bQ_INVOKABLE\b//g;
+              s/\bQ_SIGNAL\b//g;
+              s/\bQ_SIGNALS\b/signals/g;
+              s/\bQ_SLOT\b//g;
+              s/\bQ_SLOTS\b/slots/g;
+              s/\bQ_EMIT\b//g;
+              s/\bemit\b//g;
+              s/\bQ_PROPERTY\s*\([^)]*\)//g;
+              s/\bQ_ENUMS?\([^)]*\)//g;
+              s/\bQ_FLAGS\([^)]*\)//g;
+              s/\bQ_DECLARE_FLAGS\([^)]*\)//g;
+              s/\bQ_DECLARE_OPERATORS_FOR_FLAGS\([^)]*\)//g;
+              s/\bsignals[[:space:]]*:/public:/g;
+              s/\bpublic[[:space:]]+slots[[:space:]]*:/public:/g;
+              s/\bprotected[[:space:]]+slots[[:space:]]*:/protected:/g;
+              s/\bprivate[[:space:]]+slots[[:space:]]*:/private:/g;
+              s/\bslots[[:space:]]*://g;
             ' "$f" > "$out"
           done
 
           echo "===== Génération PlantUML ====="
 
           args=()
-          for f in uml_tmp/*.h; do
-            args+=(-i "$f")
+          for f in uml_tmp/*.h uml_tmp/*.hpp; do
+            [ -e "$f" ] && args+=(-i "$f")
           done
 
-          hpp2plantuml "${args[@]}" -o architecture_auto.puml || true
+          if [ ${#args[@]} -eq 0 ]; then
+            echo "Aucun header nettoyé exploitable"
+            exit 0
+          fi
 
-          if [ ! -f architecture_auto.puml ]; then
+          hpp2plantuml "${args[@]}" -o architecture_auto_raw.puml || true
+
+          if [ ! -f architecture_auto_raw.puml ]; then
             echo "Diagramme non généré"
             exit 0
           fi
 
-          echo "===== Nettoyage diagramme ====="
+          echo "===== Extraction du vrai diagramme ====="
 
-          sed -n '/@startuml/,/@enduml/p' architecture_auto.puml > tmp.puml
-          mv tmp.puml architecture_auto.puml
+          sed -n '/@startuml/,/@enduml/p' architecture_auto_raw.puml > architecture_auto_step1.puml
 
-          # supprimer auto-relations absurdes
-          sed -E -i '/^([A-Za-z_][A-Za-z0-9_:]*) o-- \1$/d' architecture_auto.puml
+          if ! grep -q "@startuml" architecture_auto_step1.puml; then
+            echo "Aucun bloc PlantUML valide trouvé"
+            exit 0
+          fi
 
-          # supprimer doublons
-          awk '!seen[$0]++' architecture_auto.puml > tmp.puml
-          mv tmp.puml architecture_auto.puml
+          echo "===== Correction des blocs class/enum non fermés ====="
+
+          awk '
+            BEGIN {
+              in_block = 0
+            }
+
+            function close_block_if_needed() {
+              if (in_block == 1) {
+                print "}"
+                in_block = 0
+              }
+            }
+
+            /^class[[:space:]]+[A-Za-z_][A-Za-z0-9_:]*[[:space:]]*\{/ {
+              close_block_if_needed()
+              print
+              in_block = 1
+              next
+            }
+
+            /^enum[[:space:]]+[A-Za-z_][A-Za-z0-9_:]*[[:space:]]*\{/ {
+              close_block_if_needed()
+              print
+              in_block = 1
+              next
+            }
+
+            /^interface[[:space:]]+[A-Za-z_][A-Za-z0-9_:]*[[:space:]]*\{/ {
+              close_block_if_needed()
+              print
+              in_block = 1
+              next
+            }
+
+            /^abstract[[:space:]]+class[[:space:]]+[A-Za-z_][A-Za-z0-9_:]*[[:space:]]*\{/ {
+              close_block_if_needed()
+              print
+              in_block = 1
+              next
+            }
+
+            /^\}/ {
+              print
+              in_block = 0
+              next
+            }
+
+            /^\/'\''/ {
+              close_block_if_needed()
+              print
+              next
+            }
+
+            /^@enduml/ {
+              close_block_if_needed()
+              print
+              next
+            }
+
+            /^[A-Za-z_][A-Za-z0-9_:]*[[:space:]]+[-.o*+<#|]+[-.o*+<#|]*[[:space:]]+[A-Za-z_][A-Za-z0-9_:]*/ {
+              close_block_if_needed()
+              print
+              next
+            }
+
+            {
+              print
+            }
+
+            END {
+              if (in_block == 1) {
+                print "}"
+              }
+            }
+          ' architecture_auto_step1.puml > architecture_auto_step2.puml
+
+          echo "===== Nettoyage des relations absurdes et doublons ====="
+
+          sed -E '/^([A-Za-z_][A-Za-z0-9_:]*) o-- \1$/d' architecture_auto_step2.puml \
+            | sed -E '/^([A-Za-z_][A-Za-z0-9_:]*) \+-- \1$/d' \
+            | awk '!seen[$0]++' \
+            > architecture_auto.puml
+
+          if ! grep -q "@startuml" architecture_auto.puml; then
+            echo "Fichier final invalide"
+            exit 0
+          fi
 
           echo "===== Diagramme final ====="
           cat architecture_auto.puml
