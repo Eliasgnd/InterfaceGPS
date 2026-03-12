@@ -1,76 +1,119 @@
-- name: Générer le diagramme UML automatique
-  shell: bash
-  run: |
-    set -euo pipefail
+name: Génération Doc Doxygen et UML
 
-    mkdir -p uml_headers
+on:
+  push:
+    branches:
+      - '**'
 
-    mapfile -t headers < <(
-      find . -maxdepth 1 -type f -name "*.h" \
-        ! -name "moc_*" \
-        ! -name "ui_*" \
-        ! -name "qrc_*" \
-        | sort
-    )
+permissions:
+  contents: write
 
-    echo "Headers trouvés :"
-    printf ' - %s\n' "${headers[@]}"
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-    if [ ${#headers[@]} -eq 0 ]; then
-      echo "Aucun header trouvé."
-      exit 0
-    fi
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
 
-    # Copie nettoyée des headers pour aider CppHeaderParser avec Qt
-    for f in "${headers[@]}"; do
-      out="uml_headers/$(basename "$f")"
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
 
-      sed -E '
-        s/\bQ_OBJECT\b//g;
-        s/\bQ_GADGET\b//g;
-        s/\bQ_INVOKABLE\b//g;
-        s/\bQ_SIGNAL\b//g;
-        s/\bQ_SIGNALS\b/signals/g;
-        s/\bQ_SLOT\b//g;
-        s/\bQ_SLOTS\b/slots/g;
-        s/\bQ_EMIT\b/emit/g;
-        s/\bemit\b//g;
-        s/\bQ_ENUMS?\([^)]*\)//g;
-        s/\bQ_FLAGS\([^)]*\)//g;
-        s/\bQ_DECLARE_FLAGS\([^)]*\)//g;
-        s/\bQ_DECLARE_OPERATORS_FOR_FLAGS\([^)]*\)//g;
-        s/\bQ_PROPERTY\s*\([^)]*\)//g;
-        s/\bsignals\s*:/public:/g;
-        s/\bpublic\s+slots\s*:/public:/g;
-        s/\bprotected\s+slots\s*:/protected:/g;
-        s/\bprivate\s+slots\s*:/private:/g;
-        s/\bslots\s*://g;
-      ' "$f" > "$out"
-    done
+      - name: Installer les outils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz plantuml python3-pip
+          pip install hpp2plantuml
 
-    mapfile -t clean_headers < <(find uml_headers -type f -name "*.h" | sort)
+      - name: Générer le diagramme UML automatique
+        shell: bash
+        run: |
+          set -euo pipefail
 
-    args=()
-    for f in "${clean_headers[@]}"; do
-      args+=(-i "$f")
-    done
+          mkdir -p uml_headers
 
-    hpp2plantuml "${args[@]}" -o architecture_auto.puml
+          mapfile -t headers < <(
+            find . -maxdepth 1 -type f -name "*.h" \
+              ! -name "moc_*" \
+              ! -name "ui_*" \
+              ! -name "qrc_*" \
+              | sort
+          )
 
-    if [ ! -f architecture_auto.puml ]; then
-      echo "Erreur: architecture_auto.puml n'a pas été généré."
-      exit 1
-    fi
+          echo "Headers trouvés :"
+          printf ' - %s\n' "${headers[@]}"
 
-    sed -n '/@startuml/,/@enduml/p' architecture_auto.puml > clean_arch.puml
-    mv clean_arch.puml architecture_auto.puml
+          if [ ${#headers[@]} -eq 0 ]; then
+            echo "Aucun header trouvé."
+            exit 0
+          fi
 
-    echo "===== architecture_auto.puml ====="
-    cat architecture_auto.puml
+          for f in "${headers[@]}"; do
+            out="uml_headers/$(basename "$f")"
 
-    grep -q "@startuml" architecture_auto.puml || {
-      echo "Erreur: le fichier PUML ne contient pas de diagramme valide."
-      exit 1
-    }
+            sed -E '
+              s/\bQ_OBJECT\b//g;
+              s/\bQ_GADGET\b//g;
+              s/\bQ_INVOKABLE\b//g;
+              s/\bQ_SIGNAL\b//g;
+              s/\bQ_SIGNALS\b/signals/g;
+              s/\bQ_SLOT\b//g;
+              s/\bQ_SLOTS\b/slots/g;
+              s/\bQ_EMIT\b/emit/g;
+              s/\bemit\b//g;
+              s/\bQ_ENUMS?\([^)]*\)//g;
+              s/\bQ_FLAGS\([^)]*\)//g;
+              s/\bQ_DECLARE_FLAGS\([^)]*\)//g;
+              s/\bQ_DECLARE_OPERATORS_FOR_FLAGS\([^)]*\)//g;
+              s/\bQ_PROPERTY\s*\([^)]*\)//g;
+              s/\bsignals\s*:/public:/g;
+              s/\bpublic\s+slots\s*:/public:/g;
+              s/\bprotected\s+slots\s*:/protected:/g;
+              s/\bprivate\s+slots\s*:/private:/g;
+              s/\bslots\s*://g;
+            ' "$f" > "$out"
+          done
 
-    plantuml -tsvg architecture_auto.puml
+          mapfile -t clean_headers < <(find uml_headers -type f -name "*.h" | sort)
+
+          args=()
+          for f in "${clean_headers[@]}"; do
+            args+=(-i "$f")
+          done
+
+          hpp2plantuml "${args[@]}" -o architecture_auto.puml
+
+          if [ ! -f architecture_auto.puml ]; then
+            echo "Erreur: architecture_auto.puml n'a pas été généré."
+            exit 1
+          fi
+
+          sed -n '/@startuml/,/@enduml/p' architecture_auto.puml > clean_arch.puml
+          mv clean_arch.puml architecture_auto.puml
+
+          echo "===== architecture_auto.puml ====="
+          cat architecture_auto.puml
+
+          if ! grep -q "@startuml" architecture_auto.puml; then
+            echo "Erreur: le fichier PUML ne contient pas de diagramme valide."
+            exit 1
+          fi
+
+          plantuml -tsvg architecture_auto.puml
+
+      - name: Générer la documentation Doxygen
+        run: doxygen Doxyfile
+
+      - name: Préparer les fichiers pour le déploiement
+        run: |
+          mkdir -p ./doc_output/html/images
+          if [ -f architecture_auto.svg ]; then
+            cp architecture_auto.svg ./doc_output/html/images/
+          fi
+
+      - name: Déployer sur GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./doc_output/html
