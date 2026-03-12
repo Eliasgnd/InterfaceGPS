@@ -1,68 +1,67 @@
-# Compilation et exécution
+# Build & exécution
 
-## Prérequis
+Ce guide est volontairement court: suivez les étapes dans l'ordre.
 
-- Linux recommandé (ex. Ubuntu, Raspberry Pi OS).
-- Qt 6 avec les modules déclarés dans `InterfaceGPS.pro`.
-- Outils de build : `qmake6`, `make`, compilateur C++ compatible C++17.
+## 1. Prérequis
 
-Selon la cible, prévoir également les dépendances système associées à Qt WebEngine, Qt Bluetooth et Qt Multimedia.
+- Linux (Ubuntu / Raspberry Pi OS recommandé)
+- Outils de base: `make`, compilateur C++17 (`g++`)
 
-## Compilation avec qmake
+## 2. Installation automatique des dépendances (recommandé)
 
-Depuis la racine du dépôt :
+Depuis la racine du dépôt:
+
+```bash
+bash scripts/install_dependencies.sh
+```
+
+Le script installe les paquets nécessaires pour:
+- compiler (`qmake6`, Qt6 dev),
+- exécuter les modules (QML, WebEngine, Bluetooth, multimédia),
+- lancer les tests Qt (`xvfb`),
+- générer la documentation (`doxygen`).
+
+## 3. Compiler
 
 ```bash
 qmake6 InterfaceGPS.pro
 make -j"$(nproc)"
 ```
 
-
-## Exécution
-
-Après compilation :
+## 4. Lancer
 
 ```bash
 ./InterfaceGPS
 ```
 
-Points de configuration utiles :
+## 5. Configurer
 
-- `MAPBOX_API_KEY` pour la couche cartographique.
-- URL Home Assistant configurable dans `homeassistant.cpp`.
+- Définir `MAPBOX_API_KEY` pour la carte.
+- Adapter l'URL Home Assistant dans `homeassistant.cpp`.
 
-## Tests Qt (unitaires/UI)
+## 6. Vérifier rapidement les modules
 
-Pour lancer l’ensemble des suites de tests Qt en local depuis la racine du dépôt :
+- Navigation: la carte se charge.
+- Média Bluetooth: commandes visibles et réactives.
+- Caméra: flux reçu côté `CameraPage`.
+- Télémétrie: données GPS/IMU visibles si capteurs connectés.
+
+## 7. Tests Qt
 
 ```bash
 bash scripts/run_qt_tests_ci.sh
 ```
 
-Ce script couvre les tests `tests/*/*_test.pro`, compile chaque suite avec `qmake6` puis exécute les binaires de test avec `xvfb-run` (utile pour les tests GUI).
-
-
-## Dépannage simple
+## 8. Dépannage
 
 ### `qmake6: command not found`
+Relancer `bash scripts/install_dependencies.sh`.
 
-- Installer Qt 6 et l’outil qmake correspondant (`qmake6`).
-- Vérifier le `PATH`.
+### Modules Qt manquants
+Relancer le script puis `qmake6 InterfaceGPS.pro`.
 
-### Erreurs de modules Qt manquants
-
-- Installer les paquets Qt 6 requis (Widgets, QML/Quick, Positioning/Location, SerialPort, Multimedia, DBus, Bluetooth, WebEngine, etc.).
-- Re-lancer `qmake6` après installation.
-
-### L’application démarre mais certaines fonctions ne répondent pas
-
-- Vérifier la disponibilité du matériel (GPS, IMU, Bluetooth, caméra).
-- Vérifier les permissions et services système (accès série/I2C, service Bluetooth, pile réseau).
-
-### Documentation API
-
-Pour régénérer la documentation Doxygen :
-
-```bash
-bash scripts/run_doxygen.sh
-```
+### Fonctions matérielles inactives
+Vérifier:
+- branchements (UART/I2C/réseau),
+- permissions Linux,
+- services système (Bluetooth, réseau).

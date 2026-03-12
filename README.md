@@ -2,158 +2,134 @@
 
 [![Documentation Doxygen](https://img.shields.io/badge/docs-doxygen-blue)](https://Eliasgnd.github.io/InterfaceGPS/)
 
-InterfaceGPS est une application **Qt 6 / C++ / qmake** de type tableau de bord embarqué. Le projet centralise la navigation, le multimédia Bluetooth, l’affichage caméra, la télémétrie et une intégration Home Assistant dans une interface unique, pensée pour un usage véhicule/embarqué.
+InterfaceGPS est une application **Qt 6 / C++ / qmake** pour écran embarqué (ex: Raspberry Pi), qui regroupe navigation, multimédia Bluetooth, caméra et télémétrie dans une interface unique.
 
-## Contexte et objectif
+## 1) Démarrage rapide (objectif: première exécution en < 15 min)
 
-Ce dépôt vise à démontrer une architecture logicielle embarquée moderne avec Qt, utilisable à la fois comme projet pédagogique, vitrine portfolio et base technique évolutive.
+### Prérequis minimum
 
-Objectifs principaux :
-- proposer une IHM unifiée et réactive,
-- connecter des sources matérielles (GPS série, IMU I2C),
-- conserver une base de code maintenable et documentée.
+- Linux (Ubuntu ou Raspberry Pi OS recommandé)
+- `make`, `g++`
 
-## Fonctionnalités
+### Installation automatique des dépendances (recommandé)
 
-- **Navigation GPS** : carte interactive QML, recherche de destination, suggestions, itinéraires et guidage visuel.
-- **Caméra embarquée** : affichage d’un flux JPEG UDP en temps réel.
-- **Multimédia Bluetooth** : contrôle média via DBus/MPRIS (lecture, piste, métadonnées).
-- **Home Assistant** : vue WebEngine intégrée pour la domotique embarquée.
-- **Paramètres système** : page de configuration Bluetooth et états de connectivité.
-- **Télémétrie unifiée** : modèle central (`TelemetryData`) partagé entre modules.
-- **Mode split-screen** : affichage simultané de modules (ex. Navigation + Média).
-
-## Stack technique
-
-- **Langage** : C++17
-- **Framework UI** : Qt 6 Widgets + QML
-- **Build system** : qmake
-- **Modules Qt utilisés** : `widgets`, `quickwidgets`, `qml`, `positioning`, `location`, `serialport`, `multimedia`, `dbus`, `bluetooth`, `webenginewidgets`, etc.
-- **Documentation API** : Doxygen (HTML)
-- **CI/CD documentation** : génération locale via Doxygen
-
-## Structure du projet
-
-```text
-.
-├── .github/                  # Workflows CI, templates de PR/issues
-├── docs/                     # Documentation projet (non API)
-├── tests/                    # Tests unitaires / UI par module
-├── scripts/                  # Scripts utilitaires (tests et documentation)
-├── *.h / *.cpp               # Code source C++ Qt
-├── *.ui / *.qml              # Interfaces Qt Designer / QML
-├── InterfaceGPS.pro          # Configuration qmake
-├── Doxyfile                  # Configuration Doxygen
-└── README.md
+```bash
+bash scripts/install_dependencies.sh
 ```
 
-## Compilation (qmake)
+### Compiler
 
-### Prérequis
-
-- Qt 6 avec les modules nécessaires
-- `qmake6`, `make`, `g++`
-- Linux recommandé (Raspberry Pi OS / Ubuntu)
-
-### Étapes
+Depuis la racine du dépôt:
 
 ```bash
 qmake6 InterfaceGPS.pro
 make -j"$(nproc)"
 ```
 
-## Exécution
+### Lancer
 
 ```bash
 ./InterfaceGPS
 ```
 
-Variables et points de configuration utiles :
-- `MAPBOX_API_KEY` pour la cartographie,
-- URL Home Assistant configurable dans `homeassistant.cpp`.
+Si l'application démarre, votre environnement logiciel est prêt.
 
-## Tests
+---
 
-Les tests Qt sont organisés sous `tests/*` avec un `.pro` par suite (`*_test.pro`).
+## 2) Mise en route sur matériel (checklist simple)
 
-### Exécution locale (toutes les suites)
+Pour une intégration progressive et claire:
+
+1. **Écran**: vérifier que l'interface s'affiche.
+2. **GPS**: connecter le module (UART/USB), puis vérifier que les données remontent.
+3. **Bluetooth**: activer le service Bluetooth, tester l'appairage et le contrôle média.
+4. **Caméra**: vérifier la réception du flux UDP/JPEG.
+5. **IMU (optionnel)**: brancher le capteur I2C (MPU9250) et valider les mesures.
+
+> Conseil: valider chaque bloc un par un. Si une brique matérielle manque, le reste de l'interface reste exploitable.
+
+---
+
+## 3) Câblage matériel (Raspberry Pi, exemple recommandé)
+
+### GPS (UART)
+
+- GPS **TX** → Raspberry Pi **GPIO15 / RXD** (pin physique 10)
+- GPS **RX** → Raspberry Pi **GPIO14 / TXD** (pin physique 8)
+- GPS **VCC** → **5V** (ou 3.3V selon module)
+- GPS **GND** → **GND**
+
+### IMU MPU9250 (I2C)
+
+- MPU9250 **SDA** → Raspberry Pi **GPIO2 / SDA1** (pin 3)
+- MPU9250 **SCL** → Raspberry Pi **GPIO3 / SCL1** (pin 5)
+- MPU9250 **VCC** → **3.3V**
+- MPU9250 **GND** → **GND**
+- Adresse I2C attendue côté code: **0x68** (`/dev/i2c-1`)
+
+### Caméra
+
+- Le module attend un flux **JPEG sur UDP** (source locale ou distante).
+
+> ⚠️ Important: vérifier le niveau logique (3.3V/5V) de vos modules avant câblage.
+
+---
+
+## 4) Configuration utile
+
+- **Cartographie**: définir `MAPBOX_API_KEY`.
+- **Home Assistant**: adapter l'URL dans `homeassistant.cpp`.
+
+---
+
+## 5) Structure du dépôt (lecture guidée)
+
+```text
+.
+├── README.md                # Point d'entrée: installation et usage
+├── InterfaceGPS.pro         # Modules Qt et build qmake
+├── docs/                    # Documentation d'architecture, build et matériel
+├── tests/                   # Tests Qt (unitaires / UI)
+├── scripts/                 # Scripts tests + Doxygen
+└── *.cpp / *.h / *.ui / *.qml
+```
+
+---
+
+## 6) Documentation (ordre recommandé)
+
+1. **Guide principal**: `README.md`
+2. **Démarrage détaillé**: [`docs/build.md`](docs/build.md)
+3. **Matériel cible**: [`docs/hardware.md`](docs/hardware.md)
+4. **Architecture**: [`docs/architecture.md`](docs/architecture.md)
+5. **Navigation**: [`docs/navigation.md`](docs/navigation.md)
+6. **Index docs**: [`docs/index.md`](docs/index.md)
+
+---
+
+## 7) Tests
+
+Lancer toutes les suites Qt:
 
 ```bash
 bash scripts/run_qt_tests_ci.sh
 ```
 
-Le script :
-- détecte automatiquement les projets de test dans `tests/`,
-- compile chaque suite avec `qmake6` + `make`,
-- exécute les tests sous `xvfb-run` (compatible avec les tests GUI),
-- génère les logs dans `test-results/`.
+---
 
-### Exécution locale (suite unique)
-
-```bash
-cd tests/telemetrydata
-qmake6 telemetrydata_test.pro
-make -j"$(nproc)"
-./telemetrydata_test
-```
-
-## Architecture logicielle (texte)
-
-- `MainWindow` orchestre les pages applicatives et le mode split-screen.
-- `TelemetryData` joue le rôle de **source de vérité** pour les données runtime.
-- `GpsTelemetrySource` et `Mpu9250Source` alimentent `TelemetryData`.
-- Les pages UI (`NavigationPage`, `MediaPage`, `CameraPage`, `SettingsPage`, `HomeAssistant`) consomment/produisent des événements via Qt (signals/slots).
-
-## Documentation
-
-- **Accueil documentation technique** : [`docs/index.md`](docs/index.md)
-- **Architecture logicielle** : [`docs/architecture.md`](docs/architecture.md)
-- **Plateforme matérielle** : [`docs/hardware.md`](docs/hardware.md)
-- **Compilation et exécution** : [`docs/build.md`](docs/build.md)
-- **Navigation** : [`docs/navigation.md`](docs/navigation.md)
-- **Guide dossier docs** : [`docs/README.md`](docs/README.md)
-- **Documentation API générée** (Doxygen) :
-  - locale : `doc_output/html/index.html`
-  - publiée : https://Eliasgnd.github.io/InterfaceGPS/
-
-## Documentation générée
-
-Génération locale :
+## 8) Documentation API (Doxygen)
 
 ```bash
 bash scripts/run_doxygen.sh
 ```
 
-## État du projet / roadmap
+Sortie locale: `doc_output/html/index.html`
 
-Projet actif, base fonctionnelle déjà en place.
+---
 
-Perspectives court terme :
-- robustesse I/O matériel (gestion fine des erreurs série/I2C),
-- amélioration UX tactile,
-- extension des tests d’intégration multi-modules,
-- packaging et déploiement embarqué reproductible.
+## Contribution et licence
 
-## Captures d’écran
-
-Aperçus UI à centraliser dans : `docs/assets/screenshots/`.
-
-> Emplacements prévus :
-> - `docs/assets/screenshots/navigation.png`
-> - `docs/assets/screenshots/split_screen.png`
-> - `docs/assets/screenshots/settings.png`
-
-## Contribution
-
-Les contributions sont bienvenues. Merci de consulter :
-- `CONTRIBUTING.md`
-- `CODE_OF_CONDUCT.md`
-- `SECURITY.md`
-
-## Licence
-
-Ce projet est distribué sous licence **MIT**. Voir `LICENSE`.
-
-## Auteur
-
-Projet maintenu par **Eliasgnd**.
+- Contribution: `CONTRIBUTING.md`
+- Sécurité: `SECURITY.md`
+- Code de conduite: `CODE_OF_CONDUCT.md`
+- Licence: `LICENSE` (MIT)
