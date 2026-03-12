@@ -19,3 +19,11 @@ qrc_*.cpp
 # OS
 .DS_Store
 Thumbs.db
+
+# Secrets / tokens u-blox
+.env
+.env.*
+*.env
+ublox_token*
+assistnow_token*
+config/local/*.json

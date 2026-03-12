@@ -8,7 +8,12 @@
 
 #include "gpstelemetrysource.h"
 #include "telemetrydata.h"
+#include <QCoreApplication>
 #include <QDebug>
+#include <QDir>
+#include <QFileInfo>
+#include <QProcess>
+#include <QProcessEnvironment>
 
 GpsTelemetrySource::GpsTelemetrySource(TelemetryData* data, QObject* parent)
     : QObject(parent), m_data(data)
@@ -25,6 +30,51 @@ void GpsTelemetrySource::start(const QString& portName) {
     // Redémarrage idempotent : on repart d'un état propre et on referme le port
     // s'il était déjà ouvert avant toute nouvelle tentative.
     stop();
+
+    QString scriptPath = QCoreApplication::applicationDirPath() + "/scripts/agps_loader.py";
+    if (!QFileInfo::exists(scriptPath)) {
+        scriptPath = QDir::currentPath() + "/scripts/agps_loader.py";
+    }
+
+    if (QFileInfo::exists(scriptPath)) {
+        qDebug() << "🚀 Lancement du script A-GPS AssistNow :" << scriptPath;
+
+        QProcess agpsProcess;
+        agpsProcess.setProcessEnvironment(QProcessEnvironment::systemEnvironment());
+        agpsProcess.setProcessChannelMode(QProcess::MergedChannels);
+        agpsProcess.setProgram("python3");
+        agpsProcess.setArguments({scriptPath, portName});
+        agpsProcess.start();
+
+        if (!agpsProcess.waitForStarted(3000)) {
+            qWarning() << "⚠️ Impossible de démarrer le script A-GPS :"
+                       << agpsProcess.errorString();
+        } else {
+            const bool finished = agpsProcess.waitForFinished(15000);
+            if (!finished) {
+                qWarning() << "⚠️ Timeout (15s) pendant l'injection A-GPS."
+                           << "Le port GPS ne sera pas ouvert.";
+                agpsProcess.kill();
+                agpsProcess.waitForFinished(2000);
+                if (m_data) m_data->setGpsOk(false);
+                return;
+            }
+
+            const QByteArray agpsOutput = agpsProcess.readAll();
+            if (!agpsOutput.trimmed().isEmpty()) {
+                qDebug().noquote() << "A-GPS output:\n" + QString::fromUtf8(agpsOutput);
+            }
+
+            if (agpsProcess.exitStatus() != QProcess::NormalExit || agpsProcess.exitCode() != 0) {
+                qWarning() << "⚠️ Injection A-GPS terminée avec erreur. Code de sortie :"
+                           << agpsProcess.exitCode();
+            } else {
+                qDebug() << "✅ Injection A-GPS terminée avec succès.";
+            }
+        }
+    } else {
+        qWarning() << "⚠️ Script A-GPS introuvable, démarrage GPS sans injection :" << scriptPath;
+    }
 
     // Configuration de la connexion physique au module GPS (ex: NEO-6M)
     m_serial->setPortName(portName);
