@@ -187,13 +187,6 @@ void NavigationPage::onSuggestionsReceived(const QString& jsonSuggestions) {
     }
 }
 
-void NavigationPage::onRouteInfoReceived(const QString& distance, const QString& duration) {
-    // Note : On utilise les labels historiquement nommés "lblLat" et "lblLon"
-    // pour afficher la distance et le temps restant du trajet.
-    ui->lblLat->setText("Dist: " + distance);
-    ui->lblLon->setText("Temps: " + duration);
-}
-
 void NavigationPage::bindTelemetry(TelemetryData* t) {
     m_t = t;
     if(!m_t) return;
