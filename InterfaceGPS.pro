@@ -1,13 +1,30 @@
-QT += core gui widgets positioning location quickwidgets qml quick serialport virtualkeyboard multimedia quickcontrols2 network dbus bluetooth webenginewidgets testlib svg
+# -------------------------------------------------------------------------
+# Section 1 : Modules Qt necessaires
+# -------------------------------------------------------------------------
+# positioning/location : Pour le parsing GPS et les cartes
+# serialport : Pour la communication avec le module u-blox
+# quick/qml : Pour l'interface graphique moderne
+# multimedia : Pour la lecture audio (MediaPlayer)
+# webenginewidgets : Pour l'affichage de composants web
+QT += core gui widgets positioning location quickwidgets qml quick \
+      serialport virtualkeyboard multimedia quickcontrols2 network \
+      dbus bluetooth webenginewidgets testlib svg
 
+# Compatibilite Qt 5/6 pour le module widgets
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+# -------------------------------------------------------------------------
+# Section 2 : Configuration du compilateur
+# -------------------------------------------------------------------------
 CONFIG += c++17
 
-# You can make your code fail to compile if it uses deprecated APIs.
-# In order to do so, uncomment the following line.
-#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
+# Nom de l'executable genere
+TARGET = InterfaceGPS
+TEMPLATE = app
 
+# -------------------------------------------------------------------------
+# Section 3 : Fichiers sources et En-tetes (C++)
+# -------------------------------------------------------------------------
 SOURCES += \
     bluetoothmanager.cpp \
     camerapage.cpp \
@@ -35,6 +52,9 @@ HEADERS += \
     settingspage.h \
     telemetrydata.h
 
+# -------------------------------------------------------------------------
+# Section 4 : Fichiers d'interface (UI Designer)
+# -------------------------------------------------------------------------
 FORMS += \
     camerapage.ui \
     mainwindow.ui \
@@ -42,15 +62,43 @@ FORMS += \
     navigationpage.ui \
     settingspage.ui
 
-# Default rules for deployment.
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
-
+# -------------------------------------------------------------------------
+# Section 5 : Ressources (QML, Images, Icones)
+# -------------------------------------------------------------------------
+# DISTFILES liste les fichiers qui ne sont pas compiles mais font partie du projet
 DISTFILES += \
     MediaPlayer.qml \
     diagramme_classe.qmodel \
     map.qml
 
+# Fichier de ressources Qt compile
 RESOURCES += \
     resources.qrc
+
+# -------------------------------------------------------------------------
+# Section 6 : Automatisation du dossier SCRIPTS (A-GPS)
+# -------------------------------------------------------------------------
+# Cette section s'assure que agps_loader.py est copie dans le dossier de build
+# afin que gpstelemetrysource.cpp puisse le trouver au lancement
+
+# 1. Definit le chemin du dossier scripts dans les sources ($$PWD)
+# et la destination dans le dossier de build ($$OUT_PWD)
+copy_scripts.target = copy_scripts_target
+copy_scripts.commands = $(COPY_DIR) $$shell_path($$PWD/scripts) $$shell_path($$OUT_PWD)
+copy_scripts.depends = FORCE
+
+# 2. Ajoute cette action a la sequence de compilation
+PRE_TARGETDEPS += copy_scripts_target
+QMAKE_EXTRA_TARGETS += copy_scripts
+
+# -------------------------------------------------------------------------
+# Section 7 : Regles de deploiement (Linux/Unix)
+# -------------------------------------------------------------------------
+qnx: target.path = /tmp/$${TARGET}/bin
+else: unix:!android: target.path = /opt/$${TARGET}/bin
+
+# Ajoute egalement le dossier scripts a la regle d'installation systeme
+!isEmpty(target.path): INSTALLS += target
+script_install.path = $$target.path/scripts
+script_install.files = scripts/*
+INSTALLS += script_install
