@@ -1,0 +1,37 @@
+name: Qt Unit Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  qt-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    env:
+      QT_QPA_PLATFORM: xcb
+      QTWEBENGINE_DISABLE_SANDBOX: 1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt and system dependencies
+        run: bash scripts/install_qt_deps_ubuntu.sh
+
+      - name: Build and run Qt tests
+        run: bash scripts/run_qt_tests_ci.sh test-results build-tests
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qt-test-results-${{ github.run_id }}
+          path: |
+            test-results/
+            build-tests/
+          if-no-files-found: warn

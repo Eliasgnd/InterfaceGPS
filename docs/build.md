@@ -32,6 +32,18 @@ Points de configuration utiles :
 - `MAPBOX_API_KEY` pour la couche cartographique.
 - URL Home Assistant configurable dans `homeassistant.cpp`.
 
+## Tests Qt (unitaires/UI)
+
+Pour lancer l’ensemble des suites de tests Qt en local depuis la racine du dépôt :
+
+```bash
+bash scripts/run_qt_tests_ci.sh
+```
+
+Ce script couvre les tests `tests/*/*_test.pro`, compile chaque suite avec `qmake6` puis exécute les binaires de test avec `xvfb-run` (utile pour les tests GUI).
+
+En CI, le workflow GitHub Actions `.github/workflows/tests.yml` exécute le même script sur `push` et `pull_request` et publie les logs de test en artifacts.
+
 ## Dépannage simple
 
 ### `qmake6: command not found`
