@@ -74,7 +74,21 @@ Variables et points de configuration utiles :
 
 ## Tests
 
-Exemple (module télémétrie) :
+Les tests Qt sont organisés sous `tests/*` avec un `.pro` par suite (`*_test.pro`).
+
+### Exécution locale (toutes les suites)
+
+```bash
+bash scripts/run_qt_tests_ci.sh
+```
+
+Le script :
+- détecte automatiquement les projets de test dans `tests/`,
+- compile chaque suite avec `qmake6` + `make`,
+- exécute les tests sous `xvfb-run` (compatible avec les tests GUI),
+- génère les logs dans `test-results/`.
+
+### Exécution locale (suite unique)
 
 ```bash
 cd tests/telemetrydata
@@ -82,6 +96,10 @@ qmake6 telemetrydata_test.pro
 make -j"$(nproc)"
 ./telemetrydata_test
 ```
+
+### CI GitHub Actions
+
+Le workflow `.github/workflows/tests.yml` lance automatiquement les tests sur `push` et `pull_request`, puis publie les résultats (`.txt` et `.xml`) en artifacts.
 
 ## Architecture logicielle (texte)
 
