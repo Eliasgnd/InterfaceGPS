@@ -1,106 +1,76 @@
-name: Génération Doc Doxygen et UML
+- name: Générer le diagramme UML automatique
+  shell: bash
+  run: |
+    set -euo pipefail
 
-on:
-  push:
-    branches:
-      - '**'
+    mkdir -p uml_headers
 
-permissions:
-  contents: write
+    mapfile -t headers < <(
+      find . -maxdepth 1 -type f -name "*.h" \
+        ! -name "moc_*" \
+        ! -name "ui_*" \
+        ! -name "qrc_*" \
+        | sort
+    )
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    echo "Headers trouvés :"
+    printf ' - %s\n' "${headers[@]}"
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+    if [ ${#headers[@]} -eq 0 ]; then
+      echo "Aucun header trouvé."
+      exit 0
+    fi
 
-    steps:
-      - name: Récupérer le code
-        uses: actions/checkout@v4
+    # Copie nettoyée des headers pour aider CppHeaderParser avec Qt
+    for f in "${headers[@]}"; do
+      out="uml_headers/$(basename "$f")"
 
-      - name: Installer les outils
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y doxygen graphviz plantuml python3-pip
-          pip install hpp2plantuml
+      sed -E '
+        s/\bQ_OBJECT\b//g;
+        s/\bQ_GADGET\b//g;
+        s/\bQ_INVOKABLE\b//g;
+        s/\bQ_SIGNAL\b//g;
+        s/\bQ_SIGNALS\b/signals/g;
+        s/\bQ_SLOT\b//g;
+        s/\bQ_SLOTS\b/slots/g;
+        s/\bQ_EMIT\b/emit/g;
+        s/\bemit\b//g;
+        s/\bQ_ENUMS?\([^)]*\)//g;
+        s/\bQ_FLAGS\([^)]*\)//g;
+        s/\bQ_DECLARE_FLAGS\([^)]*\)//g;
+        s/\bQ_DECLARE_OPERATORS_FOR_FLAGS\([^)]*\)//g;
+        s/\bQ_PROPERTY\s*\([^)]*\)//g;
+        s/\bsignals\s*:/public:/g;
+        s/\bpublic\s+slots\s*:/public:/g;
+        s/\bprotected\s+slots\s*:/protected:/g;
+        s/\bprivate\s+slots\s*:/private:/g;
+        s/\bslots\s*://g;
+      ' "$f" > "$out"
+    done
 
-      - name: Générer le diagramme UML automatique
-        shell: bash
-        run: |
-          set +e
+    mapfile -t clean_headers < <(find uml_headers -type f -name "*.h" | sort)
 
-          # On récupère uniquement les vrais headers source
-          mapfile -t headers < <(
-            find . -maxdepth 1 -type f -name "*.h" \
-              ! -name "moc_*" \
-              ! -name "ui_*" \
-              ! -name "qrc_*" \
-              | sort
-          )
+    args=()
+    for f in "${clean_headers[@]}"; do
+      args+=(-i "$f")
+    done
 
-          echo "Headers trouvés :"
-          printf ' - %s\n' "${headers[@]}"
+    hpp2plantuml "${args[@]}" -o architecture_auto.puml
 
-          if [ ${#headers[@]} -eq 0 ]; then
-            echo "Aucun header trouvé."
-            exit 0
-          fi
+    if [ ! -f architecture_auto.puml ]; then
+      echo "Erreur: architecture_auto.puml n'a pas été généré."
+      exit 1
+    fi
 
-          # Construction des arguments -i fichier1 -i fichier2 ...
-          args=()
-          for f in "${headers[@]}"; do
-            args+=(-i "$f")
-          done
+    sed -n '/@startuml/,/@enduml/p' architecture_auto.puml > clean_arch.puml
+    mv clean_arch.puml architecture_auto.puml
 
-          # Génération du .puml
-          hpp2plantuml "${args[@]}" -o architecture_auto.puml
-          HPP_EXIT=$?
+    echo "===== architecture_auto.puml ====="
+    cat architecture_auto.puml
 
-          if [ ! -f architecture_auto.puml ]; then
-            echo "Erreur: architecture_auto.puml n'a pas été généré."
-            exit 1
-          fi
+    grep -q "@startuml" architecture_auto.puml || {
+      echo "Erreur: le fichier PUML ne contient pas de diagramme valide."
+      exit 1
+    }
 
-          # Nettoyage éventuel
-          sed -n '/@startuml/,/@enduml/p' architecture_auto.puml > clean_arch.puml
-          mv clean_arch.puml architecture_auto.puml
-
-          echo "Contenu de architecture_auto.puml :"
-          cat architecture_auto.puml
-
-          if ! grep -q "@startuml" architecture_auto.puml; then
-            echo "Erreur: le fichier PUML ne contient pas de diagramme valide."
-            exit 1
-          fi
-
-          # Conversion SVG
-          plantuml -tsvg architecture_auto.puml
-          PLANT_EXIT=$?
-
-          if [ $PLANT_EXIT -ne 0 ]; then
-            echo "PlantUML a échoué. Vérifie la syntaxe générée ci-dessus."
-            exit 1
-          fi
-
-          # Si hpp2plantuml a signalé des erreurs de parsing mais a quand même généré un diagramme,
-          # on ne casse pas forcément le job avant la conversion.
-          if [ $HPP_EXIT -ne 0 ]; then
-            echo "hpp2plantuml a retourné un code non nul, probablement à cause d'un header mal parsé."
-            echo "Le diagramme a quand même été tenté."
-          fi
-
-      - name: Générer la documentation Doxygen
-        run: doxygen Doxyfile
-
-      - name: Préparer les fichiers pour le déploiement
-        run: |
-          mkdir -p ./doc_output/html/images
-          [ -f architecture_auto.svg ] && cp architecture_auto.svg ./doc_output/html/images/
-
-      - name: Déployer sur GitHub Pages
-        if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./doc_output/html
+    plantuml -tsvg architecture_auto.puml
