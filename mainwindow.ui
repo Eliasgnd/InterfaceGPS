@@ -110,6 +110,12 @@ QPushButton:pressed{background:#2d3245;}
        </property>
        <item>
         <widget class="QPushButton" name="btnNav">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>30</height>
+          </size>
+         </property>
          <property name="text">
           <string>Nav</string>
          </property>
@@ -117,6 +123,12 @@ QPushButton:pressed{background:#2d3245;}
        </item>
        <item>
         <widget class="QPushButton" name="btnCam">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>30</height>
+          </size>
+         </property>
          <property name="text">
           <string>Cam</string>
          </property>
@@ -124,6 +136,12 @@ QPushButton:pressed{background:#2d3245;}
        </item>
        <item>
         <widget class="QPushButton" name="btnMedia">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>30</height>
+          </size>
+         </property>
          <property name="text">
           <string>Musique</string>
          </property>
@@ -131,6 +149,12 @@ QPushButton:pressed{background:#2d3245;}
        </item>
        <item>
         <widget class="QPushButton" name="btnHA">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>30</height>
+          </size>
+         </property>
          <property name="text">
           <string>Maison</string>
          </property>
@@ -138,6 +162,12 @@ QPushButton:pressed{background:#2d3245;}
        </item>
        <item>
         <widget class="QPushButton" name="btnSettings">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>30</height>
+          </size>
+         </property>
          <property name="text">
           <string>Settings</string>
          </property>
