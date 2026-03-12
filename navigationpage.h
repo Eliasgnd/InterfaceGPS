@@ -127,6 +127,12 @@ private:
      */
     void openVirtualKeyboard();
 
+    /**
+     * @brief Affiche/masque les contrôles de recherche (champ + bouton Aller).
+     * @param visible true pour afficher, false pour masquer.
+     */
+    void setSearchControlsVisible(bool visible);
+
     // --- ATTRIBUTS ---
     Ui::NavigationPage* ui;                    ///< Interface utilisateur générée.
     TelemetryData* m_t = nullptr;              ///< Référence aux données du véhicule.
