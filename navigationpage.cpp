@@ -101,6 +101,15 @@ NavigationPage::NavigationPage(QWidget* parent)
             QMetaObject::invokeMethod(m_mapView->rootObject(), "recenterMap");
         }
     });
+    connect(ui->btnToggleSearch, &QPushButton::clicked, this, [this](){
+        setSearchControlsVisible(!ui->editSearch->isVisible());
+    });
+    connect(ui->btnStopRoute, &QPushButton::clicked, this, [this](){
+        if (m_mapView && m_mapView->rootObject()) {
+            QMetaObject::invokeMethod(m_mapView->rootObject(), "stopNavigation");
+        }
+        setSearchControlsVisible(true);
+    });
     connect(ui->btnSearch, &QPushButton::clicked, this, [this](){
         requestRouteForText(ui->editSearch->text());
     });
@@ -143,6 +152,17 @@ void NavigationPage::openVirtualKeyboard()
     }
 
     m_currentClavier = nullptr;
+}
+
+void NavigationPage::setSearchControlsVisible(bool visible)
+{
+    ui->editSearch->setVisible(visible);
+    ui->btnSearch->setVisible(visible);
+    ui->btnToggleSearch->setText("🔍");
+
+    if (visible) {
+        ui->editSearch->setFocus();
+    }
 }
 
 void NavigationPage::onSuggestionsReceived(const QString& jsonSuggestions) {
@@ -204,6 +224,8 @@ void NavigationPage::requestRouteForText(const QString& destination) {
     if (trimmed.isEmpty()) return;
 
     emit routeSearchRequested(trimmed);
+    setSearchControlsVisible(false);
+
     if (!m_mapView || !m_mapView->rootObject()) return;
 
     // Appel d'une fonction Javascript/QML directement depuis le C++

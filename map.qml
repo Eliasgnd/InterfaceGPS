@@ -586,6 +586,31 @@ Item {
     }
 
     /**
+     * @brief Arrête le guidage en cours et nettoie l'itinéraire affiché.
+     */
+    function stopNavigation() {
+        finalDestination = null;
+        routePoints = [];
+        routeSteps = [];
+        trafficSegments = [];
+        routeSpeedLimits = [];
+        routeCongestions = [];
+        currentStepIndex = 0;
+        lastDistToStep = 999999;
+        isRecalculating = false;
+        nextInstruction = "";
+        distanceToNextTurn = "";
+        nextManeuverDirection = 0;
+        remainingDistString = "-- km";
+        remainingTimeString = "-- min";
+        arrivalTimeString = "--:--";
+        speedLimit = -1;
+        autoFollow = true;
+        enableSpeedZoom = true;
+        map.center = QtPositioning.coordinate(carLat, carLon);
+    }
+
+    /**
      * @brief Force la caméra à se replacer au centre du véhicule et réactive l'Auto-Follow.
      */
     function recenterMap() {
