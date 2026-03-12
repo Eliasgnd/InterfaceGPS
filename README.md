@@ -92,7 +92,12 @@ make -j"$(nproc)"
 
 ## Documentation
 
-- **Guide dépôt** : `docs/README.md`
+- **Accueil documentation technique** : [`docs/index.md`](docs/index.md)
+- **Architecture logicielle** : [`docs/architecture.md`](docs/architecture.md)
+- **Plateforme matérielle** : [`docs/hardware.md`](docs/hardware.md)
+- **Compilation et exécution** : [`docs/build.md`](docs/build.md)
+- **Navigation** : [`docs/navigation.md`](docs/navigation.md)
+- **Guide dossier docs** : [`docs/README.md`](docs/README.md)
 - **Documentation API générée** (Doxygen) :
   - locale : `doc_output/html/index.html`
   - publiée : https://Eliasgnd.github.io/InterfaceGPS/

@@ -8,7 +8,7 @@ CREATE_SUBDIRS         = NO
 OUTPUT_LANGUAGE        = French
 
 INPUT                  = .
-FILE_PATTERNS          = *.h *.hpp *.cpp
+FILE_PATTERNS          = *.h *.hpp *.cpp *.md
 RECURSIVE              = YES
 EXCLUDE                = ./build ./build-* ./doc_output ./tests
 EXCLUDE_SYMLINKS       = YES
