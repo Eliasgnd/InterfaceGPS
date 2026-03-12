@@ -3,10 +3,14 @@ name: Génération Doc Doxygen et UML
 on:
   push:
     branches:
-      - '**'  # Se déclenche sur absolument toutes les branches
+      - '**'
 
 permissions:
   contents: write
+
+# Correction de la dépréciation Node.js
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-deploy:
@@ -23,26 +27,27 @@ jobs:
 
       - name: Générer le diagramme UML automatique
         run: |
-          # Scanne tous les headers (.h) pour créer le fichier source PlantUML
-          hpp2plantuml -i "*.h" -o architecture_auto.puml
-          # Transforme le fichier source en image SVG
-          plantuml -tsvg architecture_auto.puml
+          # Recherche récursive de tous les headers .h du projet
+          find . -name "*.h" -not -path "./tests/*" -not -path "./build/*" > headers_list.txt
+          hpp2plantuml -i headers_list.txt -o architecture_auto.puml || true
+          
+          if [ -f architecture_auto.puml ]; then
+            plantuml -tsvg architecture_auto.puml
+          else
+            echo "Avertissement : Aucun diagramme généré."
+          fi
 
       - name: Générer la documentation Doxygen
         run: doxygen Doxyfile
 
       - name: Préparer les fichiers pour le déploiement
         run: |
-          # Crée le dossier pour l'image dans le rendu HTML
           mkdir -p ./doc_output/html/images
-          # Copie le diagramme généré pour qu'il soit lié à la doc
-          cp architecture_auto.svg ./doc_output/html/images/
+          [ -f architecture_auto.svg ] && cp architecture_auto.svg ./doc_output/html/images/ || echo "Pas de SVG à copier"
 
       - name: Déployer sur GitHub Pages
-        # IMPORTANT : On ne publie officiellement que si on est sur la branche 'main'
-        # Si votre branche principale s'appelle 'master' ou 'documentation', changez le nom ici
         if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4 # Passage à la v4 pour support Node récent
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./doc_output/html
