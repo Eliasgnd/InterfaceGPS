@@ -98,7 +98,6 @@ jobs:
           fi
 
           echo "===== Extraction du vrai diagramme ====="
-
           sed -n '/@startuml/,/@enduml/p' architecture_auto_raw.puml > architecture_auto_step1.puml
 
           if ! grep -q "@startuml" architecture_auto_step1.puml; then
@@ -106,85 +105,56 @@ jobs:
             exit 0
           fi
 
-          echo "===== Correction des blocs class/enum non fermés ====="
+          echo "===== Correction des blocs non fermés ====="
+          python3 <<'PY'
+          import re
 
-          awk '
-            BEGIN {
-              in_block = 0
-            }
+          src = "architecture_auto_step1.puml"
+          dst = "architecture_auto_step2.puml"
 
-            function close_block_if_needed() {
-              if (in_block == 1) {
-                print "}"
-                in_block = 0
-              }
-            }
+          block_start = re.compile(r'^\s*(class|enum|interface|abstract\s+class)\s+[A-Za-z_][A-Za-z0-9_:]*\s*\{\s*$')
+          block_end = re.compile(r'^\s*\}\s*$')
+          section_comment = re.compile(r"^\s*/'")
+          relation = re.compile(r'^\s*[A-Za-z_][A-Za-z0-9_:]*\s+[-.o*+<#|]+[-.o*+<#|]*\s+[A-Za-z_][A-Za-z0-9_:]*')
+          enduml = re.compile(r'^\s*@enduml\s*$')
 
-            /^class[[:space:]]+[A-Za-z_][A-Za-z0-9_:]*[[:space:]]*\{/ {
-              close_block_if_needed()
-              print
-              in_block = 1
-              next
-            }
+          out = []
+          in_block = False
 
-            /^enum[[:space:]]+[A-Za-z_][A-Za-z0-9_:]*[[:space:]]*\{/ {
-              close_block_if_needed()
-              print
-              in_block = 1
-              next
-            }
+          with open(src, "r", encoding="utf-8", errors="ignore") as f:
+              for raw in f:
+                  line = raw.rstrip("\n")
+                  stripped = line.strip()
 
-            /^interface[[:space:]]+[A-Za-z_][A-Za-z0-9_:]*[[:space:]]*\{/ {
-              close_block_if_needed()
-              print
-              in_block = 1
-              next
-            }
+                  if block_start.match(line):
+                      if in_block:
+                          out.append("}")
+                      out.append(line)
+                      in_block = True
+                      continue
 
-            /^abstract[[:space:]]+class[[:space:]]+[A-Za-z_][A-Za-z0-9_:]*[[:space:]]*\{/ {
-              close_block_if_needed()
-              print
-              in_block = 1
-              next
-            }
+                  if block_end.match(line):
+                      out.append(line)
+                      in_block = False
+                      continue
 
-            /^\}/ {
-              print
-              in_block = 0
-              next
-            }
+                  if section_comment.match(line) or relation.match(line) or enduml.match(line):
+                      if in_block:
+                          out.append("}")
+                          in_block = False
+                      out.append(line)
+                      continue
 
-            /^\/'\''/ {
-              close_block_if_needed()
-              print
-              next
-            }
+                  out.append(line)
 
-            /^@enduml/ {
-              close_block_if_needed()
-              print
-              next
-            }
+          if in_block:
+              out.append("}")
 
-            /^[A-Za-z_][A-Za-z0-9_:]*[[:space:]]+[-.o*+<#|]+[-.o*+<#|]*[[:space:]]+[A-Za-z_][A-Za-z0-9_:]*/ {
-              close_block_if_needed()
-              print
-              next
-            }
+          with open(dst, "w", encoding="utf-8") as f:
+              f.write("\n".join(out) + "\n")
+          PY
 
-            {
-              print
-            }
-
-            END {
-              if (in_block == 1) {
-                print "}"
-              }
-            }
-          ' architecture_auto_step1.puml > architecture_auto_step2.puml
-
-          echo "===== Nettoyage des relations absurdes et doublons ====="
-
+          echo "===== Nettoyage final ====="
           sed -E '/^([A-Za-z_][A-Za-z0-9_:]*) o-- \1$/d' architecture_auto_step2.puml \
             | sed -E '/^([A-Za-z_][A-Za-z0-9_:]*) \+-- \1$/d' \
             | awk '!seen[$0]++' \
