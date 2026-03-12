@@ -1,9 +1,9 @@
 /**
  * @file gpstelemetrysource.cpp
- * @brief Impl�mentation de la source GPS mat�rielle.
- * @details Responsabilit�s : Configurer le port s�rie, d�coder le flux NMEA en continu
- * et traduire les mesures brutes en t�l�m�trie exploitable par l'interface graphique.
- * D�pendances principales : Qt SerialPort, Qt Positioning et TelemetryData.
+ * @brief Implémentation de la source GPS mat�rielle.
+ * @details Responsabilités : Configurer le port série, décoder le flux NMEA en continu
+ * et traduire les mesures brutes en télémétrie exploitable par l'interface graphique.
+ * Dépendances principales : Qt SerialPort, Qt Positioning et TelemetryData.
  */
 
 #include "gpstelemetrysource.h"
@@ -13,7 +13,7 @@
 GpsTelemetrySource::GpsTelemetrySource(TelemetryData* data, QObject* parent)
     : QObject(parent), m_data(data)
 {
-    // Initialisation de l'interface s�rie mat�rielle
+    // Initialisation de l'interface série mat�rielle
     m_serial = new QSerialPort(this);
 }
 
@@ -22,44 +22,44 @@ GpsTelemetrySource::~GpsTelemetrySource() {
 }
 
 void GpsTelemetrySource::start(const QString& portName) {
-    // Red�marrage idempotent : on repart d'un �tat propre et on referme le port
-    // s'il �tait d�j� ouvert avant toute nouvelle tentative.
+    // Redémarrage idempotent : on repart d'un état propre et on referme le port
+    // s'il �tait déjà ouvert avant toute nouvelle tentative.
     stop();
 
     // Configuration de la connexion physique au module GPS (ex: NEO-6M)
     m_serial->setPortName(portName);
-    m_serial->setBaudRate(QSerialPort::Baud9600); // 9600 bauds est le standard industriel NMEA par d�faut
+    m_serial->setBaudRate(QSerialPort::Baud9600); // 9600 bauds est le standard industriel NMEA par défaut
 
     if (!m_serial->open(QIODevice::ReadOnly)) {
-        qCritical() << "? Erreur : Impossible d'ouvrir le module GPS sur le port" << portName;
+        qCritical() << "? Erreur : Impossible d’ouvrir le module GPS sur le port" << portName;
         if(m_data) m_data->setGpsOk(false);
         return;
     }
 
-    // Cr�ation du parseur NMEA en "RealTimeMode" (lit le flux en direct au lieu d'un fichier log)
+    // Création du parseur NMEA en "RealTimeMode" (lit le flux en direct au lieu d'un fichier log)
     m_nmeaSource = new QNmeaPositionInfoSource(QNmeaPositionInfoSource::RealTimeMode, this);
     m_nmeaSource->setDevice(m_serial);
 
-    // Connexion du moteur Qt Positioning � notre logique m�tier
+    // Connexion du moteur Qt Positioning � notre logique métier
     connect(m_nmeaSource, &QNmeaPositionInfoSource::positionUpdated,
             this, &GpsTelemetrySource::onPositionUpdated);
 
-    // D�marrage de la boucle de lecture
+    // Démarrage de la boucle de lecture
     m_nmeaSource->startUpdates();
 
     qDebug() << "? GPS D�marr� (Mode Qt Positioning) sur" << portName;
 }
 
 void GpsTelemetrySource::stop() {
-    // L'arr�t explicite du parseur et la suppression de l'objet �vitent
-    // des callbacks fant�mes lors des changements d'�tat de l'application.
+    // L'arrêt explicite du parseur et la suppression de l'objet évitent
+    // des callbacks fantômes lors des changements d'état de l'application.
     if (m_nmeaSource) {
         m_nmeaSource->stopUpdates();
         delete m_nmeaSource;
         m_nmeaSource = nullptr;
     }
 
-    // Lib�ration mat�rielle du port s�rie
+    // Lib�ration mat�rielle du port série
     if (m_serial->isOpen()) {
         m_serial->close();
     }
@@ -90,8 +90,8 @@ void GpsTelemetrySource::onPositionUpdated(const QGeoPositionInfo &info) {
             // LOGIQUE M�TIER CRITIQUE :
             // Sous une faible vitesse, le calcul de cap (Heading) par le GPS devient erratique
             // car le module ne peut plus d�terminer l'avant de l'arri�re.
-            // On applique un seuil (3 km/h) pour �viter que la carte GPS ne pivote brutalement
-            // dans tous les sens lorsque le v�hicule est arr�t� � un feu rouge.
+            // On applique un seuil (3 km/h) pour éviter que la carte GPS ne pivote brutalement
+            // dans tous les sens lorsque le v�hicule est arrêt� � un feu rouge.
             /*if (speedMs * 3.6 > 3.0) {
                 m_data->setHeading(course);
             }*/

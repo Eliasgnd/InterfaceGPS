@@ -1,49 +1,50 @@
-name: Génération Doc Doxygen
+name: Doxygen Documentation
 
 on:
   push:
-    branches:
-      - '**'
+    branches: ["**"]
+  pull_request:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build-and-deploy:
+  doxygen:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Récupérer le code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Installer Doxygen
+      - name: Install Doxygen
         run: |
           sudo apt-get update
-          sudo apt-get install -y doxygen graphviz
+          sudo apt-get install -y doxygen
 
-      - name: Vérifier le Doxyfile
+      - name: Generate documentation
+        run: doxygen Doxyfile
+
+      - name: Verify HTML output
         run: |
-          if [ ! -f Doxyfile ]; then
-            echo "Erreur : fichier Doxyfile introuvable à la racine du projet."
-            exit 1
-          fi
+          test -f doc_output/html/index.html
 
-      - name: Générer la documentation Doxygen
-        run: |
-          doxygen Doxyfile
-
-      - name: Vérifier le dossier HTML généré
-        run: |
-          if [ ! -d doc_output/html ]; then
-            echo "Erreur : le dossier doc_output/html n'a pas été généré."
-            echo "Vérifie dans ton Doxyfile que OUTPUT_DIRECTORY = doc_output"
-            echo "et que GENERATE_HTML = YES"
-            exit 1
-          fi
-
-      - name: Déployer sur GitHub Pages
-        if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./doc_output/html
+          path: doc_output/html
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: doxygen
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

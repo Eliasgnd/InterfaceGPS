@@ -1,11 +1,11 @@
 /**
  * @file main.cpp
- * @brief Point d'entr�e de l'application (Bootstrapper).
- * @details Ce fichier agit comme le chef d'orchestre du d�marrage. Ses responsabilit�s sont :
+ * @brief Point d'entrée de l'application (Bootstrapper).
+ * @details Ce fichier agit comme le chef d'orchestre du démarrage. Ses responsabilités sont :
  * 1. Configurer l'environnement bas niveau de l'OS (Variables d'environnement Linux/Raspberry).
  * 2. Initialiser les moteurs de rendu lourd (OpenGL et Chromium/WebEngine).
- * 3. Appliquer le motif d'architecture "Injection de D�pendances" en instanciant le Mod�le
- * central et en le distribuant aux diff�rents Contr�leurs et Capteurs mat�riels.
+ * 3. Appliquer le motif d'architecture "Injection de Dépendances" en instanciant le Modèle
+ * central et en le distribuant aux différents Contrôleurs et Capteurs matériels.
  */
 
 #include <QApplication>
@@ -20,15 +20,15 @@
 #include "mpu9250source.h"
 
 int main(int argc, char *argv[]) {
-    // --- 1. CONFIGURATION SYST�ME ET GRAPHIQUE ---
+    // --- 1. CONFIGURATION SYSTÈME ET GRAPHIQUE ---
 
-    // D�sactive le moteur de th�me externe pour garder le contr�le total sur le style sombre
+    // Désactive le moteur de thème externe pour garder le contrôle total sur le style sombre
     qputenv("QT_QPA_PLATFORMTHEME", "");
 
     // Indispensable pour que WebEngine (Chromium) fonctionne avec le GPU sous Wayland
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 
-    // Optimisations pour Chromium (utilis� dans la page HomeAssistant / Media)
+    // Optimisations pour Chromium (utilisé dans la page HomeAssistant / Media)
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
             "--disable-web-security "
             "--no-sandbox "
@@ -39,10 +39,10 @@ int main(int argc, char *argv[]) {
 
     // --- 2. INITIALISATION DE L'APPLICATION ---
 
-    QApplication a(argc, argv); // L'objet 'a' doit �tre cr�� ICI pour �tre utilis� ensuite
+    QApplication a(argc, argv); // L'objet 'a' doit �tre créé ICI pour �tre utilisé ensuite
 
-    // --- 3. TH�ME SOMBRE GLOBAL (FEUILLE DE STYLE) ---
-    // Cette section d�finit l'apparence de toute l'application pour �viter les fonds blancs
+    // --- 3. THÈME SOMBRE GLOBAL (FEUILLE DE STYLE) ---
+    // Cette section définit l'apparence de toute l'application pour éviter les fonds blancs
     a.setStyleSheet(
         // Fond de tous les widgets par d�faut
         "QWidget { "
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
         "   color: white; "
         "   font-family: 'Segoe UI', sans-serif;"
         "}"
-        // Style des boutons (bas� sur votre charte graphique)
+        // Style des boutons (basé sur votre charte graphique)
         "QPushButton { "
         "   background-color: #222634; "
         "   border-radius: 12px; "
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
         "   border: none; "
         "   outline: none; "
         "}"
-        // Style des barres de d�filement (Scrollbars)
+        // Style des barres de défilement (Scrollbars)
         "QScrollBar:vertical { "
         "   border: none; background: #171a21; width: 10px; "
         "}"
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
     // Utilisation du style Fusion comme base (tr�s flexible pour le mode sombre)
     QQuickStyle::setStyle("Fusion");
 
-    // --- 4. CONFIGURATION DES LOGS ET R�SEAU ---
+    // --- 4. CONFIGURATION DES LOGS ET RÉSEAU ---
 
     QLoggingCategory::setFilterRules(
         "*.debug=false\n"
@@ -88,10 +88,10 @@ int main(int argc, char *argv[]) {
         "qt.network.access.debug=false"
         );
 
-    // Chemin des plugins pour les ic�nes SVG sur Raspberry Pi
+    // Chemin des plugins pour les icônes SVG sur Raspberry Pi
     QCoreApplication::addLibraryPath("/usr/lib/aarch64-linux-gnu/qt6/plugins");
 
-    // Cache local pour les cartes OSM (r�duit la data r�seau)
+    // Cache local pour les cartes OSM (réduit la data r�seau)
     QString cachePath = QCoreApplication::applicationDirPath() + "/qtlocation_cache";
     QDir().mkpath(cachePath);
     qputenv("QTLOCATION_OSM_CACHE_DIR", cachePath.toUtf8());
@@ -100,10 +100,10 @@ int main(int argc, char *argv[]) {
 
     // --- 5. ARCHITECTURE ET INJECTION DE D�PENDANCES ---
 
-    // Le "Single Source of Truth" (Mod�le de donn�es central)
+    // Le "Single Source of Truth" (Modèle de donn�es central)
     TelemetryData telemetry;
 
-    // Initialisation du GPS (Port S�rie)
+    // Initialisation du GPS (Port Série)
     GpsTelemetrySource gpsSource(&telemetry);
 #ifdef Q_OS_LINUX
     gpsSource.start("/dev/serial0");
@@ -111,14 +111,14 @@ int main(int argc, char *argv[]) {
     gpsSource.start("COM1");
 #endif
 
-    // Initialisation de la Centrale Inertielle (IMU)
+    // Initialisation de la Centrale inertielle (IMU)
     Mpu9250Source mpuSource(&telemetry);
     mpuSource.start();
 
-    // D�marrage de l'IHM avec injection de la t�l�m�trie
+    // Démarrage de l'IHM avec injection de la télémétrie
     MainWindow w(&telemetry);
     w.showFullScreen();
 
-    // Lancement de la boucle d'�v�nements
+    // Lancement de la boucle d'événements
     return a.exec();
 }
