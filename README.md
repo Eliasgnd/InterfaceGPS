@@ -16,12 +16,8 @@ L'application regroupe en un seul écran :
 
 La documentation API générée par Doxygen est publiée via la branche `gh-pages`.
 
-- **Lien principal (index Doxygen)** : `https://<votre-utilisateur>.github.io/InterfaceGPS/`
-- **Lien HTML explicite** (si votre génération est dans un sous-dossier) : `https://<votre-utilisateur>.github.io/InterfaceGPS/doxygen/html/index.html`
-
-> Remplacez `<votre-utilisateur>` par votre nom d'utilisateur GitHub.
->
-> Exemple : `https://toto.github.io/InterfaceGPS/`
+- **Lien principal (index Doxygen)** : `https://Eliasgnd.github.io/InterfaceGPS/`
+- **Lien HTML explicite** (si votre génération est dans un sous-dossier) : `https://Eliasgnd.github.io/InterfaceGPS/doxygen/html/index.html`
 
 ---
 
