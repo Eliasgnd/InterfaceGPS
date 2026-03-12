@@ -105,17 +105,8 @@ Pour une intégration progressive et claire:
 
 ---
 
-## 7) Tests
 
-Lancer toutes les suites Qt:
-
-```bash
-bash scripts/run_qt_tests_ci.sh
-```
-
----
-
-## 8) Documentation API (Doxygen)
+## 7) Documentation API (Doxygen)
 
 ```bash
 bash scripts/run_doxygen.sh
