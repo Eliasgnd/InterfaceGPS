@@ -16,12 +16,12 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     setWindowTitle("Clavier GPS");
 
     // Dimensions fixes adaptées à l'écran embarqué
-    setFixedSize(1000, 750);
+    setFixedSize(780, 420);
     currentLayout = AZERTY;
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setSpacing(10);
-    mainLayout->setContentsMargins(15, 15, 15, 15);
+    mainLayout->setSpacing(5);
+    mainLayout->setContentsMargins(8, 8, 8, 8);
 
     // Pousse le clavier vers le bas de l'écran
     mainLayout->addStretch(1);
@@ -29,14 +29,14 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     // --- LISTE DE SUGGESTIONS ---
     suggestionList = new QListWidget(this);
     suggestionList->setVisible(false);
-    suggestionList->setMaximumHeight(160);
-    suggestionList->setStyleSheet("font-size: 20px; background: white; color: black; border-radius: 10px;");
+    suggestionList->setMaximumHeight(100);
+    suggestionList->setStyleSheet("font-size: 16px; background: white; color: black; border-radius: 10px;");
     mainLayout->addWidget(suggestionList);
 
     // --- CHAMP DE SAISIE ---
     lineEdit = new QLineEdit(this);
-    lineEdit->setFixedHeight(65);
-    lineEdit->setStyleSheet("font-size: 24px; padding: 10px; font-weight: bold; background: #2a2f3a; color: white; border-radius: 8px;");
+    lineEdit->setFixedHeight(45);
+    lineEdit->setStyleSheet("font-size: 18px; padding: 10px; font-weight: bold; background: #2a2f3a; color: white; border-radius: 8px;");
     mainLayout->addWidget(lineEdit);
 
     // Si on clique sur une suggestion, on remplit le champ de saisie et on masque la liste
@@ -48,11 +48,11 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
 
     // --- GRILLE DES TOUCHES ---
     gridLayout = new QGridLayout();
-    gridLayout->setSpacing(8);
+    gridLayout->setSpacing(4);
 
-    int btnW = 85;
-    int btnH = 80;
-    QString keyStyle = "QPushButton { font-size: 22px; font-weight: bold; border-radius: 8px; background: #333a4a; color: white; } "
+    int btnW = 65;
+    int btnH = 50;
+    QString keyStyle = "QPushButton { font-size: 16px; font-weight: bold; border-radius: 8px; background: #333a4a; color: white; } "
                        "QPushButton:pressed { background: #4a5468; }";
 
     // 1. Ligne des chiffres
@@ -67,7 +67,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
 
     // Bouton de suppression (Backspace)
     QPushButton *btnDel = new QPushButton("⌫", this);
-    btnDel->setFixedSize(110, btnH);
+    btnDel->setFixedSize(80, btnH);
     btnDel->setStyleSheet("QPushButton { font-size: 26px; background: #852222; color: white; border-radius: 8px; font-weight: bold; }");
     connect(btnDel, &QPushButton::pressed, this, &Clavier::startDeleteDelay);
     connect(btnDel, &QPushButton::released, this, &Clavier::stopDelete);
@@ -106,7 +106,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     gridLayout->addWidget(apostropheButton, 3, 8);
 
     shiftButton = new QPushButton("⇧", this);
-    shiftButton->setFixedSize(110, btnH);
+    shiftButton->setFixedSize(80, btnH);
     shiftButton->setStyleSheet(keyStyle);
     connect(shiftButton, &QPushButton::clicked, this, &Clavier::toggleShift);
     gridLayout->addWidget(shiftButton, 3, 9, 1, 2);
@@ -124,7 +124,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     gridLayout->addWidget(switchButton, 4, 2);
 
     QPushButton *btnSpace = new QPushButton("ESPACE", this);
-    btnSpace->setFixedSize(350, btnH);
+    btnSpace->setFixedSize(250, btnH);
     btnSpace->setStyleSheet(keyStyle);
     connect(btnSpace, &QPushButton::clicked, this, &Clavier::addSpace);
     gridLayout->addWidget(btnSpace, 4, 3, 1, 4);
@@ -136,7 +136,7 @@ Clavier::Clavier(QWidget *parent) : QDialog(parent), majusculeActive(true), isSy
     gridLayout->addWidget(btnUnderscore, 4, 7);
 
     QPushButton *btnVal = new QPushButton("✔", this);
-    btnVal->setFixedSize(140, btnH);
+    btnVal->setFixedSize(100, btnH);
     btnVal->setStyleSheet("QPushButton { background-color: #2e7d32; color: white; font-size: 28px; font-weight: bold; border-radius: 8px; }");
     connect(btnVal, &QPushButton::clicked, this, &Clavier::validateText);
     gridLayout->addWidget(btnVal, 4, 9, 1, 2);
