@@ -87,12 +87,6 @@ private slots:
     // --- SLOTS DE RÉCEPTION QML -> C++ ---
 
     /**
-     * @brief Slot appelé quand la carte QML a calculé un itinéraire.
-     * @param distance Chaîne formatée représentant la distance (ex: "15 km").
-     * @param duration Chaîne formatée représentant le temps de trajet (ex: "20 min").
-     */
-
-    /**
      * @brief Slot appelé quand le code QML renvoie les suggestions d'autocomplétion.
      * @param jsonSuggestions Chaîne JSON contenant un tableau de suggestions d'adresses.
      */
