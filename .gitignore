@@ -31,14 +31,13 @@ config/local/*.json
 # ==============================================================================
 # Doxygen
 # ==============================================================================
-# On ignore les dossiers de sortie par défaut
-html/
+# On ignore le dossier de sortie que nous avons défini (OUTPUT_DIRECTORY)
+doc_output/
+
+# On ignore les résidus au cas où tu génères du LaTeX ou autre sans le vouloir
 latex/
 rtf/
 xml/
 
-# Si vous avez configuré un dossier de sortie spécifique dans votre Doxyfile, 
-# assurez-vous de l'ajouter ici (ex: doc_output/)
-
-# On s'assure de NE PAS ignorer le fichier de configuration
+# On s'assure de NE PAS ignorer le fichier de configuration (la recette)
 !Doxyfile
