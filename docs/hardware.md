@@ -1,45 +1,59 @@
-# Plateforme matérielle
+# Matériel cible + câblage
 
-## Objectif matériel
+L'application peut tourner partiellement même si tout le matériel n'est pas branché.
 
-InterfaceGPS cible un environnement embarqué (prototype ou véhicule), avec une logique applicative Qt exécutée sur une plateforme Linux.
+## 1. Matériel recommandé
 
-## Éléments matériels visés
+- **Calculateur**: Raspberry Pi (ou autre Linux)
+- **Écran**: HDMI/DSI (tactile recommandé)
+- **GPS**: module UART ou USB (trames NMEA)
+- **Bluetooth**: adaptateur intégré ou USB
+- **Caméra**: source flux JPEG/UDP
+- **IMU (optionnel)**: MPU9250 sur bus I2C
 
-### Raspberry Pi (ou plateforme Linux équivalente)
+## 2. Câblage recommandé (Raspberry Pi)
 
-- Héberge l’application Qt.
-- Exécute les modules UI, navigation, multimédia et intégrations système.
-- Sert de point d’interface vers les périphériques (série, I2C, réseau, Bluetooth).
+### GPS (UART)
 
-### Récepteur GPS
+- GPS `TX` -> Raspberry Pi `GPIO15 / RXD` (pin 10)
+- GPS `RX` -> Raspberry Pi `GPIO14 / TXD` (pin 8)
+- GPS `VCC` -> `5V` (ou `3.3V` selon la fiche de votre module)
+- GPS `GND` -> `GND`
 
-- Fournit la position, la vitesse et potentiellement le cap via trames NMEA.
-- Connecté typiquement en série (UART/USB selon montage).
-- Exploité par la source `GpsTelemetrySource`.
+### IMU MPU9250 (I2C)
 
-### IMU / MPU9250
+- MPU9250 `SDA` -> Raspberry Pi `GPIO2 / SDA1` (pin 3)
+- MPU9250 `SCL` -> Raspberry Pi `GPIO3 / SCL1` (pin 5)
+- MPU9250 `VCC` -> `3.3V`
+- MPU9250 `GND` -> `GND`
+- Adresse attendue dans le code: `0x68` sur `/dev/i2c-1`
 
-- Fournit des données inertielles et/ou d’orientation selon la configuration du capteur.
-- Utilisée par `Mpu9250Source` lorsque le matériel et le bus I2C sont disponibles.
+### Caméra
 
-### Caméra embarquée
+- Fournir un flux **JPEG/UDP** vers la machine qui exécute InterfaceGPS.
 
-- Produit un flux image (dans le projet actuel, réception UDP/JPEG côté application).
-- Affichée via `CameraPage`.
-- Peut être une caméra locale ou une source réseau selon l’architecture déployée.
+## 3. Pré-configuration OS (Raspberry Pi)
 
-### Bluetooth
+- Activer **I2C** et **UART** (ex: via `raspi-config`).
+- Vérifier que le périphérique I2C est présent: `/dev/i2c-1`.
+- Vérifier l'accès au port série GPS (`/dev/tty*`) selon votre branchement.
 
-- Utilisé pour l’intégration multimédia (contrôle lecteur via MPRIS/DBus) et la gestion d’appairage.
-- Dépend de l’adaptateur Bluetooth disponible sur la cible.
+## 4. Ordre conseillé de mise en service
 
-### Écran / interface tactile
+1. Démarrer l'application avec écran seul.
+2. Ajouter le GPS et vérifier la position.
+3. Ajouter Bluetooth (appairage + contrôle média).
+4. Ajouter la caméra réseau.
+5. Ajouter l'IMU (si utilisée).
 
-- L’IHM est conçue pour un affichage embarqué fixe.
-- Un usage tactile est prévu (clavier virtuel intégré).
+## 5. Points d'attention système
 
-## Remarques de compatibilité
+- Permissions d'accès aux périphériques (`/dev/tty*`, I2C).
+- Services actifs (Bluetooth, réseau).
+- Qualité alimentation électrique sur plateforme embarquée.
+- Compatibilité de niveau logique (3.3V/5V).
 
-- Le matériel exact peut varier entre environnement de développement et cible finale.
-- Certaines fonctions (capteurs, Bluetooth, caméra) peuvent être partiellement disponibles selon les pilotes, permissions système et services actifs.
+## 6. Compatibilité
+
+- La cible exacte peut varier (prototype, banc, véhicule).
+- Certaines fonctionnalités peuvent être indisponibles selon pilotes, kernel ou matériel.

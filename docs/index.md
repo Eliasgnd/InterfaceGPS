@@ -1,19 +1,21 @@
 # Documentation technique — InterfaceGPS
 
-Cette documentation complète le `README.md` et la documentation API Doxygen.
-Elle décrit l’architecture fonctionnelle du projet **InterfaceGPS** (Qt 6 / C++ / qmake), les éléments matériels visés et les étapes de build.
+Cette documentation complète le `README.md` avec une logique simple:
 
-L’objectif est de proposer une vue technique lisible et versionnée directement dans le dépôt, sans dupliquer l’intégralité des détails du code.
+1. **Installer les dépendances** automatiquement
+2. **Construire et lancer** l'application
+3. **Connecter le matériel** avec le bon câblage
+4. **Comprendre l'architecture**
 
-## Table des matières
+## Parcours conseillé
 
+- [Build & exécution](./build.md)
+- [Matériel cible + câblage](./hardware.md)
 - [Architecture logicielle](./architecture.md)
-- [Plateforme matérielle](./hardware.md)
-- [Compilation et exécution](./build.md)
 - [Navigation](./navigation.md)
 
 ## Portée
 
-- Documentation orientée **intégration** et **maintenance**.
-- Cohérente avec l’état actuel du dépôt.
-- Certaines parties matérielles peuvent varier selon la cible (prototype, banc de test, véhicule).
+- Documentation orientée intégration et maintenance.
+- Alignée avec l'état réel du dépôt.
+- Les détails API C++ sont disponibles via Doxygen.
