@@ -9,179 +9,106 @@ permissions:
   contents: write
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Récupérer le code
+
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Installer les outils
+      - name: Installer outils
         run: |
           sudo apt-get update
           sudo apt-get install -y doxygen graphviz plantuml python3-pip
           pip install hpp2plantuml
 
-      - name: Générer le diagramme UML
-        shell: bash
+      - name: Générer UML
         run: |
+
           set +e
 
-          echo "===== Recherche headers ====="
+          echo "=== Recherche headers ==="
 
           mapfile -t headers < <(
-            find . -type f \( -name "*.h" -o -name "*.hpp" \) \
+            find . -name "*.h" \
               ! -name "moc_*" \
               ! -name "ui_*" \
               ! -name "qrc_*" \
               ! -path "*/build/*" \
-              ! -path "*/doc_output/*" \
               | sort
           )
 
           printf ' - %s\n' "${headers[@]}"
 
-          if [ ${#headers[@]} -eq 0 ]; then
-            echo "Aucun header trouvé"
-            exit 0
-          fi
+          mkdir uml_tmp
 
-          rm -rf uml_tmp
-          mkdir -p uml_tmp
-
-          echo "===== Nettoyage macros Qt ====="
+          echo "=== Nettoyage macros Qt ==="
 
           for f in "${headers[@]}"; do
-            out="uml_tmp/$(basename "$f")"
-
             sed -E '
-              s/\bQ_OBJECT\b//g;
-              s/\bQ_GADGET\b//g;
-              s/\bQ_NAMESPACE\b//g;
-              s/\bQ_INVOKABLE\b//g;
-              s/\bQ_SIGNAL\b//g;
-              s/\bQ_SIGNALS\b/signals/g;
-              s/\bQ_SLOT\b//g;
-              s/\bQ_SLOTS\b/slots/g;
-              s/\bQ_EMIT\b//g;
-              s/\bemit\b//g;
-              s/\bQ_PROPERTY\s*\([^)]*\)//g;
-              s/\bQ_ENUMS?\([^)]*\)//g;
-              s/\bQ_FLAGS\([^)]*\)//g;
-              s/\bQ_DECLARE_FLAGS\([^)]*\)//g;
-              s/\bQ_DECLARE_OPERATORS_FOR_FLAGS\([^)]*\)//g;
-              s/\bsignals[[:space:]]*:/public:/g;
-              s/\bpublic[[:space:]]+slots[[:space:]]*:/public:/g;
-              s/\bprotected[[:space:]]+slots[[:space:]]*:/protected:/g;
-              s/\bprivate[[:space:]]+slots[[:space:]]*:/private:/g;
-              s/\bslots[[:space:]]*://g;
-            ' "$f" > "$out"
+              s/Q_OBJECT//g;
+              s/Q_PROPERTY\s*\([^)]*\)//g;
+              s/Q_SIGNAL//g;
+              s/Q_SLOT//g;
+              s/Q_INVOKABLE//g;
+              s/Q_ENUMS?\([^)]*\)//g;
+              s/Q_FLAGS\([^)]*\)//g;
+              s/signals:/public:/g;
+              s/slots://g;
+            ' "$f" > uml_tmp/$(basename "$f")
           done
 
-          echo "===== Génération PlantUML ====="
+          echo "=== Génération PlantUML ==="
 
           args=()
-          for f in uml_tmp/*.h uml_tmp/*.hpp; do
-            [ -e "$f" ] && args+=(-i "$f")
+          for f in uml_tmp/*.h; do
+            args+=(-i "$f")
           done
 
-          if [ ${#args[@]} -eq 0 ]; then
-            echo "Aucun header nettoyé exploitable"
-            exit 0
-          fi
+          hpp2plantuml "${args[@]}" -o architecture_auto.puml || true
 
-          hpp2plantuml "${args[@]}" -o architecture_auto_raw.puml || true
+          echo "=== Nettoyage diagramme ==="
 
-          if [ ! -f architecture_auto_raw.puml ]; then
-            echo "Diagramme non généré"
-            exit 0
-          fi
+          sed -n '/@startuml/,/@enduml/p' architecture_auto.puml > tmp.puml
+          mv tmp.puml architecture_auto.puml
 
-          echo "===== Extraction du vrai diagramme ====="
-          sed -n '/@startuml/,/@enduml/p' architecture_auto_raw.puml > architecture_auto_step1.puml
+          echo "=== Correction classes ==="
 
-          if ! grep -q "@startuml" architecture_auto_step1.puml; then
-            echo "Aucun bloc PlantUML valide trouvé"
-            exit 0
-          fi
+          awk '
+          /^class / {
+              if(open==1) print "}"
+              open=1
+          }
+          {print}
+          END{
+              if(open==1) print "}"
+          }
+          ' architecture_auto.puml > tmp.puml
 
-          echo "===== Correction des blocs non fermés ====="
-          python3 <<'PY'
-          import re
+          mv tmp.puml architecture_auto.puml
 
-          src = "architecture_auto_step1.puml"
-          dst = "architecture_auto_step2.puml"
+          echo "=== Suppression doublons ==="
 
-          block_start = re.compile(r'^\s*(class|enum|interface|abstract\s+class)\s+[A-Za-z_][A-Za-z0-9_:]*\s*\{\s*$')
-          block_end = re.compile(r'^\s*\}\s*$')
-          section_comment = re.compile(r"^\s*/'")
-          relation = re.compile(r'^\s*[A-Za-z_][A-Za-z0-9_:]*\s+[-.o*+<#|]+[-.o*+<#|]*\s+[A-Za-z_][A-Za-z0-9_:]*')
-          enduml = re.compile(r'^\s*@enduml\s*$')
+          awk '!seen[$0]++' architecture_auto.puml > tmp.puml
+          mv tmp.puml architecture_auto.puml
 
-          out = []
-          in_block = False
-
-          with open(src, "r", encoding="utf-8", errors="ignore") as f:
-              for raw in f:
-                  line = raw.rstrip("\n")
-                  stripped = line.strip()
-
-                  if block_start.match(line):
-                      if in_block:
-                          out.append("}")
-                      out.append(line)
-                      in_block = True
-                      continue
-
-                  if block_end.match(line):
-                      out.append(line)
-                      in_block = False
-                      continue
-
-                  if section_comment.match(line) or relation.match(line) or enduml.match(line):
-                      if in_block:
-                          out.append("}")
-                          in_block = False
-                      out.append(line)
-                      continue
-
-                  out.append(line)
-
-          if in_block:
-              out.append("}")
-
-          with open(dst, "w", encoding="utf-8") as f:
-              f.write("\n".join(out) + "\n")
-          PY
-
-          echo "===== Nettoyage final ====="
-          sed -E '/^([A-Za-z_][A-Za-z0-9_:]*) o-- \1$/d' architecture_auto_step2.puml \
-            | sed -E '/^([A-Za-z_][A-Za-z0-9_:]*) \+-- \1$/d' \
-            | awk '!seen[$0]++' \
-            > architecture_auto.puml
-
-          if ! grep -q "@startuml" architecture_auto.puml; then
-            echo "Fichier final invalide"
-            exit 0
-          fi
-
-          echo "===== Diagramme final ====="
+          echo "=== UML final ==="
           cat architecture_auto.puml
 
-          echo "===== Génération SVG ====="
+          echo "=== Génération SVG ==="
+
           plantuml -tsvg architecture_auto.puml || true
 
-      - name: Générer la documentation Doxygen
+      - name: Générer Doxygen
         run: doxygen Doxyfile
 
-      - name: Copier UML dans la doc
+      - name: Copier UML
         run: |
           mkdir -p doc_output/html/images
-          if [ -f architecture_auto.svg ]; then
-            cp architecture_auto.svg doc_output/html/images/
-          fi
+          cp architecture_auto.svg doc_output/html/images/ || true
 
-      - name: Déployer sur GitHub Pages
+      - name: Déployer GitHub Pages
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
