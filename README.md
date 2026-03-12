@@ -12,7 +12,137 @@ L'application regroupe en un seul écran :
 
 ---
 
-## 1) Fonctionnalités principales
+## Documentation Doxygen (GitHub Pages)
+
+La documentation API générée par Doxygen est publiée via la branche `gh-pages`.
+
+- **Lien principal (index Doxygen)** : `https://<votre-utilisateur>.github.io/InterfaceGPS/`
+- **Lien HTML explicite** (si votre génération est dans un sous-dossier) : `https://<votre-utilisateur>.github.io/InterfaceGPS/doxygen/html/index.html`
+
+> Remplacez `<votre-utilisateur>` par votre nom d'utilisateur GitHub.
+>
+> Exemple : `https://toto.github.io/InterfaceGPS/`
+
+---
+
+## 1) Démarrage rapide (objectif : « je branche une Pi 4 et ça marche »)
+
+### Étape 1 — Matériel recommandé
+
+- Raspberry Pi 4 (Raspberry Pi OS Bookworm ou Ubuntu 22.04+),
+- écran HDMI tactile ou écran classique,
+- module GPS série (ex: NEO-6M/NEO-M8N),
+- capteur IMU MPU9250 (I2C),
+- caméra/récepteur vidéo qui envoie des JPEG en UDP sur le port `4444`,
+- smartphone Bluetooth (pour la partie média),
+- accès réseau local (pour Home Assistant) + internet (Mapbox).
+
+### Étape 2 — Câblage type (Pi 4)
+
+> Vérifiez **toujours** la tension de vos modules (3.3V/5V) avant branchement.
+
+#### GPS (UART)
+
+- VCC -> 5V (ou 3.3V selon module)
+- GND -> GND
+- TX GPS -> RX Pi (GPIO15 / pin 10)
+- RX GPS -> TX Pi (GPIO14 / pin 8)
+
+#### MPU9250 (I2C)
+
+- VCC -> 3.3V
+- GND -> GND
+- SDA -> GPIO2 (pin 3)
+- SCL -> GPIO3 (pin 5)
+
+### Étape 3 — Activer les interfaces Pi
+
+```bash
+sudo raspi-config
+```
+
+Activez :
+- `Interface Options` -> `I2C` -> Enable,
+- `Interface Options` -> `Serial Port` ->
+  - shell login over serial: **No**,
+  - serial hardware: **Yes**,
+- Bluetooth (normalement actif par défaut sur Pi 4).
+
+Puis redémarrez.
+
+### Étape 4 — Vérifier les périphériques
+
+```bash
+ls /dev/i2c-1
+ls /dev/serial0
+```
+
+Et pour l'IMU (adresse attendue `0x68`) :
+
+```bash
+sudo apt-get update
+sudo apt-get install -y i2c-tools
+sudo i2cdetect -y 1
+```
+
+### Étape 5 — Installer les dépendances de build/runtime
+
+```bash
+chmod +x scripts/install_qt_deps_ubuntu.sh
+./scripts/install_qt_deps_ubuntu.sh
+```
+
+### Étape 6 — Configurer les variables essentielles
+
+#### Clé Mapbox
+
+```bash
+export MAPBOX_API_KEY="votre_cle_mapbox"
+```
+
+Ajoutez-la dans `~/.bashrc` pour la rendre persistante.
+
+#### URL Home Assistant
+
+Par défaut, l'URL est codée ici :
+
+```cpp
+m_view->setUrl(QUrl("http://192.168.1.158:8123"));
+```
+
+Adaptez la valeur dans `homeassistant.cpp` selon votre réseau.
+
+### Étape 7 — Donner les permissions utilisateur
+
+```bash
+sudo usermod -aG dialout,i2c,bluetooth $USER
+```
+
+Déconnectez-vous/reconnectez-vous ensuite.
+
+### Étape 8 — Compiler
+
+```bash
+qmake6 InterfaceGPS.pro
+make -j"$(nproc)"
+```
+
+### Étape 9 — Lancer
+
+```bash
+./InterfaceGPS
+```
+
+Si tout est correctement branché/configuré, vous devez pouvoir :
+- voir la carte + faire un itinéraire,
+- recevoir les données GPS/IMU,
+- voir la caméra dans l'onglet caméra,
+- piloter le média Bluetooth,
+- afficher Home Assistant.
+
+---
+
+## 2) Fonctionnalités principales
 
 - **Navigation**
   - carte QML intégrée,
@@ -43,112 +173,19 @@ L'application regroupe en un seul écran :
 
 ---
 
-## 2) Prérequis système
+## 3) Prérequis système
 
 Ce projet est prévu principalement pour Linux (ex: Raspberry Pi OS / Ubuntu) avec Qt 6.
-
-### Matériel (optionnel mais recommandé)
-
-- module GPS (port série, ex: `/dev/serial0`),
-- capteur MPU9250 (I2C, ex: `/dev/i2c-1`),
-- source caméra UDP qui envoie des JPEG sur `:4444`,
-- Bluetooth actif + BlueZ,
-- instance Home Assistant accessible sur le réseau local.
 
 ### Logiciels
 
 - Ubuntu/Debian (ou dérivé),
 - `qmake6` (ou `qt-cmake`), `make`, `g++`,
-- modules Qt nécessaires (installés via script ci-dessous).
+- modules Qt nécessaires (installés via script ci-dessus).
 
 ---
 
-## 3) Installation automatique des dépendances Qt
-
-Un script est fourni pour installer toutes les bibliothèques Qt et dépendances système nécessaires.
-
-```bash
-chmod +x scripts/install_qt_deps_ubuntu.sh
-./scripts/install_qt_deps_ubuntu.sh
-```
-
-Le script installe notamment (version Qt6) :
-- Qt Core/Gui/Widgets,
-- Qt Quick/QML/QuickControls2,
-- Qt Location/Positioning,
-- Qt Multimedia,
-- Qt SerialPort,
-- Qt Bluetooth/Connectivity,
-- Qt WebEngine,
-- Qt Virtual Keyboard,
-- outils de build et runtimes QML,
-- utilitaires système (BlueZ, DBus, I2C).
-
----
-
-## 4) Configuration avant lancement
-
-### 4.1 Clé API Mapbox (navigation)
-
-L'application lit la clé depuis la variable d'environnement `MAPBOX_API_KEY`.
-
-```bash
-export MAPBOX_API_KEY="votre_cle_mapbox"
-```
-
-Ajoutez cette ligne dans `~/.bashrc` pour la conserver.
-
-### 4.2 URL Home Assistant
-
-Par défaut, l'URL Home Assistant est codée en dur dans `homeassistant.cpp` :
-
-```cpp
-m_view->setUrl(QUrl("http://192.168.1.158:8123"));
-```
-
-Adaptez cette URL à votre réseau local.
-
-### 4.3 Permissions Linux utiles
-
-Pour accéder au série/I2C/Bluetooth, assurez-vous que l'utilisateur est dans les bons groupes :
-
-```bash
-sudo usermod -aG dialout,i2c,bluetooth $USER
-```
-
-Puis reconnectez votre session.
-
----
-
-## 5) Compilation
-
-Depuis la racine du projet :
-
-```bash
-qmake6 InterfaceGPS.pro
-make -j"$(nproc)"
-```
-
-Le binaire est généré dans le dossier courant (selon votre kit Qt / mkspec).
-
-Si `qmake6` n'est pas disponible sur votre distribution, vous pouvez utiliser `qt-cmake` avec CMake (si vous migrez le projet vers CMake).
-
----
-
-## 6) Exécution
-
-```bash
-./InterfaceGPS
-```
-
-Notes d'exécution :
-- sous Linux, l'application force `QT_QPA_PLATFORM=xcb`,
-- un cache cartographique est créé dans `./qtlocation_cache`,
-- WebEngine est configuré pour tolérer des environnements locaux non sécurisés (utile en embarqué local).
-
----
-
-## 7) Utilisation rapide (par écran)
+## 4) Utilisation rapide (par écran)
 
 - **Navigation** : recherchez une destination dans la barre, sélectionnez une suggestion, suivez l'itinéraire.
 - **Caméra** : ouvrez l'onglet caméra pour démarrer l'écoute UDP.
@@ -159,7 +196,7 @@ Notes d'exécution :
 
 ---
 
-## 8) Lancer les tests
+## 5) Lancer les tests
 
 Des tests unitaires/UI existent dans `tests/`.
 
@@ -176,7 +213,7 @@ Répétez la même procédure pour les autres dossiers `tests/ui_*`.
 
 ---
 
-## 9) Dépannage
+## 6) Dépannage
 
 - **Carte vide / pas d'itinéraire**
   - vérifier `MAPBOX_API_KEY`,
@@ -209,7 +246,7 @@ Répétez la même procédure pour les autres dossiers `tests/ui_*`.
 
 ---
 
-## 10) Structure du projet
+## 7) Structure du projet
 
 - `main.cpp` : bootstrap (environnement + initialisation sources télémétrie + fenêtre principale)
 - `mainwindow.*` : orchestration des pages + split-screen
@@ -224,7 +261,7 @@ Répétez la même procédure pour les autres dossiers `tests/ui_*`.
 
 ---
 
-## 11) Roadmap recommandée (optionnel)
+## 8) Roadmap recommandée (optionnel)
 
 Pour améliorer encore l'expérience utilisateur :
 - rendre l'URL Home Assistant configurable via `QSettings`,
