@@ -1,4 +1,4 @@
-name: Génération Doc Doxygen et UML
+name: Génération Doc Doxygen
 
 on:
   push:
@@ -9,106 +9,39 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Checkout
+      - name: Récupérer le code
         uses: actions/checkout@v4
 
-      - name: Installer outils
+      - name: Installer Doxygen
         run: |
           sudo apt-get update
-          sudo apt-get install -y doxygen graphviz plantuml python3-pip
-          pip install hpp2plantuml
+          sudo apt-get install -y doxygen graphviz
 
-      - name: Générer UML
+      - name: Vérifier le Doxyfile
         run: |
+          if [ ! -f Doxyfile ]; then
+            echo "Erreur : fichier Doxyfile introuvable à la racine du projet."
+            exit 1
+          fi
 
-          set +e
-
-          echo "=== Recherche headers ==="
-
-          mapfile -t headers < <(
-            find . -name "*.h" \
-              ! -name "moc_*" \
-              ! -name "ui_*" \
-              ! -name "qrc_*" \
-              ! -path "*/build/*" \
-              | sort
-          )
-
-          printf ' - %s\n' "${headers[@]}"
-
-          mkdir uml_tmp
-
-          echo "=== Nettoyage macros Qt ==="
-
-          for f in "${headers[@]}"; do
-            sed -E '
-              s/Q_OBJECT//g;
-              s/Q_PROPERTY\s*\([^)]*\)//g;
-              s/Q_SIGNAL//g;
-              s/Q_SLOT//g;
-              s/Q_INVOKABLE//g;
-              s/Q_ENUMS?\([^)]*\)//g;
-              s/Q_FLAGS\([^)]*\)//g;
-              s/signals:/public:/g;
-              s/slots://g;
-            ' "$f" > uml_tmp/$(basename "$f")
-          done
-
-          echo "=== Génération PlantUML ==="
-
-          args=()
-          for f in uml_tmp/*.h; do
-            args+=(-i "$f")
-          done
-
-          hpp2plantuml "${args[@]}" -o architecture_auto.puml || true
-
-          echo "=== Nettoyage diagramme ==="
-
-          sed -n '/@startuml/,/@enduml/p' architecture_auto.puml > tmp.puml
-          mv tmp.puml architecture_auto.puml
-
-          echo "=== Correction classes ==="
-
-          awk '
-          /^class / {
-              if(open==1) print "}"
-              open=1
-          }
-          {print}
-          END{
-              if(open==1) print "}"
-          }
-          ' architecture_auto.puml > tmp.puml
-
-          mv tmp.puml architecture_auto.puml
-
-          echo "=== Suppression doublons ==="
-
-          awk '!seen[$0]++' architecture_auto.puml > tmp.puml
-          mv tmp.puml architecture_auto.puml
-
-          echo "=== UML final ==="
-          cat architecture_auto.puml
-
-          echo "=== Génération SVG ==="
-
-          plantuml -tsvg architecture_auto.puml || true
-
-      - name: Générer Doxygen
-        run: doxygen Doxyfile
-
-      - name: Copier UML
+      - name: Générer la documentation Doxygen
         run: |
-          mkdir -p doc_output/html/images
-          cp architecture_auto.svg doc_output/html/images/ || true
+          doxygen Doxyfile
 
-      - name: Déployer GitHub Pages
+      - name: Vérifier le dossier HTML généré
+        run: |
+          if [ ! -d doc_output/html ]; then
+            echo "Erreur : le dossier doc_output/html n'a pas été généré."
+            echo "Vérifie dans ton Doxyfile que OUTPUT_DIRECTORY = doc_output"
+            echo "et que GENERATE_HTML = YES"
+            exit 1
+          fi
+
+      - name: Déployer sur GitHub Pages
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
