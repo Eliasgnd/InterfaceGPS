@@ -30,7 +30,7 @@ Objectifs principaux :
 - **Build system** : qmake
 - **Modules Qt utilisés** : `widgets`, `quickwidgets`, `qml`, `positioning`, `location`, `serialport`, `multimedia`, `dbus`, `bluetooth`, `webenginewidgets`, etc.
 - **Documentation API** : Doxygen (HTML)
-- **CI/CD documentation** : GitHub Actions + GitHub Pages
+- **CI/CD documentation** : génération locale via Doxygen
 
 ## Structure du projet
 
@@ -39,7 +39,7 @@ Objectifs principaux :
 ├── .github/                  # Workflows CI, templates de PR/issues
 ├── docs/                     # Documentation projet (non API)
 ├── tests/                    # Tests unitaires / UI par module
-├── scripts/                  # Scripts utilitaires (installation dépendances)
+├── scripts/                  # Scripts utilitaires (tests et documentation)
 ├── *.h / *.cpp               # Code source C++ Qt
 ├── *.ui / *.qml              # Interfaces Qt Designer / QML
 ├── InterfaceGPS.pro          # Configuration qmake
@@ -97,10 +97,6 @@ make -j"$(nproc)"
 ./telemetrydata_test
 ```
 
-### CI GitHub Actions
-
-Le workflow `.github/workflows/tests.yml` lance automatiquement les tests sur `push` et `pull_request`, puis publie les résultats (`.txt` et `.xml`) en artifacts.
-
 ## Architecture logicielle (texte)
 
 - `MainWindow` orchestre les pages applicatives et le mode split-screen.
@@ -125,10 +121,8 @@ Le workflow `.github/workflows/tests.yml` lance automatiquement les tests sur `p
 Génération locale :
 
 ```bash
-doxygen Doxyfile
+bash scripts/run_doxygen.sh
 ```
-
-Le workflow GitHub Actions publie automatiquement la documentation sur GitHub Pages pour la branche `main`.
 
 ## État du projet / roadmap
 

@@ -11,7 +11,7 @@ Ce dossier regroupe la documentation complémentaire au code source.
 La documentation API C++ est générée avec Doxygen via le `Doxyfile` à la racine.
 
 - Sortie locale attendue : `doc_output/html/index.html`
-- Publication GitHub Pages : via workflow `.github/workflows/deploy_doc.yml`
+- Génération locale : via `bash scripts/run_doxygen.sh`
 
 ## Bonnes pratiques
 

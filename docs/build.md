@@ -17,7 +17,6 @@ qmake6 InterfaceGPS.pro
 make -j"$(nproc)"
 ```
 
-> Remarque : le projet contient un script d’aide d’installation des dépendances pour Ubuntu dans `scripts/install_qt_deps_ubuntu.sh`.
 
 ## Exécution
 
@@ -42,7 +41,6 @@ bash scripts/run_qt_tests_ci.sh
 
 Ce script couvre les tests `tests/*/*_test.pro`, compile chaque suite avec `qmake6` puis exécute les binaires de test avec `xvfb-run` (utile pour les tests GUI).
 
-En CI, le workflow GitHub Actions `.github/workflows/tests.yml` exécute le même script sur `push` et `pull_request` et publie les logs de test en artifacts.
 
 ## Dépannage simple
 
@@ -66,5 +64,5 @@ En CI, le workflow GitHub Actions `.github/workflows/tests.yml` exécute le mêm
 Pour régénérer la documentation Doxygen :
 
 ```bash
-doxygen Doxyfile
+bash scripts/run_doxygen.sh
 ```
