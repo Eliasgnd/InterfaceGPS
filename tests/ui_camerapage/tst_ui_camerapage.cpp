@@ -20,6 +20,16 @@ private slots:
     void processPendingDatagrams_validJpeg_setsPixmap();
 };
 
+static bool labelHasValidPixmap(const QLabel *label)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    return !label->pixmap(Qt::ReturnByValue).isNull();
+#else
+    const QPixmap *pixmap = label->pixmap();
+    return pixmap != nullptr && !pixmap->isNull();
+#endif
+}
+
 void CameraPageUiTest::startStream_whenPortAvailable_setsConnectingMessage()
 {
     // Objectif: vérifier le démarrage nominal du flux caméra UDP.
@@ -90,7 +100,7 @@ void CameraPageUiTest::processPendingDatagrams_invalidJpeg_keepsTextMessage()
     sender.writeDatagram("not-a-jpeg", QHostAddress::LocalHost, 4444);
     QTest::qWait(50);
 
-    QVERIFY(page.videoLabel->pixmap() == nullptr || page.videoLabel->pixmap()->isNull());
+    QVERIFY(!labelHasValidPixmap(page.videoLabel));
     QCOMPARE(page.videoLabel->text(), QString("Connexion en cours..."));
 
     page.stopStream();
@@ -119,8 +129,7 @@ void CameraPageUiTest::processPendingDatagrams_validJpeg_setsPixmap()
     sender.writeDatagram(bytes, QHostAddress::LocalHost, 4444);
     QTest::qWait(50);
 
-    QVERIFY(page.videoLabel->pixmap() != nullptr);
-    QVERIFY(!page.videoLabel->pixmap()->isNull());
+    QVERIFY(labelHasValidPixmap(page.videoLabel));
 
     page.stopStream();
 }
