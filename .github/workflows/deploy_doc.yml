@@ -1,9 +1,9 @@
-name: Génération Doc Doxygen
+name: Génération Doc Doxygen et UML
 
 on:
   push:
     branches:
-      - main  # Vérifie bien si ta branche s'appelle 'main' ou 'master'
+      - '**'  # Se déclenche sur absolument toutes les branches
 
 permissions:
   contents: write
@@ -15,14 +15,34 @@ jobs:
       - name: Récupérer le code
         uses: actions/checkout@v4
 
-      - name: Installer Doxygen et Graphviz
-        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
+      - name: Installer les outils (Doxygen, Graphviz, PlantUML)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz plantuml python3-pip
+          pip install hpp2plantuml
 
-      - name: Générer la documentation
+      - name: Générer le diagramme UML automatique
+        run: |
+          # Scanne tous les headers (.h) pour créer le fichier source PlantUML
+          hpp2plantuml -i "*.h" -o architecture_auto.puml
+          # Transforme le fichier source en image SVG
+          plantuml -tsvg architecture_auto.puml
+
+      - name: Générer la documentation Doxygen
         run: doxygen Doxyfile
 
+      - name: Préparer les fichiers pour le déploiement
+        run: |
+          # Crée le dossier pour l'image dans le rendu HTML
+          mkdir -p ./doc_output/html/images
+          # Copie le diagramme généré pour qu'il soit lié à la doc
+          cp architecture_auto.svg ./doc_output/html/images/
+
       - name: Déployer sur GitHub Pages
+        # IMPORTANT : On ne publie officiellement que si on est sur la branche 'main'
+        # Si votre branche principale s'appelle 'master' ou 'documentation', changez le nom ici
+        if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./doc_output/html  # On pointe vers le sous-dossier html
+          publish_dir: ./doc_output/html
