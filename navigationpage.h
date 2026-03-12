@@ -91,7 +91,6 @@ private slots:
      * @param distance Chaîne formatée représentant la distance (ex: "15 km").
      * @param duration Chaîne formatée représentant le temps de trajet (ex: "20 min").
      */
-    void onRouteInfoReceived(const QString& distance, const QString& duration);
 
     /**
      * @brief Slot appelé quand le code QML renvoie les suggestions d'autocomplétion.

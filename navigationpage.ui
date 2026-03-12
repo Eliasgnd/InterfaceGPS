@@ -34,7 +34,7 @@ QPushButton{height:40px;border-radius:12px;color:white;background:#222634;font-s
 QPushButton:pressed{background:#2d3245;}
       </string>
      </property>
-     <layout class="QVBoxLayout" name="layoutInner">
+     <layout class="QVBoxLayout" name="layoutInner" stretch="0,1,0">
       <property name="spacing">
        <number>8</number>
       </property>
@@ -49,9 +49,6 @@ QPushButton:pressed{background:#2d3245;}
       </property>
       <property name="bottomMargin">
        <number>10</number>
-      </property>
-      <property name="stretch">
-       <string>0,1,0</string>
       </property>
       <item>
        <layout class="QHBoxLayout" name="rowSearch">
