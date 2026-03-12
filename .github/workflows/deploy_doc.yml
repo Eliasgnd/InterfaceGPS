@@ -8,7 +8,7 @@ on:
 permissions:
   contents: write
 
-# Correction de la dépréciation Node.js
+# Correction de la dépréciation Node.js pour l'environnement 2026
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -27,14 +27,19 @@ jobs:
 
       - name: Générer le diagramme UML automatique
         run: |
-          # Recherche récursive de tous les headers .h du projet
-          find . -name "*.h" -not -path "./tests/*" -not -path "./build/*" > headers_list.txt
-          hpp2plantuml -i headers_list.txt -o architecture_auto.puml || true
+          # 1. Lister les headers en excluant les dossiers inutiles pour éviter les erreurs de parsing
+          find . -name "*.h" -not -path "./tests/*" -not -path "./build/*" -not -path "./moc_*" > headers_list.txt
           
-          if [ -f architecture_auto.puml ]; then
+          # 2. Générer le .puml. On utilise || true pour ne pas bloquer si un fichier est mal parsé
+          if [ -s headers_list.txt ]; then
+            hpp2plantuml -i headers_list.txt -o architecture_auto.puml || echo "Erreur partielle de parsing"
+          fi
+          
+          # 3. Convertir en SVG seulement si le fichier source existe et n'est pas vide
+          if [ -s architecture_auto.puml ]; then
             plantuml -tsvg architecture_auto.puml
           else
-            echo "Avertissement : Aucun diagramme généré."
+            echo "Avertissement : architecture_auto.puml vide ou absent."
           fi
 
       - name: Générer la documentation Doxygen
@@ -42,12 +47,17 @@ jobs:
 
       - name: Préparer les fichiers pour le déploiement
         run: |
+          # S'assurer que le dossier de destination existe
           mkdir -p ./doc_output/html/images
-          [ -f architecture_auto.svg ] && cp architecture_auto.svg ./doc_output/html/images/ || echo "Pas de SVG à copier"
+          # Copier le diagramme s'il existe
+          if [ -f architecture_auto.svg ]; then
+            cp architecture_auto.svg ./doc_output/html/images/
+          fi
 
       - name: Déployer sur GitHub Pages
+        # On ne déploie que sur la branche principale (main ou documentation selon votre dépôt)
         if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v4 # Passage à la v4 pour support Node récent
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./doc_output/html
