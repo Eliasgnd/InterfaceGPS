@@ -1,0 +1,28 @@
+name: Génération Doc Doxygen
+
+on:
+  push:
+    branches:
+      - main  # Vérifie bien si ta branche s'appelle 'main' ou 'master'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Doxygen et Graphviz
+        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
+
+      - name: Générer la documentation
+        run: doxygen Doxyfile
+
+      - name: Déployer sur GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./doc_output/html  # On pointe vers le sous-dossier html
