@@ -1,0 +1,82 @@
+/*
+ * Local vendored stylesheet inspired by doxygen-awesome-css.
+ * Repository: https://github.com/jothepro/doxygen-awesome-css
+ * This compact copy is kept in-repo for deterministic GitHub Pages builds.
+ */
+
+:root {
+  --page-bg: #f6f8fb;
+  --card-bg: #ffffff;
+  --text-main: #19202a;
+  --text-muted: #5f6b7a;
+  --accent: #2f80ed;
+  --accent-2: #1f6ed6;
+  --border: #d9e0ea;
+  --code-bg: #eef3fa;
+}
+
+html, body {
+  background: var(--page-bg);
+  color: var(--text-main);
+  font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+a, .el, .qindex a {
+  color: var(--accent);
+}
+
+a:hover, .el:hover {
+  color: var(--accent-2);
+}
+
+#titlearea, #projectalign {
+  background: linear-gradient(130deg, #0f1722 0%, #18263a 100%);
+  color: #f7f9fc;
+  border-bottom: 1px solid #223149;
+}
+
+#projectname {
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+.contents, div.header, .textblock, dl, table.memberdecls, .fragment {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+h1, h2, h3, h4 {
+  color: #0f1722;
+  letter-spacing: .2px;
+}
+
+.fragment, pre.fragment {
+  background: var(--code-bg);
+}
+
+.memtitle, .fieldname {
+  background: #edf3fc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #0c1118;
+    --card-bg: #121a24;
+    --text-main: #d7deea;
+    --text-muted: #a2afbf;
+    --accent: #5ea2ff;
+    --accent-2: #8dbdff;
+    --border: #243245;
+    --code-bg: #0f1722;
+  }
+
+  h1, h2, h3, h4 {
+    color: #f2f5fb;
+  }
+
+  #titlearea, #projectalign {
+    background: linear-gradient(130deg, #0a0f16 0%, #132033 100%);
+    border-bottom-color: #223149;
+  }
+}

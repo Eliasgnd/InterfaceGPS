@@ -1,0 +1,19 @@
+/* Sidebar-focused tweaks (compatible with doxygen-awesome sidebar layout). */
+
+#side-nav {
+  background: #0f1722;
+  border-right: 1px solid #223149;
+}
+
+#nav-tree .label a,
+#nav-tree .item a,
+#nav-tree .children_ul a {
+  color: #d4def0;
+}
+
+#nav-tree .selected > a,
+#nav-tree a:hover {
+  color: #ffffff;
+  background: rgba(94, 162, 255, 0.18);
+  border-radius: 6px;
+}
