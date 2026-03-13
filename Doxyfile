@@ -17,12 +17,15 @@ OUTPUT_LANGUAGE        = French
 INPUT                  = . docs
 FILE_PATTERNS          = *.h *.hpp *.cpp *.md
 RECURSIVE              = YES
-EXCLUDE                = ./build ./build-* ./doc_output ./tests
+EXCLUDE                = ./build ./build-* ./doc_output ./tests \
+                         ./README.md ./CONTRIBUTING.md ./SECURITY.md ./CHANGELOG.md \
+                         ./docs/index.md ./docs/README.md
 EXCLUDE_SYMLINKS       = YES
 
 MARKDOWN_SUPPORT       = YES
 AUTOLINK_SUPPORT       = YES
 USE_MDFILE_AS_MAINPAGE = docs/mainpage.md
+TOC_INCLUDE_HEADINGS   = 2
 
 # ---------------------------------------------------------------------------
 # Extraction de documentation
@@ -58,8 +61,11 @@ HTML_FILE_EXTENSION    = .html
 HTML_COLORSTYLE        = AUTO_DARK
 HTML_DYNAMIC_MENUS     = YES
 GENERATE_TREEVIEW      = YES
-FULL_SIDEBAR           = YES
+FULL_SIDEBAR           = NO
 SEARCHENGINE           = YES
+SHOW_FILES             = YES
+SHOW_NAMESPACES        = NO
+DISABLE_INDEX          = NO
 
 # Thème moderne: doxygen-awesome (vendoré) + surcharge projet
 HTML_EXTRA_STYLESHEET  = \
