@@ -108,6 +108,10 @@ Pour une intégration progressive et claire:
 
 ## 7) Documentation API (Doxygen)
 
+Publication automatique sur GitHub Pages à chaque push sur `main` via le workflow `.github/workflows/doxygen-pages.yml`.
+
+Génération locale (pour vérifier avant push) :
+
 ```bash
 bash scripts/run_doxygen.sh
 ```
