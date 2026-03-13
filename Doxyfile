@@ -1,22 +1,32 @@
 # Doxyfile - InterfaceGPS (Qt 6 / C++)
+# Configuration orientée documentation API + guides Markdown publiés sur GitHub Pages.
 
+# ---------------------------------------------------------------------------
+# Projet
+# ---------------------------------------------------------------------------
 PROJECT_NAME           = "InterfaceGPS"
-PROJECT_BRIEF          = "Interface embarquée Qt pour navigation, multimédia et télémétrie"
+PROJECT_BRIEF          = "Interface embarquée Qt pour navigation, multimédia, caméra et télémétrie"
 PROJECT_NUMBER         = "0.1.0"
 OUTPUT_DIRECTORY       = doc_output
 CREATE_SUBDIRS         = NO
 OUTPUT_LANGUAGE        = French
 
-INPUT                  = .
+# ---------------------------------------------------------------------------
+# Sources analysées
+# ---------------------------------------------------------------------------
+INPUT                  = . docs
 FILE_PATTERNS          = *.h *.hpp *.cpp *.md
 RECURSIVE              = YES
 EXCLUDE                = ./build ./build-* ./doc_output ./tests
 EXCLUDE_SYMLINKS       = YES
 
-USE_MDFILE_AS_MAINPAGE = README.md
 MARKDOWN_SUPPORT       = YES
 AUTOLINK_SUPPORT       = YES
+USE_MDFILE_AS_MAINPAGE = docs/mainpage.md
 
+# ---------------------------------------------------------------------------
+# Extraction de documentation
+# ---------------------------------------------------------------------------
 EXTRACT_ALL            = NO
 EXTRACT_PRIVATE        = NO
 EXTRACT_STATIC         = NO
@@ -36,15 +46,27 @@ INHERIT_DOCS           = YES
 
 SOURCE_BROWSER         = YES
 INLINE_SOURCES         = NO
-REFERENCED_BY_RELATION = NO
-REFERENCES_RELATION    = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
 
+# ---------------------------------------------------------------------------
+# Sortie HTML
+# ---------------------------------------------------------------------------
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
 HTML_COLORSTYLE        = AUTO_DARK
 HTML_DYNAMIC_MENUS     = YES
 GENERATE_TREEVIEW      = YES
+FULL_SIDEBAR           = YES
+SEARCHENGINE           = YES
+
+# Thème moderne: doxygen-awesome (vendoré) + surcharge projet
+HTML_EXTRA_STYLESHEET  = \
+  docs/theme/vendor/doxygen-awesome.css \
+  docs/theme/vendor/doxygen-awesome-sidebar-only.css \
+  docs/theme/vendor/doxygen-awesome-sidebar-only-darkmode-toggle.css \
+  docs/theme/custom.css
 
 GENERATE_LATEX         = NO
 GENERATE_XML           = NO
@@ -52,13 +74,28 @@ GENERATE_RTF           = NO
 GENERATE_MAN           = NO
 GENERATE_DOCBOOK       = NO
 
-HAVE_DOT               = NO
-CLASS_DIAGRAMS         = NO
-UML_LOOK               = NO
-TEMPLATE_RELATIONS     = NO
-CALL_GRAPH             = NO
-CALLER_GRAPH           = NO
+# ---------------------------------------------------------------------------
+# Graphviz / UML
+# ---------------------------------------------------------------------------
+HAVE_DOT               = YES
+CLASS_DIAGRAMS         = YES
+UML_LOOK               = YES
+DOT_UML_DETAILS        = YES
+COLLABORATION_GRAPH    = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+GRAPHICAL_HIERARCHY    = YES
+DIRECTORY_GRAPH        = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_MULTI_TARGETS      = YES
+TEMPLATE_RELATIONS     = YES
 
+# ---------------------------------------------------------------------------
+# Warnings
+# ---------------------------------------------------------------------------
 QUIET                  = YES
 WARNINGS               = YES
 WARN_IF_UNDOCUMENTED   = YES

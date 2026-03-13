@@ -1,0 +1,49 @@
+/* InterfaceGPS custom overrides (loaded after vendored doxygen-awesome styles). */
+
+:root {
+  --ifgps-accent: #00a3a3;
+  --ifgps-accent-2: #31c48d;
+}
+
+a, .el {
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+}
+
+h1 {
+  border-bottom: 2px solid rgba(0, 163, 163, 0.25);
+  padding-bottom: .25rem;
+}
+
+h2 {
+  border-left: 4px solid var(--ifgps-accent);
+  padding-left: .55rem;
+}
+
+#MSearchBox {
+  border-radius: 10px;
+  border: 1px solid rgba(0, 163, 163, 0.45);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+#MSearchField {
+  font-size: 0.95rem;
+}
+
+div.contents img,
+div.contents svg {
+  max-width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  padding: .35rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  h1 { border-bottom-color: rgba(49, 196, 141, 0.35); }
+  div.contents img,
+  div.contents svg {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(18, 26, 36, 0.85);
+  }
+}
