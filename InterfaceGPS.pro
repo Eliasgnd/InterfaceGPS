@@ -74,25 +74,9 @@ DISTFILES += \
 # Fichier de ressources Qt compile
 RESOURCES += \
     resources.qrc
-
+    
 # -------------------------------------------------------------------------
-# Section 6 : Automatisation du dossier SCRIPTS (A-GPS)
-# -------------------------------------------------------------------------
-# Cette section s'assure que agps_loader.py est copie dans le dossier de build
-# afin que gpstelemetrysource.cpp puisse le trouver au lancement
-
-# 1. Definit le chemin du dossier scripts dans les sources ($$PWD)
-# et la destination dans le dossier de build ($$OUT_PWD)
-copy_scripts.target = copy_scripts_target
-copy_scripts.commands = $(COPY_DIR) $$shell_path($$PWD/scripts) $$shell_path($$OUT_PWD)
-copy_scripts.depends = FORCE
-
-# 2. Ajoute cette action a la sequence de compilation
-PRE_TARGETDEPS += copy_scripts_target
-QMAKE_EXTRA_TARGETS += copy_scripts
-
-# -------------------------------------------------------------------------
-# Section 7 : Regles de deploiement (Linux/Unix)
+# Section 6 : Regles de deploiement (Linux/Unix)
 # -------------------------------------------------------------------------
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
