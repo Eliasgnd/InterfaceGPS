@@ -20,4 +20,3 @@ InterfaceGPS est une application **Qt/C++** pour un usage embarqué combinant na
 - [Guide rapide (build & exécution)](build.md)
 - [Architecture](architecture.md)
 - [Matériel](hardware.md)
-- [API C++ (classes et fichiers)](annotated.html)
