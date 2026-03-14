@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
     // Initialisation du GPS (Port Série)
     GpsTelemetrySource gpsSource(&telemetry);
 #ifdef Q_OS_LINUX
-    gpsSource.start("/dev/serial0");
+    gpsSource.start("/dev/serial0");:;:
 #else
     gpsSource.start("COM1");
 #endif
