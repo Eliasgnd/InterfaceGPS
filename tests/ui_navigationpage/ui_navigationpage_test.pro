@@ -1,4 +1,4 @@
-QT += testlib core gui widgets positioning location quickwidgets qml quick network
+QT += testlib core gui widgets positioning quickwidgets qml quick network
 CONFIG += c++17 testcase
 TEMPLATE = app
 
