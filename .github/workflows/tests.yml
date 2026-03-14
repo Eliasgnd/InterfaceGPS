@@ -1,0 +1,68 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: bash scripts/install_dependencies.sh
+
+      - name: Build and run telemetrydata tests
+        run: |
+          cd tests/telemetrydata
+          qmake6 telemetrydata_test.pro
+          make -j"$(nproc)"
+          ./telemetrydata_test
+
+      - name: Build and run ui_camerapage tests
+        run: |
+          cd tests/ui_camerapage
+          qmake6 ui_camerapage_test.pro
+          make -j"$(nproc)"
+          xvfb-run ./ui_camerapage_test
+
+      - name: Build and run ui_homeassistant tests
+        run: |
+          cd tests/ui_homeassistant
+          qmake6 ui_homeassistant_test.pro
+          make -j"$(nproc)"
+          xvfb-run ./ui_homeassistant_test
+
+      - name: Build and run ui_mainwindow tests
+        run: |
+          cd tests/ui_mainwindow
+          qmake6 ui_mainwindow_test.pro
+          make -j"$(nproc)"
+          xvfb-run ./ui_mainwindow_test
+
+      - name: Build and run ui_mediapage tests
+        run: |
+          cd tests/ui_mediapage
+          qmake6 ui_mediapage_test.pro
+          make -j"$(nproc)"
+          xvfb-run ./ui_mediapage_test
+
+      - name: Build and run ui_navigationpage tests
+        run: |
+          cd tests/ui_navigationpage
+          qmake6 ui_navigationpage_test.pro
+          make -j"$(nproc)"
+          xvfb-run ./ui_navigationpage_test
+
+      - name: Build and run ui_settingspage tests
+        run: |
+          cd tests/ui_settingspage
+          qmake6 ui_settingspage_test.pro
+          make -j"$(nproc)"
+          xvfb-run ./ui_settingspage_test
