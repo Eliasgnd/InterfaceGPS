@@ -97,18 +97,20 @@ jobs:
             libxcb-xfixes0 \
             libxcb-xinerama0 \
             libxcb-xkb1 \
-            libx11-xcb1
+            libx11-xcb1 \
+            libbluetooth-dev
 
-      - name: Install Qt 6.5.3
+      - name: Install Qt 6.5.3 with required modules
         uses: jurplel/install-qt-action@v4
         with:
           version: 6.5.3
           cache: true
+          modules: 'qtconnectivity qtmultimedia qtserialport qtpositioning qtwebchannel qtwebengine'
 
       - name: Show Qt version
         run: |
           qmake6 -v
-          which qmake6 || true
+          which qmake6
 
       - name: Build test
         working-directory: ${{ matrix.test_dir }}
