@@ -1,4 +1,4 @@
-QT += core gui widgets positioning quickwidgets qml quick serialport virtualkeyboard multimedia quickcontrols2 network dbus bluetooth webenginewidgets testlib
+QT += core gui widgets positioning quickwidgets qml quick serialport multimedia quickcontrols2 network dbus bluetooth webenginewidgets testlib
 CONFIG += c++17 testcase
 TEMPLATE = app
 
