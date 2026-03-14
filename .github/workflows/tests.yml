@@ -65,8 +65,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: bash scripts/install_dependencies.sh
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-declarative-dev \
+            qt6-positioning-dev \
+            qt6-location-dev \
+            qt6-serialport-dev \
+            qt6-multimedia-dev \
+            qt6-connectivity-dev \
+            qt6-webengine-dev \
+            qt6-virtualkeyboard-dev \
+            xvfb
 
       - name: Build test
         working-directory: ${{ matrix.test_dir }}
