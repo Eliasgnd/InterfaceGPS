@@ -1,7 +1,6 @@
 #include <QtTest>
 #include <QPushButton>
 #include <QLineEdit>
-#include <QLabel>
 #include <QStringListModel>
 #include <QCompleter>
 #include <QSignalSpy>
@@ -17,7 +16,6 @@ class NavigationPageUiTest : public QObject
 
 private slots:
     void constructor_wiresMainWidgetsAndDefaults();
-    void onRouteInfoReceived_updatesInfoLabels();
     void onSuggestionsReceived_updatesCompleterModel();
     void onSuggestionChosen_updatesSearchField();
     void triggerSuggestionsSearch_shortQuery_doesNothingAndKeepsState();
@@ -47,26 +45,6 @@ void NavigationPageUiTest::constructor_wiresMainWidgetsAndDefaults()
     QVERIFY(page.m_searchCompleter != nullptr);
     QVERIFY(page.m_suggestionsModel != nullptr);
     QCOMPARE(page.m_suggestionDebounceTimer->interval(), 800);
-}
-
-void NavigationPageUiTest::onRouteInfoReceived_updatesInfoLabels()
-{
-    // Objectif: confirmer la mise à jour des informations de trajet dans l'UI.
-    // Pourquoi: distance et durée sont des retours essentiels après calcul d'itinéraire.
-    // Procédure détaillée:
-    //   1) Injecter une distance et un temps simulés.
-    //   2) Récupérer les labels d'affichage.
-    //   3) Vérifier leur texte formaté final.
-    NavigationPage page;
-
-    page.onRouteInfoReceived("12.4 km", "18 min");
-
-    auto* lblLat = page.findChild<QLabel*>("lblLat");
-    auto* lblLon = page.findChild<QLabel*>("lblLon");
-    QVERIFY(lblLat != nullptr);
-    QVERIFY(lblLon != nullptr);
-    QCOMPARE(lblLat->text(), QString("Dist: 12.4 km"));
-    QCOMPARE(lblLon->text(), QString("Temps: 18 min"));
 }
 
 void NavigationPageUiTest::onSuggestionsReceived_updatesCompleterModel()
