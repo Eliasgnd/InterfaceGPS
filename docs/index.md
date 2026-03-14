@@ -10,9 +10,3 @@ Ce dossier regroupe la documentation guide utilisée par Doxygen et par les cont
 - [Configurer un token Mapbox](./mapbox-token.md)
 - [Matériel cible + câblage](./hardware.md)
 - [Build & exécution](./build.md)
-
-## Portée
-
-- Documentation orientée intégration, maintenance et exploitation.
-- Alignée avec l’état réel du dépôt.
-- Détails API C++ générés automatiquement via Doxygen (`doc_output/html`).
