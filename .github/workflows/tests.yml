@@ -3,13 +3,59 @@ name: Unit Tests
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: telemetrydata
+            test_dir: tests/telemetrydata
+            pro_file: telemetrydata_test.pro
+            binary: telemetrydata_test
+            headless: false
+          - name: ui_camerapage
+            test_dir: tests/ui_camerapage
+            pro_file: ui_camerapage_test.pro
+            binary: ui_camerapage_test
+            headless: true
+          - name: ui_homeassistant
+            test_dir: tests/ui_homeassistant
+            pro_file: ui_homeassistant_test.pro
+            binary: ui_homeassistant_test
+            headless: true
+          - name: ui_mainwindow
+            test_dir: tests/ui_mainwindow
+            pro_file: ui_mainwindow_test.pro
+            binary: ui_mainwindow_test
+            headless: true
+          - name: ui_mediapage
+            test_dir: tests/ui_mediapage
+            pro_file: ui_mediapage_test.pro
+            binary: ui_mediapage_test
+            headless: true
+          - name: ui_navigationpage
+            test_dir: tests/ui_navigationpage
+            pro_file: ui_navigationpage_test.pro
+            binary: ui_navigationpage_test
+            headless: true
+          - name: ui_settingspage
+            test_dir: tests/ui_settingspage
+            pro_file: ui_settingspage_test.pro
+            binary: ui_settingspage_test
+            headless: true
+
+    name: ${{ matrix.name }}
 
     steps:
       - name: Checkout
@@ -18,51 +64,17 @@ jobs:
       - name: Install dependencies
         run: bash scripts/install_dependencies.sh
 
-      - name: Build and run telemetrydata tests
+      - name: Build test
+        working-directory: ${{ matrix.test_dir }}
         run: |
-          cd tests/telemetrydata
-          qmake6 telemetrydata_test.pro
+          qmake6 "${{ matrix.pro_file }}"
           make -j"$(nproc)"
-          ./telemetrydata_test
 
-      - name: Build and run ui_camerapage tests
+      - name: Run test
+        working-directory: ${{ matrix.test_dir }}
         run: |
-          cd tests/ui_camerapage
-          qmake6 ui_camerapage_test.pro
-          make -j"$(nproc)"
-          xvfb-run ./ui_camerapage_test
-
-      - name: Build and run ui_homeassistant tests
-        run: |
-          cd tests/ui_homeassistant
-          qmake6 ui_homeassistant_test.pro
-          make -j"$(nproc)"
-          xvfb-run ./ui_homeassistant_test
-
-      - name: Build and run ui_mainwindow tests
-        run: |
-          cd tests/ui_mainwindow
-          qmake6 ui_mainwindow_test.pro
-          make -j"$(nproc)"
-          xvfb-run ./ui_mainwindow_test
-
-      - name: Build and run ui_mediapage tests
-        run: |
-          cd tests/ui_mediapage
-          qmake6 ui_mediapage_test.pro
-          make -j"$(nproc)"
-          xvfb-run ./ui_mediapage_test
-
-      - name: Build and run ui_navigationpage tests
-        run: |
-          cd tests/ui_navigationpage
-          qmake6 ui_navigationpage_test.pro
-          make -j"$(nproc)"
-          xvfb-run ./ui_navigationpage_test
-
-      - name: Build and run ui_settingspage tests
-        run: |
-          cd tests/ui_settingspage
-          qmake6 ui_settingspage_test.pro
-          make -j"$(nproc)"
-          xvfb-run ./ui_settingspage_test
+          if [ "${{ matrix.headless }}" = "true" ]; then
+            xvfb-run "./${{ matrix.binary }}"
+          else
+            "./${{ matrix.binary }}"
+          fi
