@@ -1,6 +1,7 @@
 # InterfaceGPS
 
 [![Documentation Doxygen](https://img.shields.io/badge/docs-doxygen-blue)](https://Eliasgnd.github.io/InterfaceGPS/)
+[![Tests GitHub Actions](https://github.com/Eliasgnd/InterfaceGPS/actions/workflows/tests.yml/badge.svg)](https://github.com/Eliasgnd/InterfaceGPS/actions/workflows/tests.yml)
 
 InterfaceGPS est une application **Qt 6 / C++ / qmake** pour écran embarqué (ex: Raspberry Pi), qui regroupe navigation, multimédia Bluetooth, caméra et télémétrie dans une interface unique.
 
@@ -117,5 +118,43 @@ bash scripts/run_doxygen.sh
 ```
 
 Sortie locale: `doc_output/html/index.html`
+
+---
+
+## 8) Tests automatisés (GitHub Actions)
+
+Les tests unitaires/UI sont lancés automatiquement via le workflow `.github/workflows/tests.yml`:
+
+- à chaque push,
+- à chaque pull request,
+- et manuellement depuis l'onglet **Actions** (`workflow_dispatch`).
+
+### Exécution manuelle en local (comme la CI)
+
+Depuis la racine du dépôt, exécuter les tests un par un:
+
+```bash
+# 1) telemetrydata
+cd tests/telemetrydata
+qmake6 telemetrydata_test.pro
+make -j"$(nproc)"
+./telemetrydata_test
+
+# 2) UI tests (requièrent un affichage virtuel)
+cd ../ui_camerapage
+qmake6 ui_camerapage_test.pro
+make -j"$(nproc)"
+xvfb-run -a -s "-screen 0 1920x1080x24" ./ui_camerapage_test
+```
+
+Même principe pour les autres dossiers de `tests/`:
+
+- `ui_homeassistant`
+- `ui_mainwindow`
+- `ui_mediapage`
+- `ui_navigationpage`
+- `ui_settingspage`
+
+> Astuce: définir `QT_QPA_PLATFORM=offscreen` et utiliser `xvfb-run` pour reproduire le comportement headless de la CI.
 
 ---
