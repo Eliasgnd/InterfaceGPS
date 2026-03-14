@@ -96,13 +96,12 @@ Pour une intégration progressive et claire:
 
 ## 6) Documentation (ordre recommandé)
 
-1. **Guide principal**: `README.md`
-2. **Démarrage détaillé**: [`docs/build.md`](docs/build.md)
-3. **Matériel cible**: [`docs/hardware.md`](docs/hardware.md)
-4. **Architecture**: [`docs/architecture.md`](docs/architecture.md)
-5. **Navigation**: [`docs/navigation.md`](docs/navigation.md)
-6. **Token Mapbox (compte + dashboard + Raspberry Pi)**: [`docs/mapbox-token.md`](docs/mapbox-token.md)
-7. **Index docs**: [`docs/index.md`](docs/index.md)
+1. **Démarrage détaillé**: [`docs/build.md`](docs/build.md)
+2. **Matériel cible**: [`docs/hardware.md`](docs/hardware.md)
+3. **Architecture**: [`docs/architecture.md`](docs/architecture.md)
+4. **Navigation**: [`docs/navigation.md`](docs/navigation.md)
+5. **Token Mapbox (compte + dashboard + Raspberry Pi)**: [`docs/mapbox-token.md`](docs/mapbox-token.md)
+6. **Index docs**: [`docs/index.md`](docs/index.md)
 
 ---
 
