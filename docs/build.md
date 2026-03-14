@@ -21,7 +21,7 @@ make -j"$(nproc)"
 
 ## Configuration minimale
 
-- Définir `MAPBOX_API_KEY` pour la carte
+- Définir `MAPBOX_API_KEY` pour la carte (guide détaillé : [`mapbox-token.md`](./mapbox-token.md))
 - Adapter l’URL Home Assistant dans `homeassistant.cpp` si nécessaire
 
 ## Documentation Doxygen

@@ -75,7 +75,7 @@ Pour une intégration progressive et claire:
 
 ## 4) Configuration utile
 
-- **Cartographie**: définir `MAPBOX_API_KEY`.
+- **Cartographie**: définir `MAPBOX_API_KEY` (voir [`docs/mapbox-token.md`](docs/mapbox-token.md)).
 - **Home Assistant**: adapter l'URL dans `homeassistant.cpp`.
 
 ---
@@ -101,7 +101,8 @@ Pour une intégration progressive et claire:
 3. **Matériel cible**: [`docs/hardware.md`](docs/hardware.md)
 4. **Architecture**: [`docs/architecture.md`](docs/architecture.md)
 5. **Navigation**: [`docs/navigation.md`](docs/navigation.md)
-6. **Index docs**: [`docs/index.md`](docs/index.md)
+6. **Token Mapbox (compte + dashboard + Raspberry Pi)**: [`docs/mapbox-token.md`](docs/mapbox-token.md)
+7. **Index docs**: [`docs/index.md`](docs/index.md)
 
 ---
 

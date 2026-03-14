@@ -16,5 +16,5 @@ Cette page décrit la logique métier de navigation, centrée sur `NavigationPag
 
 ## Dépendances
 
-- Clé cartographique valide (`MAPBOX_API_KEY`)
+- Clé cartographique valide (`MAPBOX_API_KEY`) — voir [`mapbox-token.md`](./mapbox-token.md)
 - Connectivité réseau selon le fournisseur cartographique
