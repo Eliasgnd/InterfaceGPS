@@ -154,7 +154,5 @@ Même principe pour les autres dossiers de `tests/`:
 - `ui_mediapage`
 - `ui_navigationpage`
 - `ui_settingspage`
-
-> Astuce: définir `QT_QPA_PLATFORM=offscreen` et utiliser `xvfb-run` pour reproduire le comportement headless de la CI.
-
+  
 ---
