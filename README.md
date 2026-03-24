@@ -5,7 +5,7 @@
 
 InterfaceGPS est une application **Qt 6 / C++ / qmake** pour écran embarqué (ex: Raspberry Pi), qui regroupe navigation, multimédia Bluetooth, caméra et télémétrie dans une interface unique.
 
-## 1) Démarrage rapide (objectif: première exécution en < 15 min)
+## 1) Démarrage rapide (objectif: première exécution en < 30 min)
 
 ### Prérequis minimum
 
